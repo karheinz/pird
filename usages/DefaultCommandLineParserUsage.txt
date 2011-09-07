@@ -1,0 +1,10 @@
+usage: %s [options] source
+       %s -l [source]
+       %s -h
+
+options:
+-h print help
+-l list source(s)
+-q be quiet
+-s simulate
+-v be verbose (specifiy as often as required)
