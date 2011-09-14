@@ -48,32 +48,32 @@ mixin template Log()
 {
   void log( LogLevel logLevel, string message )
   {
-    emit( this.type(),logLevel, message );
+    emit( this.type(), logLevel, message );
   }
 
   void logTrace( string message )
   {
-    emit( this.type(), LogLevel.TRACE, message );
+    log( LogLevel.TRACE, message );
   }
 
   void logDebug( string message )
   {
-    emit( this.type(), LogLevel.DEBUG, message );
+    log( LogLevel.DEBUG, message );
   }
 
   void logInfo( string message )
   {
-    emit( this.type(), LogLevel.INFO, message );
+    log( LogLevel.INFO, message );
   }
 
   void logWarn( string message )
   {
-    emit( this.type(), LogLevel.WARN, message );
+    log( LogLevel.WARN, message );
   }
 
   void logError( string message )
   {
-    emit( this.type(), LogLevel.ERROR, message );
+    log( LogLevel.ERROR, message );
   }
 
   mixin Signal!( string, LogLevel, string );

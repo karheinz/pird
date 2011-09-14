@@ -1,2 +1,4 @@
 pird
 *.o
+*.toc
+*.wav

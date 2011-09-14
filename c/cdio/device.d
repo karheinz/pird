@@ -16,7 +16,9 @@
 +/
 
 
-module cdio.device;
+module c.cdio.device;
+
+import c.cdio.types;
 
 extern (C):
 
@@ -90,20 +92,24 @@ enum WriteCapability : uint {
     DVD                  = ( DVD_R | DVD_R_P | DVD_RAM | DVD_RW | DVD_RW_P ),
     CDIO_DRIVE_CAP_WRITE = ( CD | DVD )
 }
- 
+
+// Used to store drive info.
+struct cdio_hwinfo_t 
+{
+  char psz_vendor[ 8 + 1 ];
+  char psz_model[ 16 + 1 ];
+  char psz_revision[ 4 + 1 ];
+};
+
 
 // Types.
 alias uint driver_id_t;
 alias int cdio_fs_anal_t;
 
-struct _CdIo;
-alias _CdIo CdIo_t;
-
-
 // API functions.
 char** cdio_get_devices( driver_id_t driver_id );
-char** cdio_get_devices_ret (/*in/out*/ driver_id_t *p_driver_id);
-CdIo_t* cdio_open( const char *psz_source, driver_id_t driver_id );
+char** cdio_get_devices_ret(/*in/out*/ driver_id_t* p_driver_id );
+CdIo_t* cdio_open( const char* psz_source, driver_id_t driver_id );
 void cdio_destroy( CdIo_t* handle );
 void cdio_free_device_list( char** device_list );
 char** cdio_get_devices_with_cap(
@@ -118,7 +124,7 @@ char** cdio_get_devices_with_cap_ret(
     driver_id_t *p_driver_id // out
 );
 
-void cdio_get_drive_cap (
+void cdio_get_drive_cap(
     const CdIo_t* p_cdio,
     uint* p_read_cap,
     uint* p_write_cap,
@@ -134,3 +140,4 @@ void cdio_get_drive_cap_dev (
 char* cdio_driver_describe( uint driver );
 bool cdio_have_driver( uint driver );
 bool cdio_is_device( char* path, uint driver );
+bool cdio_get_hwinfo( const CdIo_t* p_cdio, /*out*/ cdio_hwinfo_t* p_hw_info );

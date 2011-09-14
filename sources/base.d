@@ -22,6 +22,7 @@ import std.array;
 import std.conv;
 import std.string;
 
+import c.cdio.types;
 import c.cdio.device;
 
 static import introspection;
@@ -109,8 +110,14 @@ class Device : Generic
     bool fetched;
   };
 
+  struct Info {
+    string vendor, model, revision;
+    bool fetched;
+  };
+
 private:
   Capabilities _capabilities;
+  Info _info;
 
 protected:
   Capabilities capabilities() {
@@ -127,6 +134,29 @@ protected:
   }
 
 public:
+  Info info() {
+    if ( _info.fetched ) return _info;
+
+    // Device has to be open!
+    if ( ! open() ) { return _info; }
+
+    // Fetch data.
+    cdio_hwinfo_t data;
+    _info.fetched = cdio_get_hwinfo(
+        _handle,
+        &data
+      );
+
+    // Success? Store data.
+    if ( _info.fetched ) {
+      _info.vendor = to!string( data.psz_vendor );
+      _info.model = to!string( data.psz_model );
+      _info.revision = to!string( data.psz_revision );
+    }
+
+    return _info;
+  }
+  
   bool readsAudioDiscs() {
     return ( capabilities().read & ReadCapability.CD_DA ) > 0;
   }

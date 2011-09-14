@@ -45,6 +45,11 @@ string toString( S )( S[] sources )
   string[] lines;
   foreach( S source; sources ) {
     lines ~= format( "%10s %15s %s", source.type(), source.path(), cast( Driver )source.driver() );
+    if ( source.isDevice() ) {
+      Device d = cast( Device )source;
+      Device.Info i = d.info();
+      lines ~= format( "Vendor: %s, Model: %s, Revision: %s", i.vendor, i.model, i.revision );
+    }
   }
 
   return lines.join( "\n" );
