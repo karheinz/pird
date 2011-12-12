@@ -37,10 +37,10 @@ interface Source : introspection.Interface
 
   bool open();
   bool close();
+  CdIo_t* handle();
 
   bool isDevice();
   bool isImage();
-  
 
   // Allows to search for all sources.
   mixin Finders;
@@ -57,6 +57,10 @@ protected:
   CdIo_t* _handle;
     
 public:
+  final CdIo_t* handle() {
+    return _handle;
+  }
+
   final string path() {
     return _path;
   }
