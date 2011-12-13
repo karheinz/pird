@@ -20,6 +20,7 @@ module sources.base;
 
 import std.array;
 import std.conv;
+import std.file;
 import std.string;
 
 import c.cdio.types;
@@ -42,6 +43,11 @@ interface Source : introspection.Interface
   bool isDevice();
   bool isImage();
 
+  DirEntry dirEntry();
+
+  string[] aliases();
+  void addAlias( string path );
+
   // Allows to search for all sources.
   mixin Finders;
 
@@ -49,13 +55,18 @@ interface Source : introspection.Interface
   mixin Comparators;
 }
 
-abstract class Generic : Source
+abstract class AbstractSource : Source
 {
 protected:
   string _path;
+  string[] _aliases;
   uint _driver = Driver.UNKNOWN;
   CdIo_t* _handle;
     
+  void addAlias( string path ) {
+    _aliases ~= path;
+  }
+
 public:
   final CdIo_t* handle() {
     return _handle;
@@ -91,10 +102,18 @@ public:
   final bool isImage() {
     return !isDevice();
   }
+
+  final DirEntry dirEntry() {
+    return DirEntry( _path );
+  }
+
+  final string[] aliases() {
+    return _aliases;
+  }
 }
 
 
-class Image : Generic
+class Image : AbstractSource
 {
   mixin Constructors;
   mixin Finders;
@@ -102,7 +121,7 @@ class Image : Generic
   mixin Comparators;
 }
 
-class Device : Generic
+class Device : AbstractSource
 {
   mixin Constructors;
   mixin Finders;
@@ -153,9 +172,9 @@ public:
 
     // Success? Store data.
     if ( _info.fetched ) {
-      _info.vendor = to!string( data.psz_vendor );
-      _info.model = to!string( data.psz_model );
-      _info.revision = to!string( data.psz_revision );
+      _info.vendor = bufferTo!string( data.psz_vendor ).strip();
+      _info.model = bufferTo!string( data.psz_model ).strip();
+      _info.revision = bufferTo!string( data.psz_revision ).strip();
     }
 
     return _info;

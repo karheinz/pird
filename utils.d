@@ -18,9 +18,27 @@
 
 module utils;
 
+import std.c.string;
+import std.conv;
 import std.math;
 import std.traits;
 
+/*
+ * Use this function to convert strings
+ * inside fixed size buffers!
+ */
+T bufferTo( T )( char[] buffer )
+{
+   char[] tmp;
+   int length;
+   
+   length = strlen( cast( char* )buffer );
+   tmp.length = length;
+
+   // Do not copy trailing '\0' into tmp array!
+   strncpy( cast( char* )tmp, cast( char* )buffer, length );
+   return to!( T )( tmp );
+}
 
 T[] convert( T : T[], F )( F[] from )
 {
@@ -44,6 +62,6 @@ unittest {
   assert( a == b );
 }
 
-string pluralize( string s, long count = 2 ) {
-  return ( abs( count ) > 1 ) ? s ~ "s" : s;
+string pluralize( string s, long count = 0 ) {
+  return ( abs( count ) == 1 ) ? s : s ~ "s";
 }

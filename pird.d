@@ -17,6 +17,7 @@
 
 
 import std.conv;
+import std.file;
 import std.stdio;
 import std.string;
 import std.traits;

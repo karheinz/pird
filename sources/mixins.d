@@ -26,7 +26,13 @@ mixin template Finders()
   // Direct lookup.
   final static T find( string path ) {
     foreach( source; T.find() ) {
+      // Check path.
       if ( source.path() == path ) return source;
+
+      // Check aliases.
+      foreach( a; source.aliases() ) {
+        if ( a == path ) return source;
+      }
     }
 
     return null;
@@ -34,11 +40,11 @@ mixin template Finders()
 
   final static T[] find() {
     // Available sources, paths used as keys.
-    Source[ string ] sources;
+    Source[ string ] sourcesByPath;
 
     uint driver;
     string path;
-    T[] result;
+
 
     // Iterate over drivers.
     for ( driver = Driver.min; driver <= Driver.max; driver++ ) {
@@ -56,12 +62,12 @@ mixin template Finders()
         for ( char** p = dl; *p != null; p++ ) {
           path = to!string( *p );
           // Only add to array if source wasn't added before.
-          if ( path !in sources ) {
+          if ( path !in sourcesByPath ) {
             // Device or file?
             if ( cdio_is_device( *p, driver ) ) {
-              sources[ path ] = new Device( path, driver );
+              sourcesByPath[ path ] = new Device( path, driver );
             } else {
-              sources[ path ] = new Image( path, driver );
+              sourcesByPath[ path ] = new Image( path, driver );
             }
           }
         }
@@ -71,8 +77,62 @@ mixin template Finders()
       }
     }
 
-    // Return only instances of class T.
-    return convert!( T[] )( sources.values ).sort;
+
+    T[] result;
+    T[] sources;
+    T source;
+    T[][] groups;
+    bool next;
+    
+    // Drop sources not of type T.
+    sources = convert!( T[] )( sourcesByPath.values );
+
+    // Group sources by inode.
+    while ( sources.length ) {
+      next = false;
+
+      // Handle last elem.
+      source = sources.back();
+      sources.popBack();
+
+      // Check if sources inode is already known.
+      foreach( ref T[] group; groups ) {
+        foreach( ref T member; group ) {
+          if ( source.dirEntry().statBuf.st_ino == member.dirEntry().statBuf.st_ino ) {
+            group ~= source;
+            next = true;
+            break;
+          }
+        }
+        if ( next ) break;
+      }
+      if ( next ) continue;
+
+      // Sources inode isn't known, create a new group.
+      if ( source !is null ) {
+        T[] group;
+        group ~= source;
+        groups ~= group;
+      }
+    }
+
+    // Sort groups. Build result.
+    foreach( ref T[] group; groups ) {
+      group.sort;
+
+      // Add first source in group to result.
+      // Add paths of other sources as alias.
+      for ( uint i; i < group.length; i++ ) {
+        if ( i == 0 ) {
+          result ~= group[ i ];
+          continue;
+        }
+
+        result.back().addAlias( group[ i ].path() );
+      }
+    }
+
+    return result;
   }
 
   final static bool exists( string path ) {
@@ -113,20 +173,32 @@ mixin template Comparators()
     auto o = cast( Source )other;
     if ( o is null ) return 1;   // this is greater
 
-    // Compare driver and path.
-    // Because image driver values (uint) are greater
-    // than device driver values (uint), devices come before images.
+    // Compare driver, inode, file type (symlink) and path.
+    // Because image driver values (uint) are greater than 
+    // device driver values (uint), devices come before images.
     if ( driver() > o.driver() ) {
       return 1;    // this is greater
     } else if ( driver() < o.driver() ) {
       return -1;   // this is smaller
     } else {   // equal drivers
-      if ( path() > o.path() ) {
-        return 1;    // this is greater
-      } else if ( path() < o.path() ) {
-        return -1;   // this is smaller
-      } else {
-        return 0;
+      if ( dirEntry().statBuf.st_ino > o.dirEntry().statBuf.st_ino ) {
+        return 1;    //this is greater
+      } else if ( dirEntry().statBuf.st_ino < o.dirEntry().statBuf.st_ino ) {
+        return -1;   //this is smaller
+      } else {   // equal inodes
+        if ( dirEntry().isSymLink() && ! o.dirEntry().isSymLink() ) {
+          return 1;   // this is greater
+        } else if ( ! dirEntry().isSymLink() && o.dirEntry().isSymLink() ) {
+          return -1;  // this is smaller
+        } else {    // equal file type
+          if ( path() > o.path() ) {
+            return 1;    // this is greater
+          } else if ( path() < o.path() ) {
+            return -1;   // this is smaller
+          } else {
+            return 0;
+          }
+        }
       }
     }
   }

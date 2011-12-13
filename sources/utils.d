@@ -19,6 +19,7 @@
 module sources.utils;
 
 import std.array;
+import std.format;
 import std.stdio;
 import std.string;
 
@@ -42,13 +43,24 @@ void print( S )( S[] sources )
 
 string toString( S )( S[] sources )
 {
+  string aliases;
   string[] lines;
+
   foreach( S source; sources ) {
-    lines ~= format( "%10s %15s %s", source.type(), source.path(), cast( Driver )source.driver() );
+    // Build aliases string.
+    aliases.clear();
+    if ( source.aliases().length ) {
+      aliases = format( " [%s]", source.aliases().join( ", " ) );
+    }
+
+    // Build line.
+    lines ~= format( "%10s %15s%s", source.type(), source.path(), aliases );
+
+    // Add device info if source is a device.
     if ( source.isDevice() ) {
       Device d = cast( Device )source;
       Device.Info i = d.info();
-      lines ~= format( "Vendor: %s, Model: %s, Revision: %s", i.vendor, i.model, i.revision );
+      lines[ $ - 1 ] ~= format( "   (%s, %s, %s)", i.vendor, i.model, i.revision );
     }
   }
 
