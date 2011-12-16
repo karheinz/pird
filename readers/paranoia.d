@@ -17,7 +17,7 @@ import readers.base;
 import sources.base;
 
 
-class ParanoiaReader : Reader
+class ParanoiaAudioDiscReader : Reader
 {
 private:
   Source _source;
@@ -37,14 +37,12 @@ public:
   {
     // Abort if source is no device.
     if ( ! _source.isDevice() ) {
-      logError( format( "%s is no device!", _source.path() ) );
-      return null;
+      throw new Exception( format( "%s is no device!", _source.path() ) );
     }
 
     // Open source.
-    if ( !_source.open() ) {
-      logError( format( "Failed to open %s!", _source.path() ) ); 
-      return null;
+    if ( ! _source.open() ) {
+      throw new Exception( format( "Failed to open %s!", _source.path() ) ); 
     }
 
     // Paranoia reader only supports audio discs.
@@ -59,8 +57,7 @@ public:
     char** dummy;
     _handle = cdio_cddap_identify_cdio( _source.handle(), 0, dummy );
     if ( _handle is null ) {
-      logError( "No cdrom_drive_t handle available!" );
-      return null;
+      throw new Exception( "No cdrom_drive_t handle available!" );
     }
 
     Disc disc = new Disc();
@@ -82,6 +79,6 @@ public:
     return 0;
   }
 
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
   mixin Log;
 }

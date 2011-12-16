@@ -23,6 +23,7 @@ import std.conv;
 import std.file;
 import std.string;
 
+import c.cdio.logging;
 import c.cdio.types;
 import c.cdio.device;
 
@@ -50,9 +51,6 @@ interface Source : introspection.Interface
 
   // Allows to search for all sources.
   mixin Finders;
-
-  // Allows comparison of sources.
-  mixin Comparators;
 }
 
 abstract class AbstractSource : Source
@@ -117,7 +115,7 @@ class Image : AbstractSource
 {
   mixin Constructors;
   mixin Finders;
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
   mixin Comparators;
 }
 
@@ -125,7 +123,7 @@ class Device : AbstractSource
 {
   mixin Constructors;
   mixin Finders;
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
   mixin Comparators;
 
   struct Capabilities {

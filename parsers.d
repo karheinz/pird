@@ -28,7 +28,7 @@ struct Configuration
 {
   Parser.Info parser;
   string source;
-  bool help, quiet, list, simulate;
+  bool help, quiet, list, simulate, paranoia;
   int verbose;
 }
 
@@ -53,9 +53,6 @@ protected:
 
   bool parse( Syntax syntax, string[] args, out Configuration config, out string error ) {
     try {
-      // No args? Add help switch!
-      //if ( args.length == 1 ) { args ~= "-h"; }
-
       // Apply syntax to command line.
       final switch( syntax )
       {
@@ -118,7 +115,8 @@ protected:
             std.getopt.config.bundling,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
-            "simulate|s", &config.simulate
+            "simulate|s", &config.simulate,
+            "paranoia|p", &config.paranoia
           );
 
           // Device is second arg left.

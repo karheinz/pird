@@ -23,11 +23,8 @@ import std.format;
 import std.stdio;
 import std.string;
 
-import c.cdio.device;
-
-import utils;
-
 import sources.base;
+import utils;
 
 
 // Some utils for handling sources.
@@ -46,22 +43,25 @@ string toString( S )( S[] sources )
   string aliases;
   string[] lines;
 
-  foreach( S source; sources ) {
+  foreach( int count, S source; sources ) {
     // Build aliases string.
     aliases.clear();
     if ( source.aliases().length ) {
-      aliases = format( " [%s]", source.aliases().join( ", " ) );
+      aliases = format( " (%s)", source.aliases().join( ", " ) );
     }
 
     // Build line.
-    lines ~= format( "%10s %15s%s", source.type(), source.path(), aliases );
+    lines ~= format( "%s %s%s", source.type(), source.path(), aliases );
 
     // Add device info if source is a device.
     if ( source.isDevice() ) {
       Device d = cast( Device )source;
       Device.Info i = d.info();
-      lines[ $ - 1 ] ~= format( "   (%s, %s, %s)", i.vendor, i.model, i.revision );
+      lines[ $ - 1 ] ~= format( ", %s %s %s", i.vendor, i.model, i.revision );
     }
+    
+    // End sentence.
+    //lines[ $ - 1 ] ~= ".";
   }
 
   return lines.join( "\n" );

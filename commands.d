@@ -25,9 +25,15 @@ import std.stdio;
 import std.string;
 import std.variant;
 
+import c.cdio.logging;
+
 static import introspection;
 import log;
+import media;
 import parsers;
+import readers.base;
+import readers.paranoia;
+import readers.simple;
 import sources.base;
 import sources.utils;
 import utils;
@@ -76,11 +82,12 @@ interface Command : introspection.Interface
   KeyValueStore keyValueStore();
 }
 
+
 abstract class AbstractCommand : Command
 {
   protected:
     KeyValueStore _store;
-   
+
   public:
     void setKeyValueStore( KeyValueStore store )
     {
@@ -95,6 +102,8 @@ abstract class AbstractCommand : Command
 
       return _store;
     }
+
+    mixin Log;
 }
 
 interface CommandFactory
@@ -114,18 +123,28 @@ class DefaultCommandFactory : CommandFactory
     
     // List devices?
     if ( config.list ) {
-      return new ListSourcesCommand!Source( config.source );
+      if ( config.source.length ) {
+        return new ExploreSourceCommand!Source( config.source );
+      } else {
+        return new ListSourcesCommand!Source();
+      }
     }
 
-    CompoundCommand cc = new CompoundCommand();
-    cc.add( new PrintCommand() );
-    cc.add( new ListSourcesCommand!Source() );
-    cc.add( new PrintCommand() );
+    // Rip disc.
+    Command c;
+    if ( config.paranoia ) {
+      // Paranoia makes only sense for devices.
+      c = new RipDiscCommand!( Device, ParanoiaAudioDiscReader )( config.source );
+    } else {
+      c = new RipDiscCommand!( Source, SimpleAudioDiscReader )( config.source );
+    }
+
+    // Simulate?
     if ( config.simulate ) {
-      return new SimulateCommand( cc );
+      return new SimulateCommand( c );
     }
 
-    return cc;
+    return c;
   }
 }
 
@@ -144,7 +163,7 @@ public:
     c.setKeyValueStore( keyValueStore() );
   }
 
-  void setKeyValueStore( KeyValueStore store )
+  override void setKeyValueStore( KeyValueStore store )
   {
     super.setKeyValueStore( store );
 
@@ -193,8 +212,7 @@ public:
     }
   }
 
-  mixin Log;
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
 }
 
 class PrintCommand : AbstractCommand
@@ -242,8 +260,7 @@ class PrintCommand : AbstractCommand
     writeln( "Print message(s)." );
   }
 
-  mixin Log;
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
 }
 
 class DetectSourcesCommand( T ) : AbstractCommand
@@ -295,25 +312,18 @@ public:
     }
   }
 
-  mixin Log;
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
 }
-
 
 class ListSourcesCommand( T ) : CompoundCommand
 {
-protected:
-  string _path;
-  
 public:
-  this( string path = "" ) 
+  this()
   {
-    _path = path;
-
-    add( new DetectSourcesCommand!( T )( _path ) );
+    add( new DetectSourcesCommand!( T )() );
   }
 
-  bool execute()
+  override bool execute()
   {
     // Look for sources.
     if ( ! super.execute() ) {
@@ -324,34 +334,132 @@ public:
     logDebug( "Print result." );
 
     // All sources.
-    if ( _path.empty() ) {
-      Variant sources = keyValueStore().get( T.stringof.pluralize().toLower() );
+    Variant variant = keyValueStore().get( T.stringof.pluralize().toLower() );
+    T[] sources = variant.get!( T[] )();
 
-      if ( sources.length ) {
-        writefln( "%d %s found:", sources.length, T.stringof.pluralize( sources.length ).toLower() );
-        writeln( ( sources.get!( T[] )() ).toString() );
-      } else {
-        writefln( "No %s found!", T.stringof.pluralize().toLower() );
-      }
-    // One specific source requested.
+    if ( sources.length ) {
+      writeln( sources.toString() );
     } else {
-      Variant source = keyValueStore().get( T.stringof.toLower() );
-
-      writeln( [ source.get!( T )() ].toString() );;
+      writefln( "No %s found!", T.stringof.pluralize().toLower() );
     }
 
     return true;
   }
 
-  void simulate()
+  override void simulate()
   {
     super.simulate();
 
     writefln( "List available %s.", T.stringof.pluralize().toLower() );
   }
 
-  mixin Log;
-  mixin introspection.Implementation;
+  mixin introspection.Override;
+}
+
+class ExploreSourceCommand( T ) : CompoundCommand
+{
+protected:
+  string _path;
+  
+public:
+  this( string path ) 
+  {
+    _path = path;
+
+    add( new DetectSourcesCommand!( T )( _path ) );
+  }
+
+  override bool execute()
+  {
+    // Look for source.
+    if ( ! super.execute() ) {
+      return false;
+    }
+
+    logDebug( "Print source description." );
+    Variant variant = keyValueStore().get( T.stringof.toLower() );
+    T source = variant.get!( T );
+
+    writeln( [ source ].toString() );
+
+    logDebug( format( "Looking for audio disc in %s.", source.path() ) );
+    SimpleAudioDiscReader reader = new SimpleAudioDiscReader( source );
+
+    // Subscribe for signals emitted by reader.
+    reader.connect( &handleSignal );
+
+    try {
+      if ( reader.disc() is null ) {
+        writeln( "No audio disc found!" );
+      } else {
+        logDebug( "Print disc layout." );
+        writeln();
+        writeln( discToString( reader.disc() ) );
+      }
+    } catch ( Exception e ) {
+      logError( e.msg );
+      return false;
+    }
+
+    return true;
+  }
+
+  override void simulate()
+  {
+    super.simulate();
+
+    writefln( "Explore %s %s.", T.stringof.pluralize().toLower(), _path );
+  }
+
+  mixin introspection.Override;
+}
+
+class RipDiscCommand( S, T ) : CompoundCommand
+{
+protected:
+  string _path;
+  
+public:
+  this( string path ) 
+  {
+    _path = path;
+
+    add( new DetectSourcesCommand!( S )( _path ) );
+  }
+
+  override bool execute()
+  {
+    // Look for sources.
+    if ( ! super.execute() ) {
+      return false;
+    }
+
+    // Extract source.
+    Variant v = keyValueStore().get( S.stringof.toLower() );
+    S source = v.get!( S )();
+
+    T reader = new T();
+    reader.setSource( source );
+
+    if ( reader.disc() is null ) {
+      logError( "No disc found!" );
+    } else {
+      logInfo( "Found disc!" );
+      logDebug( "Print disc layout" );
+      writeln( discToString( reader.disc() ) );
+    }
+
+    return true;
+  }
+
+  override void simulate()
+  {
+    super.simulate();
+
+    writefln( "Rip CD from %s using %s.", S.stringof.toLower(), T.stringof.toLower() );
+  }
+
+  mixin introspection.Override;
 }
 
 class SimulateCommand : AbstractCommand
@@ -383,6 +491,5 @@ class SimulateCommand : AbstractCommand
     // Nothing.
   }
 
-  mixin Log;
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
 }

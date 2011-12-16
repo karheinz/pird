@@ -24,10 +24,16 @@ interface Interface
   string type();
 }
 
-mixin template Implementation()
+mixin template Initial()
 {
-  // Note: Keyword override is no must.
   string type() { 
+    return typeof( this ).stringof;
+  }
+}
+
+mixin template Override()
+{
+  override string type() { 
     return typeof( this ).stringof;
   }
 }

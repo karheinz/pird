@@ -186,9 +186,9 @@ mixin template Comparators()
       } else if ( dirEntry().statBuf.st_ino < o.dirEntry().statBuf.st_ino ) {
         return -1;   //this is smaller
       } else {   // equal inodes
-        if ( dirEntry().isSymLink() && ! o.dirEntry().isSymLink() ) {
+        if ( dirEntry().isSymlink() && ! o.dirEntry().isSymlink() ) {
           return 1;   // this is greater
-        } else if ( ! dirEntry().isSymLink() && o.dirEntry().isSymLink() ) {
+        } else if ( ! dirEntry().isSymlink() && o.dirEntry().isSymlink() ) {
           return -1;  // this is smaller
         } else {    // equal file type
           if ( path() > o.path() ) {

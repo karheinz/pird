@@ -22,7 +22,10 @@ import std.stdio;
 import std.string;
 import std.traits;
 
+import std.c.string;
+
 import c.cdio.device;
+import c.cdio.logging;
 
 import commands;
 import log;
@@ -31,6 +34,7 @@ import sources.base;
 import sources.mixins;
 import sources.utils;
 import utils;
+
 
 
 int main( string[] args )
@@ -51,6 +55,7 @@ int main( string[] args )
   Logger logger = loggerFactory.build( config );
   command.connect( &logger.handleSignal );
 
+  //cdio_debug( toStringz( "Hello" ) );
   return ( command.execute() ? 0 : 1 );
 
   /+

@@ -1,4 +1,4 @@
-module readers.audio;
+module readers.simple;
 
 import std.array;
 import std.conv;
@@ -19,10 +19,11 @@ import readers.base;
 import sources.base;
 
 
-class AudioReader : Reader
+class SimpleAudioDiscReader : Reader
 {
 private:
   Source _source;
+  Disc _disc;
 public:
   this() {};
   this( Source source )
@@ -32,25 +33,30 @@ public:
 
   void setSource( Source source ) {
     _source = source;
+    _disc = null;
   }
 
   Disc disc()
   {
+    // Maybe we already explored the disc.
+    if ( _disc !is null ) return _disc;
+
+
     // Open source.
-    if ( !_source.open() ) {
-      logError( format( "Failed to open %s!", _source.path() ) ); 
-      return null;
+    if ( ! _source.open() ) {
+      throw new Exception( format( "Failed to open %s!", _source.path() ) ); 
     }
 
     // Default reader only supports audio discs.
     discmode_t discmode = cdio_get_discmode( _source.handle() );
     if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
         discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logError( format( "Discmode %s is not supported!", discmode ) );
+      logTrace( format( "Discmode %d is not supported!", discmode ) );
+      logDebug( "No audio disc found!" );
       return null;
     }
 
-    logTrace( "Exploring audio disc." );
+    logTrace( "Found audio disc." );
 
     // Build disc.
     Disc disc = new Disc();
@@ -88,24 +94,13 @@ public:
     }
 
     // Log what we found.
-    if ( disc.mcn().empty() ) {
-      logDebug(
-        format(
-          "Found disc with %d tracks and without media catalog number.",
-          tracks
-        )
-      );
-    } else {
-      logDebug(
-        format(
-          "Found disc with %d tracks and with media catalog number %s.",
-          tracks,
-          disc.mcn()
-        )
-      );
-    }
+    string word = ( disc.mcn().length ? format( " %s", disc.mcn() ) : "" );
+    logDebug( format( "Found audio disc%s with %d tracks.", word, tracks ) );
 
-    return disc;
+    // Cache result.
+    _disc = disc;
+
+    return _disc;
   }
 
   long read( Mask mask = null ) {
@@ -123,6 +118,6 @@ public:
     return 0;
   }
 
-  mixin introspection.Implementation;
+  mixin introspection.Initial;
   mixin Log;
 }
