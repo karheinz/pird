@@ -36,7 +36,7 @@ import utils;
 enum LogLevel
 {
   ERROR,
-  WARN,
+  WARNING,
   INFO,
   DEBUG,
   TRACE
@@ -73,9 +73,9 @@ mixin template Log()
     log( LogLevel.INFO, message );
   }
 
-  void logWarn( string message )
+  void logWarning( string message )
   {
-    log( LogLevel.WARN, message );
+    log( LogLevel.WARNING, message );
   }
 
   void logError( string message )
@@ -99,11 +99,29 @@ private:
 
 public:
   // Used as callback of a C function.
-  //extern (C) static void logCdIoMessage( cdio_log_level_t level, const char[] message )
   extern (C) static void logCdIoMessage( cdio_log_level_t level, const char* message )
   {
-      //instance().logError( format( "LEVEL %d, MESSAGE: %s", level, to!string( &message[ 0 ] ) ) );
-      instance().logError( format( "LEVEL %d, MESSAGE: %s", level, to!string( message ) ) );
+      LogLevel l;
+
+      final switch ( level ) {
+        case cdio_log_level_t.CDIO_LOG_DEBUG:
+          l =  LogLevel.DEBUG;
+          break;
+        case cdio_log_level_t.CDIO_LOG_INFO:
+          l =  LogLevel.INFO;
+          break;
+        case cdio_log_level_t.CDIO_LOG_WARN:
+          l =  LogLevel.WARNING;
+          break;
+        case cdio_log_level_t.CDIO_LOG_ERROR:
+          l =  LogLevel.ERROR;
+          break;
+        case cdio_log_level_t.CDIO_LOG_ASSERT:
+          l =  LogLevel.ERROR;
+          break;
+      }
+
+      instance().log( l, to!string( message ) );
   }
 
   static CdIoLogGateway instance()
