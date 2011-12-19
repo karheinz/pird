@@ -15,7 +15,6 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-
 module log;
 
 import std.conv;
@@ -94,13 +93,20 @@ private:
   this()
   {
     cdio_log_set_handler( &logCdIoMessage );
+    _logLevel = defaultLogLevel;
   }
+  static cdio_log_level_t defaultLogLevel = cdio_log_level_t.CDIO_LOG_WARN;
   static CdIoLogGateway _instance;
+
+  cdio_log_level_t _logLevel;
 
 public:
   // Used as callback of a C function.
   extern (C) static void logCdIoMessage( cdio_log_level_t level, const char* message )
   {
+      // Throw away log messages with level smaller than default.
+      if ( level < defaultLogLevel ) return;
+
       LogLevel l;
 
       final switch ( level ) {
@@ -136,6 +142,16 @@ public:
   string type()
   {
     return "CdIoLib";
+  }
+
+  cdio_log_level_t logLevel()
+  {
+    return _logLevel;
+  }
+
+  void setLogLevel( cdio_log_level_t logLevel )
+  {
+    _logLevel = logLevel;
   }
 
   mixin Log;

@@ -15,13 +15,14 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-
 module utils;
 
-import std.c.string;
 import std.conv;
 import std.math;
 import std.traits;
+
+import std.c.string;
+
 
 /*
  * Use this function to convert strings

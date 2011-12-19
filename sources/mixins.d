@@ -15,7 +15,6 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-
 module sources.mixins;
 
 
@@ -25,26 +24,74 @@ mixin template Finders()
 
   // Direct lookup.
   final static T find( string path ) {
-    foreach( source; T.find() ) {
-      // Check path.
-      if ( source.path() == path ) return source;
+    // Image/Device exists?
+    DirEntry info = std.file.dirEntry( path );
+    if ( ! ( info.isFile || info.statBuf.st_rdev > 0 ) ) {
+      throw new Exception( format( "%s is no device or image", path ) );
+    }
+    // Handle strange floating point error when reading an empty file.
+    if ( info.isFile && info.statBuf.st_size == 0 ) {
+      throw new Exception( format( "File %s is no valid source", path ) );
+    }
 
-      // Check aliases.
-      foreach( a; source.aliases() ) {
-        if ( a == path ) return source;
+    // Iterate over drivers and try to open source with path.
+    Device d;
+    string normalizedPath;
+    for ( uint driver = Driver.min; driver <= Driver.max; driver++ ) {
+      // Ignore abstract drivers.
+      if ( driver == Driver.UNKNOWN || driver == Driver.DEVICE ) { continue; }
+      // Also ignore drivers not avail on system.
+      if ( ! cdio_have_driver( driver ) ) { continue; }
+
+      // Try to open source.
+      CdIo_t* handle = cdio_open( toStringz( path ), driver );
+      if ( handle is null ) { continue; }
+
+      // Source was opened successfully.
+      normalizedPath = buildNormalizedPath( absolutePath( path ) );
+      if ( cdio_is_device( cast( char* )toStringz( path ), driver ) ) {
+        d = new Device( normalizedPath, driver );
+        // We are only interested in optical devices!
+        if ( ! d.readsAudioDiscs() ) {
+          throw new Exception( format( "Device %s is no optical drive", path ) );
+        }
+        
+        return cast( T )d;
+      } else {
+        return cast( T )new Image( normalizedPath, driver );
       }
     }
 
-    return null;
+    // No luck.
+    throw new Exception( format( "File %s is no valid source", path ) );
   }
 
-  final static T[] find() {
+  final static T[] findAll( string dir = "." ) {
+    string cwd = getcwd();
+    try {
+      return _findAll( dir );
+    } catch ( Exception e ) {
+      throw e;
+    } finally {
+      chdir( cwd );
+    }
+  }
+private:
+  final static T[] _findAll( string dir ) {
+    // Is directory?
+    DirEntry info = std.file.dirEntry( dir );
+    if ( ! info.isDir ) {
+      throw new Exception( format( "%s is no directory", dir ) );
+    }
+
+    // Change to directory and let libcdio do the work ;)
+    chdir( dir );
+
     // Available sources, paths used as keys.
     Source[ string ] sourcesByPath;
 
     uint driver;
     string path;
-
 
     // Iterate over drivers.
     for ( driver = Driver.min; driver <= Driver.max; driver++ ) {
@@ -60,12 +107,18 @@ mixin template Finders()
       // Evaluate result.
       if ( *dl != null ) {
         for ( char** p = dl; *p != null; p++ ) {
-          path = to!string( *p );
+          path = buildNormalizedPath( dir, to!string( *p ) );
+
           // Only add to array if source wasn't added before.
           if ( path !in sourcesByPath ) {
             // Device or file?
             if ( cdio_is_device( *p, driver ) ) {
-              sourcesByPath[ path ] = new Device( path, driver );
+              Device d = new Device( path, driver );
+
+              // Only add optical devices!
+              if ( d.readsAudioDiscs() ) {
+                sourcesByPath[ path ] = d;
+              }
             } else {
               sourcesByPath[ path ] = new Image( path, driver );
             }
@@ -131,6 +184,9 @@ mixin template Finders()
         result.back().addAlias( group[ i ].path() );
       }
     }
+
+    // Sort result.
+    result.sort;
 
     return result;
   }

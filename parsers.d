@@ -15,19 +15,20 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-
 import std.array;
 import std.conv;
+import std.file;
 import std.getopt;
 import std.stdio;
 import std.string;
 
 import commands;
 
+
 struct Configuration
 {
   Parser.Info parser;
-  string source;
+  string sourceFile, sourceDirectory;
   bool help, quiet, list, simulate, paranoia;
   int verbose;
 }
@@ -103,8 +104,20 @@ protected:
             throw new Exception( "Syntax error" );
           }
 
-          // Store source to list if passed.
-          if ( args.length == 2 ) { config.source = args[ 1 ]; }
+          // Store directory/source to list if passed.
+          if ( args.length == 2 ) {
+            // Source does not exist.
+            if ( ! exists( args[ 1 ] ) ) {
+              config.sourceFile = args[ 1 ]; 
+            // Source exists.
+            } else {
+              if ( isDir( args[ 1 ] ) ) {
+                config.sourceDirectory = args[ 1 ];
+              } else {
+                config.sourceFile = args[ 1 ];
+              }
+            }
+          }
 
           // Parsing was successful.
           return true;
@@ -119,13 +132,13 @@ protected:
             "paranoia|p", &config.paranoia
           );
 
-          // Device is second arg left.
+          // Source is second arg left.
           switch ( args.length )
           {
             case 1:
               throw new Exception( "Missing source" );
             case 2:
-              config.source = args[ 1 ];
+              config.sourceFile = args[ 1 ];
               break;
             default:
               throw new Exception( "Multiple sources" );

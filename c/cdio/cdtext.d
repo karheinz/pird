@@ -1,10 +1,26 @@
+/+
+  Copyright (C) 2011 Karsten Heinze <karsten.heinze@sidenotes.de>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
++/
+
 module c.cdio.cdtext;
 
 import c.cdio.types;
 
-extern (C):
 
-  
+extern (C):
   enum cdtext_field_t {
     CDTEXT_ARRANGER   =  0,   /**< name(s) of the arranger(s) */
     CDTEXT_COMPOSER   =  1,   /**< name(s) of the composer(s) */

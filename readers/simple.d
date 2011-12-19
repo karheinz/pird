@@ -1,3 +1,20 @@
+/+
+  Copyright (C) 2011 Karsten Heinze <karsten.heinze@sidenotes.de>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
++/
+
 module readers.simple;
 
 import std.array;
@@ -8,6 +25,7 @@ import std.stdio;
 import std.string;
 
 import c.cdio.cdda;
+import c.cdio.device;
 import c.cdio.disc;
 import c.cdio.track;
 import c.cdio.types;
@@ -19,7 +37,7 @@ import readers.base;
 import sources.base;
 
 
-class SimpleAudioDiscReader : Reader
+class SimpleAudioDiscReader : AudioDiscReader
 {
 private:
   Source _source;
@@ -38,14 +56,18 @@ public:
 
   Disc disc()
   {
-    // Maybe we already explored the disc.
-    if ( _disc !is null ) return _disc;
-
-
     // Open source.
     if ( ! _source.open() ) {
-      throw new Exception( format( "Failed to open %s!", _source.path() ) ); 
+      throw new Exception( format( "Failed to open %s", _source.path() ) ); 
     }
+
+    // Media changed since last call?
+    if ( ! cdio_get_media_changed( _source.handle() ) ) {
+      // Maybe we already explored the disc.
+      if ( _disc !is null ) return _disc;
+    }
+
+    // Either media is unknown or media changed.
 
     // Default reader only supports audio discs.
     discmode_t discmode = cdio_get_discmode( _source.handle() );

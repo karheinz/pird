@@ -15,17 +15,17 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-
 module sources.base;
 
 import std.array;
 import std.conv;
 import std.file;
+import std.path;
 import std.string;
 
+import c.cdio.device;
 import c.cdio.logging;
 import c.cdio.types;
-import c.cdio.device;
 
 static import introspection;
 import utils;
@@ -102,7 +102,7 @@ public:
   }
 
   final DirEntry dirEntry() {
-    return DirEntry( _path );
+    return std.file.dirEntry( _path );
   }
 
   final string[] aliases() {

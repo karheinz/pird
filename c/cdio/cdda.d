@@ -1,8 +1,26 @@
+/+
+  Copyright (C) 2011 Karsten Heinze <karsten.heinze@sidenotes.de>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
++/
+
 module c.cdio.cdda;
 
 import c.cdio.sector;
 import c.cdio.track;
 import c.cdio.types;
+
 
 extern (C):
   struct cdrom_paranoia_s;
@@ -75,15 +93,15 @@ extern (C):
 
   cdrom_drive_t* cdio_cddap_find_a_cdrom( int messagedest, char** ppsz_message );
   cdrom_drive_t* cdio_cddap_identify(
-    const char* psz_device, 
-    int messagedest, 
-    char** ppsz_message
-  );
+      const char* psz_device, 
+      int messagedest, 
+      char** ppsz_message
+    );
   cdrom_drive_t* cdio_cddap_identify_cdio(
-    CdIo_t* p_cdio, 
-    int messagedest,
-    char** ppsz_messages
-  );
+      CdIo_t* p_cdio, 
+      int messagedest,
+      char** ppsz_messages
+    );
   int cdio_cddap_speed_set( cdrom_drive_t* d, int speed );
   void cdio_cddap_verbose_set( cdrom_drive_t* d, int err_action, int mes_action );
   char* cdio_cddap_messages( cdrom_drive_t* d );

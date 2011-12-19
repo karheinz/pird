@@ -1,3 +1,20 @@
+/+
+  Copyright (C) 2011 Karsten Heinze <karsten.heinze@sidenotes.de>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
++/
+
 module readers.paranoia;
 
 import std.math;
@@ -17,7 +34,7 @@ import readers.base;
 import sources.base;
 
 
-class ParanoiaAudioDiscReader : Reader
+class ParanoiaAudioDiscReader : AudioDiscReader
 {
 private:
   Source _source;
@@ -37,12 +54,12 @@ public:
   {
     // Abort if source is no device.
     if ( ! _source.isDevice() ) {
-      throw new Exception( format( "%s is no device!", _source.path() ) );
+      throw new Exception( format( "%s is no device", _source.path() ) );
     }
 
     // Open source.
     if ( ! _source.open() ) {
-      throw new Exception( format( "Failed to open %s!", _source.path() ) ); 
+      throw new Exception( format( "Failed to open %s", _source.path() ) ); 
     }
 
     // Paranoia reader only supports audio discs.
@@ -57,7 +74,7 @@ public:
     char** dummy;
     _handle = cdio_cddap_identify_cdio( _source.handle(), 0, dummy );
     if ( _handle is null ) {
-      throw new Exception( "No cdrom_drive_t handle available!" );
+      throw new Exception( "No cdrom_drive_t handle available" );
     }
 
     Disc disc = new Disc();

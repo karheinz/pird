@@ -15,11 +15,11 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-
 module sources.utils;
 
 import std.array;
 import std.format;
+import std.path;
 import std.stdio;
 import std.string;
 
@@ -38,20 +38,34 @@ void print( S )( S[] sources )
   writeln( sources.toString() );
 }
 
-string toString( S )( S[] sources )
+string sourcesToString( S )( S[] sources, bool fullPath = true )
 {
   string aliases;
   string[] lines;
+  string[] shortAliases;
+
 
   foreach( int count, S source; sources ) {
     // Build aliases string.
     aliases.clear();
     if ( source.aliases().length ) {
-      aliases = format( " (%s)", source.aliases().join( ", " ) );
+      if ( fullPath || source.isDevice ) {
+        aliases = format( " (%s)", source.aliases().join( ", " ) );
+      } else {
+        shortAliases = source.aliases();  
+        foreach ( ref shortAlias; shortAliases ) {
+          shortAlias = baseName( shortAlias );
+        }
+        aliases = format( " (%s)", shortAliases.join( ", " ) );
+      }
     }
 
     // Build line.
-    lines ~= format( "%s %s%s", source.type(), source.path(), aliases );
+    if ( fullPath || source.isDevice() ) {
+      lines ~= format( "%s %s%s", source.type(), source.path(), aliases );
+    } else {
+      lines ~= format( "%s %s%s", source.type(), baseName( source.path() ), aliases );
+    }
 
     // Add device info if source is a device.
     if ( source.isDevice() ) {
