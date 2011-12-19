@@ -131,8 +131,8 @@ class DefaultCommandFactory : CommandFactory
       if ( config.sourceDirectory.length ) {
         return new ListSourcesCommand!Image( config.sourceDirectory );
       }
-      // List devices and images in current dir.
-      return new ListSourcesCommand!Source( "." );
+      // List devices.
+      return new ListSourcesCommand!Device( "." );
     }
 
     // Rip disc.

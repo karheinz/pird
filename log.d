@@ -34,6 +34,7 @@ import utils;
 
 enum LogLevel
 {
+  NONE,
   ERROR,
   WARNING,
   INFO,
@@ -209,6 +210,9 @@ class DefaultLoggerFactory : LoggerFactory
     DefaultLogger logger = new DefaultLogger();
     if ( config.verbose ) {
       logger.setLogLevel( cast( LogLevel )( fmin( logger.logLevel() + config.verbose, LogLevel.max ) ) );
+    }
+    if ( config.quiet ) {
+      logger.setLogLevel( LogLevel.NONE );
     }
 
     return logger;

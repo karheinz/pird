@@ -1,5 +1,5 @@
-usage: %s [options] source
-       %s -l [source]
+usage: %s [options] path
+       %s -l [path]
        %s -h
 
 options:

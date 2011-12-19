@@ -37,7 +37,7 @@ import readers.base;
 import sources.base;
 
 
-class SimpleAudioDiscReader : AudioDiscReader
+class SimpleDiscReader : AudioDiscReader
 {
 private:
   Source _source;
@@ -142,4 +142,20 @@ public:
 
   mixin introspection.Initial;
   mixin Log;
+}
+
+/*
+ * Decorator of SimpleDiscReader.
+ *
+ * Disallows reading of non-audio tracks.
+ */
+class SimpleAudioDiscReader : SimpleDiscReader
+{
+  this() {};
+  this( Source source )
+  {
+    super( source );
+  }
+  
+  mixin introspection.Override;
 }
