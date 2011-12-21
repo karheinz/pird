@@ -132,7 +132,7 @@ class DefaultCommandFactory : CommandFactory
         return new ListSourcesCommand!Image( config.sourceDirectory );
       }
       // List devices.
-      return new ListSourcesCommand!Device( "." );
+      return new ListSourcesCommand!Device();
     }
 
     // Rip disc.
@@ -309,7 +309,7 @@ protected:
   string _path;
   
 public:
-  this( string path ) 
+  this( string path = "." ) 
   {
     _path = path;
   }
@@ -343,7 +343,7 @@ private:
   string _path;
 
 public:
-  this( string path )
+  this( string path = "." )
   {
     _path = path;
 

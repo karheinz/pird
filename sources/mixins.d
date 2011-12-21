@@ -67,7 +67,9 @@ mixin template Finders()
   }
 
   final static T[] findAll( string dir = "." ) {
+    if ( dir.empty() ) { dir = "."; }
     string cwd = getcwd();
+
     try {
       return _findAll( dir );
     } catch ( Exception e ) {
@@ -76,6 +78,7 @@ mixin template Finders()
       chdir( cwd );
     }
   }
+
 private:
   final static T[] _findAll( string dir ) {
     // Is directory?
@@ -229,32 +232,20 @@ mixin template Comparators()
     auto o = cast( Source )other;
     if ( o is null ) return 1;   // this is greater
 
-    // Compare driver, inode, file type (symlink) and path.
+    // Compare driver and path of sources.
     // Because image driver values (uint) are greater than 
-    // device driver values (uint), devices come before images.
+    // device driver values (uint), devices come first.
     if ( driver() > o.driver() ) {
       return 1;    // this is greater
     } else if ( driver() < o.driver() ) {
       return -1;   // this is smaller
     } else {   // equal drivers
-      if ( dirEntry().statBuf.st_ino > o.dirEntry().statBuf.st_ino ) {
-        return 1;    //this is greater
-      } else if ( dirEntry().statBuf.st_ino < o.dirEntry().statBuf.st_ino ) {
-        return -1;   //this is smaller
-      } else {   // equal inodes
-        if ( dirEntry().isSymlink() && ! o.dirEntry().isSymlink() ) {
-          return 1;   // this is greater
-        } else if ( ! dirEntry().isSymlink() && o.dirEntry().isSymlink() ) {
-          return -1;  // this is smaller
-        } else {    // equal file type
-          if ( path() > o.path() ) {
-            return 1;    // this is greater
-          } else if ( path() < o.path() ) {
-            return -1;   // this is smaller
-          } else {
-            return 0;
-          }
-        }
+      if ( path() > o.path() ) {
+        return 1;    // this is greater
+      } else if ( path() < o.path() ) {
+        return -1;   // this is smaller
+      } else {
+        return 0;
       }
     }
   }
