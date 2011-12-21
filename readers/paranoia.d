@@ -94,7 +94,12 @@ public:
   }
 
   bool add( ReadFromDiscJob job ) {
-    return job.apply( disc() );
+    if ( disc() is null ) {
+      logDebug( "No disc available to " ~ type() ~ ". Can't add job!" );
+      return false;
+    }
+
+    return job.fits( disc() );
   }
 
 

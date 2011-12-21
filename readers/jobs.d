@@ -27,9 +27,9 @@ import readers.base;
 
 interface ReadFromDiscJob
 {
-  lsn_t fromSector();
-  lsn_t toSector();
-  bool apply( Disc disc );
+  lsn_t fromSector( Disc disc );
+  lsn_t toSector( Disc disc );
+  bool fits( Disc disc );
 }
 
 class ReadFromAudioDiscJob : ReadFromDiscJob
@@ -53,21 +53,20 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     _toSector = cast( int )fmax( fromSector, toSector );
   }
 
-  bool apply( Disc disc ) {
-    if ( fromSector() >= 0 && toSector() > 0 ) {
-      _disc = disc;
+  bool fits( Disc disc ) {
+    if ( fromSector( disc ) >= 0 && toSector( disc ) > 0 ) {
       return true;
     }
 
     return false;
   }
 
-  lsn_t fromSector()
+  lsn_t fromSector( Disc disc )
   {
-    if ( _disc is null ) return -1;
+    if ( disc is null ) return -1;
 
     if ( _wholeDisc ) {
-      foreach( track; _disc.tracks() ) {
+      foreach( track; disc.tracks() ) {
         if ( track.isAudio() ) {
           return track.firstSector();
         }
@@ -78,7 +77,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
 
     if ( _trackNumber > 0 ) {
       try {
-        Track track = _disc.tracks[ _trackNumber ];
+        Track track = disc.tracks[ _trackNumber - 1 ];
         if ( track.isAudio() ) {
           return track.firstSector(); 
         } else {
@@ -90,7 +89,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     if ( _fromSector > 0 ) {
-      Track track = _disc.track( _fromSector );
+      Track track = disc.track( _fromSector );
       if ( track !is null && track.isAudio() ) {
         return _fromSector;
       } else {
@@ -101,12 +100,12 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     return -1;
   }
 
-  lsn_t toSector()
+  lsn_t toSector( Disc disc )
   {
-    if ( _disc is null ) return -1;
+    if ( disc is null ) return -1;
 
     if ( _wholeDisc ) {
-      foreach( track; _disc.tracks().reverse ) {
+      foreach( track; disc.tracks().reverse ) {
         if ( track.isAudio() ) {
           return track.lastSector();
         }
@@ -117,7 +116,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
 
     if ( _trackNumber > 0 ) {
       try {
-        Track track = _disc.tracks[ _trackNumber ];
+        Track track = disc.tracks[ _trackNumber - 1 ];
         if ( track.isAudio() ) {
           return track.lastSector(); 
         } else {
@@ -129,7 +128,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     if ( _toSector > 0 ) {
-      Track track = _disc.track( _toSector );
+      Track track = disc.track( _toSector );
       if ( track !is null && track.isAudio() ) {
         return _toSector;
       } else {

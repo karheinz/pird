@@ -33,6 +33,7 @@ import log;
 import media;
 import parsers;
 import readers.base;
+import readers.jobs;
 import readers.paranoia;
 import readers.simple;
 import sources.base;
@@ -497,6 +498,17 @@ public:
     }
 
     // TODO: Rip disc!
+    // Read track 2.
+    ReadFromDiscJob job = new ReadFromAudioDiscJob( 2 );
+    if ( ! reader.add( job ) ) {
+      logError( "Cannot rip track 2!" );
+      return false;
+    }
+
+    writeln( format( "Ripping track 2 from sector %d to %d.",
+        job.fromSector( reader.disc() ),
+        job.toSector( reader.disc() )
+      ) );
 
     return true;
   }
