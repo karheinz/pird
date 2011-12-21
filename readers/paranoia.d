@@ -31,6 +31,7 @@ import introspection;
 import log;
 import media;
 import readers.base;
+import readers.jobs;
 import sources.base;
 
 
@@ -92,9 +93,10 @@ public:
     return disc;
   }
 
-  long read( Mask mask = null ) {
-    return 0;
+  bool add( ReadFromDiscJob job ) {
+    return job.apply( disc() );
   }
+
 
   mixin introspection.Initial;
   mixin Log;

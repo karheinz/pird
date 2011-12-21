@@ -20,6 +20,7 @@ module readers.base;
 import introspection;
 import log;
 import media;
+import readers.jobs;
 import sources.base;
 
 
@@ -27,7 +28,8 @@ interface DiscReader : introspection.Interface
 {
   void setSource( Source source );
   Disc disc();
-  long read( Mask mask = null );
+  bool add( ReadFromDiscJob job );
+  //bool add();
   void connect( void delegate( string, LogLevel, string ) signalHandler );
   void disconnect( void delegate( string, LogLevel, string ) signalHandler );
   void emit( string emitter, LogLevel level, string message );

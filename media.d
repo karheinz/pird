@@ -87,8 +87,18 @@ public:
 
     return format( "%d:%02d", m, s );
   }
+
+  Track track( lsn_t sector )
+  {
+    foreach( track; _tracks ) {
+      if ( sector >= track.firstSector() && sector <= track.lastSector() ) {
+        return track;
+      }
+    }
+
+    return null;
+  }
 }
-alias Disc Mask;
 
 class Track
 {

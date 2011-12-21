@@ -34,6 +34,7 @@ import introspection;
 import log;
 import media;
 import readers.base;
+import readers.jobs;
 import sources.base;
 
 
@@ -125,20 +126,10 @@ public:
     return _disc;
   }
 
-  long read( Mask mask = null ) {
-    Disc disc = disc();
-
-    // No disc?
-    if ( disc is null ) { return 0; }
-
-    // Read each track. 
-    // TODO: Mask!
-    foreach( track; disc.tracks() ) {
-      logDebug( format( "Read track %d.", track.number() ) );
-    }
-
-    return 0;
+  bool add( ReadFromDiscJob job ) {
+    return job.apply( disc() );
   }
+
 
   mixin introspection.Initial;
   mixin Log;
