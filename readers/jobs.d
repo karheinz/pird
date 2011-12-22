@@ -18,6 +18,7 @@
 module readers.jobs;
 
 import std.math;
+import std.string;
 
 import c.cdio.types;
 
@@ -30,6 +31,7 @@ interface ReadFromDiscJob
   lsn_t fromSector( Disc disc );
   lsn_t toSector( Disc disc );
   bool fits( Disc disc );
+  string description();
 }
 
 class ReadFromAudioDiscJob : ReadFromDiscJob
@@ -83,7 +85,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         } else {
           return -1;
         }
-      } catch ( Exception e ) {
+      } catch ( core.exception.RangeError e ) {
         return -1;
       }
     }
@@ -122,7 +124,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         } else {
           return -1;
         }
-      } catch ( Exception e ) {
+      } catch ( core.exception.RangeError e ) {
         return -1;
       }
     }
@@ -137,5 +139,16 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     return -1;
+  }
+
+  string description()
+  {
+    if ( _wholeDisc ) {
+      return "Read the whole disc.";
+    } else if ( _trackNumber > 0 ) {
+      return format( "Read track %d.", _trackNumber );
+    } else {
+      return format( "Read from sector %d to sector %d.", _fromSector, _toSector );
+    }
   }
 }

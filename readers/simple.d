@@ -38,21 +38,13 @@ import readers.jobs;
 import sources.base;
 
 
-class SimpleAudioDiscReader : AudioDiscReader
+class SimpleAudioDiscReader : AbstractAudioDiscReader
 {
-private:
-  Source _source;
-  Disc _disc;
 public:
   this() {};
   this( Source source )
   {
     _source = source;
-  }
-
-  void setSource( Source source ) {
-    _source = source;
-    _disc = null;
   }
 
   Disc disc()
@@ -74,7 +66,7 @@ public:
     discmode_t discmode = cdio_get_discmode( _source.handle() );
     if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
         discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logTrace( format( "Discmode %d is not supported!", discmode ) );
+      logTrace( format( "Discmode %s is not supported!", discmode2str[ discmode ] ) );
       logDebug( "No audio disc found!" );
       return null;
     }
@@ -93,7 +85,7 @@ public:
     track_t tracks = cdio_get_num_tracks( _source.handle() );
     track_format_t trackFormat;
     lsn_t firstSector, lastSector;
-    for( track_t track = 1; track <= tracks; track++ ) {
+    for ( track_t track = 1; track <= tracks; track++ ) {
       trackFormat = cdio_get_track_format( _source.handle(), track );
       firstSector = cdio_get_track_lsn( _source.handle(), track );
       lastSector = cdio_get_track_last_lsn( _source.handle(), track );
@@ -126,16 +118,30 @@ public:
     return _disc;
   }
 
-  bool add( ReadFromDiscJob job ) {
-    if ( disc() is null ) {
-      logDebug( "No disc available to " ~ type() ~ ". Can't add job!" );
-      return false;
+  bool read()
+  {
+    if ( _jobs.length == 0 ) {
+      logInfo( "Nothing to do." );
+      return true;
     }
-    
-    return job.fits( disc() );
+
+    ReadFromDiscJob job;
+    while ( _jobs.length ) {
+      job = _jobs.front();
+      _jobs.popFront();
+
+      if ( ! job.fits( disc() ) ) {
+        logWarning( "Job is unapplicable to disc: " ~ job.description() );
+        continue;
+      }
+
+      logInfo( "Start job: " ~ job.description() );
+    }
+
+    return true;
   }
 
 
-  mixin introspection.Initial;
+  mixin introspection.Override;
   mixin Log;
 }

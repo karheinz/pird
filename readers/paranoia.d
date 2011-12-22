@@ -17,12 +17,14 @@
 
 module readers.paranoia;
 
+import std.array;
 import std.math;
 import std.signals;
 import std.stdio;
 import std.string;
 
 import c.cdio.cdda;
+import c.cdio.device;
 import c.cdio.disc;
 import c.cdio.track;
 import c.cdio.types;
@@ -35,19 +37,15 @@ import readers.jobs;
 import sources.base;
 
 
-class ParanoiaAudioDiscReader : AudioDiscReader
+class ParanoiaAudioDiscReader : AbstractAudioDiscReader
 {
 private:
-  Source _source;
   cdrom_drive_t* _handle;
+
 public:
   this() {};
   this( Source source )
   {
-    _source = source;
-  }
-
-  void setSource( Source source ) {
     _source = source;
   }
 
@@ -63,11 +61,20 @@ public:
       throw new Exception( format( "Failed to open %s", _source.path() ) ); 
     }
 
+    // Media changed since last call?
+    if ( ! cdio_get_media_changed( _source.handle() ) ) {
+      // Maybe we already explored the disc.
+      if ( _disc !is null ) return _disc;
+    }
+
+    // Either media is unknown or media changed.
+
     // Paranoia reader only supports audio discs.
     discmode_t discmode = cdio_get_discmode( _source.handle() );
     if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
         discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logError( format( "Discmode %s is not supported!", discmode2str[ discmode ] ) );
+      logDebug( format( "Discmode %s is not supported!", discmode2str[ discmode ] ) );
+      logDebug( "No audio disc found!" );
       return null;
     }
 
@@ -80,29 +87,60 @@ public:
 
     Disc disc = new Disc();
     track_t tracks = cdio_cddap_tracks( _handle );
-    for( track_t track = 1; track <= tracks; track++ ) {
-      lsn_t fs = cdio_cddap_track_firstsector( _handle, track );
-      lsn_t ls = cdio_cddap_track_lastsector( _handle, track );
-      disc.addTrack( new Track( track, fs, ls, true ) );
-      logDebug( format( "Added track %d (%d - %d).", track, fs, ls ) ); 
+    track_format_t trackFormat;
+    lsn_t firstSector, lastSector;
+    for ( track_t track = 1; track <= tracks; track++ ) {
+      trackFormat = cdio_get_track_format( _source.handle(), track );
+      firstSector= cdio_cddap_track_firstsector( _handle, track );
+      lastSector= cdio_cddap_track_lastsector( _handle, track );
+      if ( trackFormat == track_format_t.TRACK_FORMAT_AUDIO ) {
+        logTrace( format( "Found audio track %d (%d - %d).", track, firstSector, lastSector) ); 
+      } else {
+        logTrace( format( "Found non audio track %d (%d - %d).", track, firstSector, lastSector) ); 
+      }
+
+      disc.addTrack(
+        new Track(
+          track,
+          firstSector,
+          lastSector,
+          trackFormat == track_format_t.TRACK_FORMAT_AUDIO
+        )
+      );
 
       // In case tracks is 255.
       if ( track == track_t.max ) break;
     }
 
-    return disc;
+    // Log what we found.
+    string word = ( disc.mcn().length ? format( " %s", disc.mcn() ) : "" );
+    logDebug( format( "Found audio disc%s with %d tracks.", word, tracks ) );
+
+    // Cache result.
+    _disc = disc;
+
+    return _disc;
   }
 
-  bool add( ReadFromDiscJob job ) {
-    if ( disc() is null ) {
-      logDebug( "No disc available to " ~ type() ~ ". Can't add job!" );
-      return false;
+  bool read()
+  {
+    if ( _jobs.length == 0 ) {
+      logInfo( "Nothing to do." );
+      return true;
     }
 
-    return job.fits( disc() );
+    ReadFromDiscJob job;
+    while ( _jobs.length ) {
+      job = _jobs.front();
+      _jobs.popFront();
+
+      logInfo( "Start job: " ~ job.description() );
+    }
+
+    return true;
   }
 
 
-  mixin introspection.Initial;
+  mixin introspection.Override;
   mixin Log;
 }

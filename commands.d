@@ -498,18 +498,29 @@ public:
     }
 
     // TODO: Rip disc!
-    // Read track 2.
-    ReadFromDiscJob job = new ReadFromAudioDiscJob( 2 );
-    if ( ! reader.add( job ) ) {
-      logError( "Cannot rip track 2!" );
+
+    // Add some jobs.
+    //foreach ( track; [ 1, 2, 3, 4, 5, 6 ] ) {
+    foreach ( track; [ 1, 2, 3 ] ) {
+      reader.add( new ReadFromAudioDiscJob( track ) );
+    }
+
+    // Make sure all jobs are satisfiable.
+    ReadFromDiscJob[] jobs = reader.unsatisfiableJobs();
+    if ( jobs.length ) {
+      logError( format( "Found %d unsatisfiable job(s):", jobs.length ) );
+      foreach ( job; jobs ) { logError( job.description() ); }
       return false;
     }
 
-    writeln( format( "Ripping track 2 from sector %d to %d.",
-        job.fromSector( reader.disc() ),
-        job.toSector( reader.disc() )
-      ) );
-
+    // Process jobs.
+    reader.read();
+    reader.add( new ReadFromAudioDiscJob() );
+    reader.read();
+    reader.add( new ReadFromAudioDiscJob( 100 ) );
+    reader.add( new ReadFromAudioDiscJob( 100, 2 ) );
+    reader.read();
+    reader.read();
     return true;
   }
 

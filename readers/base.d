@@ -28,8 +28,10 @@ interface DiscReader : introspection.Interface
 {
   void setSource( Source source );
   Disc disc();
-  bool add( ReadFromDiscJob job );
-  //bool add();
+  void add( ReadFromDiscJob job );
+  void clear();
+  bool read();
+  ReadFromDiscJob[] unsatisfiableJobs();
   void connect( void delegate( string, LogLevel, string ) signalHandler );
   void disconnect( void delegate( string, LogLevel, string ) signalHandler );
   void emit( string emitter, LogLevel level, string message );
@@ -37,4 +39,43 @@ interface DiscReader : introspection.Interface
 
 interface AudioDiscReader : DiscReader
 {
+}
+
+abstract class AbstractAudioDiscReader : AudioDiscReader
+{
+protected:
+  Source _source;
+  Disc _disc;
+  ReadFromDiscJob[] _jobs;
+
+public:
+  void setSource( Source source )
+  {
+    _source = source;
+    _disc = null;
+  }
+
+  void add( ReadFromDiscJob job )
+  {
+    _jobs ~= job;
+  }
+
+  void clear()
+  {
+    _jobs.clear();
+  }
+
+  ReadFromDiscJob[] unsatisfiableJobs() {
+    ReadFromDiscJob[] result;
+    foreach ( job; _jobs ) {
+      if ( ! job.fits( disc() ) ) {
+        result ~= job;
+      }
+    }
+
+    return result;
+  };
+
+
+  mixin introspection.Initial;
 }
