@@ -17,7 +17,6 @@
 
 module readers.jobs;
 
-import std.math;
 import std.string;
 
 import c.cdio.types;
@@ -26,10 +25,11 @@ import media;
 import readers.base;
 
 
+
+
 interface ReadFromDiscJob
 {
-  lsn_t fromSector( Disc disc );
-  lsn_t toSector( Disc disc );
+  SectorRange sectorRange( Disc disc );
   bool fits( Disc disc );
   string description();
 }
@@ -39,8 +39,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   Disc _disc;
   bool _wholeDisc;
   int _trackNumber;
-  lsn_t _fromSector, _toSector;
-
+  SectorRange _sectorRange;
 
   this() {
     _wholeDisc = true;
@@ -50,95 +49,71 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     _trackNumber = trackNumber;
   }
 
-  this( lsn_t fromSector, lsn_t toSector ) {
-    _fromSector = cast( int )fmin( fromSector, toSector );
-    _toSector = cast( int )fmax( fromSector, toSector );
+  this( lsn_t from, lsn_t to ) {
+    _sectorRange = SectorRange( from, to );
   }
 
   bool fits( Disc disc ) {
-    if ( fromSector( disc ) >= 0 && toSector( disc ) > 0 ) {
-      return true;
-    }
-
-    return false;
+    SectorRange sr = sectorRange( disc );
+    return ( sr.from >= 0 && sr.to > 0 );
   }
 
-  lsn_t fromSector( Disc disc )
+  SectorRange sectorRange( Disc disc )
   {
-    if ( disc is null ) return -1;
+    SectorRange failure = SectorRange();
+    if ( disc is null ) return failure;
 
     if ( _wholeDisc ) {
+      SectorRange tmp = SectorRange();
       foreach( track; disc.tracks() ) {
         if ( track.isAudio() ) {
-          return track.firstSector();
+          tmp.from = track.sectorRange().from;
+          break;
         }
       }
-      // No audio track.
-      return -1;
-    }
-
-    if ( _trackNumber > 0 ) {
-      try {
-        Track track = disc.tracks[ _trackNumber - 1 ];
-        if ( track.isAudio() ) {
-          return track.firstSector(); 
-        } else {
-          return -1;
-        }
-      } catch ( core.exception.RangeError e ) {
-        return -1;
-      }
-    }
-
-    if ( _fromSector > 0 ) {
-      Track track = disc.track( _fromSector );
-      if ( track !is null && track.isAudio() ) {
-        return _fromSector;
-      } else {
-        return -1;
-      }
-    }
-
-    return -1;
-  }
-
-  lsn_t toSector( Disc disc )
-  {
-    if ( disc is null ) return -1;
-
-    if ( _wholeDisc ) {
       foreach( track; disc.tracks().reverse ) {
         if ( track.isAudio() ) {
-          return track.lastSector();
+          tmp.to = track.sectorRange().to;
+          break;
         }
       }
-      // No audio track.
-      return -1;
+
+      if ( tmp.valid() ) {
+        return tmp;
+      } else {
+        return failure;
+      }
     }
 
     if ( _trackNumber > 0 ) {
       try {
         Track track = disc.tracks[ _trackNumber - 1 ];
         if ( track.isAudio() ) {
-          return track.lastSector(); 
+          return track.sectorRange(); 
         } else {
-          return -1;
+          return failure;
         }
       } catch ( core.exception.RangeError e ) {
-        return -1;
+        return failure;
       }
     }
 
-    if ( _toSector > 0 ) {
-      Track track = disc.track( _toSector );
-      if ( track !is null && track.isAudio() ) {
-        return _toSector;
+    if ( _sectorRange.from > -1 ) {
+      Track f = disc.track( _sectorRange.from );
+      Track t = disc.track( _sectorRange.to );
+
+      bool c1 = ( f !is null && f.isAudio() );
+      bool c2 = ( t !is null && t.isAudio() );
+
+      if ( c1 && c2 ) {
+        return _sectorRange;
       } else {
-        return -1;
+        return failure;
       }
     }
 
-    return -1;
+    // Should never come here.
+    return failure;
   }
 
   string description()
@@ -148,7 +123,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     } else if ( _trackNumber > 0 ) {
       return format( "Read track %d.", _trackNumber );
     } else {
-      return format( "Read from sector %d to sector %d.", _fromSector, _toSector );
+      return format( "Read from sector %d to sector %d.", _sectorRange.from, _sectorRange.to );
     }
   }
 }

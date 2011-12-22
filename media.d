@@ -19,10 +19,34 @@ module media;
 
 import std.algorithm;
 import std.conv;
+import std.math;
 import std.string;
 
 import c.cdio.sector;
 import c.cdio.types;
+
+
+struct SectorRange
+{
+  lsn_t from = -1;
+  lsn_t to = -1;
+
+  this( lsn_t f, lsn_t t )
+  {
+    from = cast( lsn_t )fmin( f, t );
+    to = cast( lsn_t )fmax( f, t );
+  }
+
+  bool valid()
+  {
+    return ( from > 0 && to > 0 && from < to );
+  }
+
+  uint sectors()
+  {
+    return ( to - from + 1 );
+  }
+}
 
 
 class Disc
@@ -91,7 +115,8 @@ public:
   Track track( lsn_t sector )
   {
     foreach( track; _tracks ) {
-      if ( sector >= track.firstSector() && sector <= track.lastSector() ) {
+      SectorRange range = track.sectorRange();
+      if ( sector >= range.from && sector <= range.to ) {
         return track;
       }
     }
@@ -104,22 +129,23 @@ class Track
 {
 private:
   ubyte _number;
-  lsn_t _firstSector, _lastSector;
+  SectorRange _sectorRange;
   bool _audio;
 
 public:
   this( ubyte number, lsn_t firstSector, lsn_t lastSector, bool audio )
   {
     _number = number;
-    _firstSector = firstSector;
-    _lastSector = lastSector;
+    _sectorRange = SectorRange( firstSector, lastSector );
     _audio = audio;
   }
 
   this( ubyte number, msf_t begin, msf_t end, bool audio )
   {
-    _firstSector = cdio_msf_to_lsn( &begin );
-    _lastSector = cdio_msf_to_lsn( &end );
+    _number = number;
+    lsn_t firstSector = cdio_msf_to_lsn( &begin );
+    lsn_t lastSector = cdio_msf_to_lsn( &end );
+    _sectorRange = SectorRange( firstSector, lastSector );
     _audio = audio;
   }
 
@@ -133,19 +159,24 @@ public:
     return _audio;
   }
 
-  lsn_t firstSector()
+  SectorRange sectorRange()
   {
-    return _firstSector;
-  }
-
-  lsn_t lastSector()
-  {
-    return _lastSector;
+    return _sectorRange;
   }
 
   lsn_t sectors()
   {
-    return ( _lastSector - _firstSector + 1 );
+    return _sectorRange.sectors();
+  }
+
+  lsn_t firstSector()
+  {
+    return _sectorRange.from;
+  }
+
+  lsn_t lastSector()
+  {
+    return _sectorRange.to;
   }
 
   uint seconds()

@@ -137,12 +137,19 @@ class DefaultCommandFactory : CommandFactory
     }
 
     // Rip disc.
-    Command c;
+    //Command c;
+    CompoundCommand c, c2;
+    c.add( c2 );
+    return c;
+    c.add( new BuildReadFromDiscJobsCommand() ); // false, [ 1, 2, 5 ] ) ); 
+    return cast( Command )c;
     if ( config.paranoia ) {
       // Paranoia makes only sense for devices.
       c = new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config.sourceFile );
+      //c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config.sourceFile ) );
     } else {
       c = new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config.sourceFile );
+      //c.add( new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config.sourceFile ) );
     }
 
     // Simulate?
@@ -150,7 +157,8 @@ class DefaultCommandFactory : CommandFactory
       return new SimulateCommand( c );
     }
 
-    return c;
+    return new BuildReadFromDiscJobsCommand();
+    //return c;
   }
 }
 
@@ -444,6 +452,35 @@ public:
   }
 
   mixin introspection.Override;
+}
+
+class BuildReadFromDiscJobsCommand : AbstractCommand
+{
+private:
+  bool _wholeDisc;
+  uint[] _trackNumbers;
+  SectorRange[] _sectorRanges;
+
+public:
+  this( bool wholeDisc = false, uint[] trackNumbers = [], SectorRange[] sectorRanges = [] )
+  {
+    _wholeDisc = wholeDisc;
+    _trackNumbers = trackNumbers;
+    _sectorRanges = sectorRanges;
+  }
+
+  bool execute()
+  {
+    logInfo( "HEYHO!" );
+    return true;
+  }
+
+  void simulate()
+  {
+    writefln( "Building read jobs." );
+  }
+
+  mixin introspection.Initial;
 }
 
 class RipAudioDiscCommand( S, T ) : CompoundCommand
