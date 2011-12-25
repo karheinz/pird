@@ -137,19 +137,14 @@ class DefaultCommandFactory : CommandFactory
     }
 
     // Rip disc.
-    //Command c;
-    CompoundCommand c, c2;
-    c.add( c2 );
-    return c;
-    c.add( new BuildReadFromDiscJobsCommand() ); // false, [ 1, 2, 5 ] ) ); 
-    return cast( Command )c;
+    CompoundCommand c = new CompoundCommand();
     if ( config.paranoia ) {
       // Paranoia makes only sense for devices.
-      c = new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config.sourceFile );
-      //c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config.sourceFile ) );
+      c.add( new DetectSourceCommand!( Device )( config.sourceFile ) );
+      c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config.jobs ) );
     } else {
-      c = new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config.sourceFile );
-      //c.add( new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config.sourceFile ) );
+      c.add( new DetectSourceCommand!( Source )( config.sourceFile ) );
+      c.add( new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config.jobs ) );
     }
 
     // Simulate?
@@ -157,8 +152,7 @@ class DefaultCommandFactory : CommandFactory
       return new SimulateCommand( c );
     }
 
-    return new BuildReadFromDiscJobsCommand();
-    //return c;
+    return c;
   }
 }
 
@@ -295,6 +289,10 @@ public:
     // Find source.
     try { 
       Variant source = T.find( _path );
+      if ( source.get!( T )() is null ) {
+        logError( format( "%s %s not found!", T.stringof, _path ) );
+        return false;
+      }
       keyValueStore().set( T.stringof.toLower(), source ); 
       logDebug( format( "Found %s.", T.stringof.toLower() ) );
       return true;
@@ -454,60 +452,29 @@ public:
   mixin introspection.Override;
 }
 
-class BuildReadFromDiscJobsCommand : AbstractCommand
+
+class RipAudioDiscCommand( S, T ) : AbstractCommand
 {
 private:
-  bool _wholeDisc;
-  uint[] _trackNumbers;
-  SectorRange[] _sectorRanges;
-
+  ReadFromDiscJob[] _jobs;
 public:
-  this( bool wholeDisc = false, uint[] trackNumbers = [], SectorRange[] sectorRanges = [] )
+  this( ReadFromDiscJob[] jobs )
   {
-    _wholeDisc = wholeDisc;
-    _trackNumbers = trackNumbers;
-    _sectorRanges = sectorRanges;
+    _jobs = jobs;
   }
 
   bool execute()
   {
-    logInfo( "HEYHO!" );
-    return true;
-  }
-
-  void simulate()
-  {
-    writefln( "Building read jobs." );
-  }
-
-  mixin introspection.Initial;
-}
-
-class RipAudioDiscCommand( S, T ) : CompoundCommand
-{
-protected:
-  string _path;
-  
-public:
-  this( string path ) 
-  {
-    _path = path;
-
-    add( new DetectSourceCommand!( S )( _path ) );
-  }
-
-  override bool execute()
-  {
-    // Look for sources.
-    if ( ! super.execute() ) {
-      return false;
-    }
-
-    // Extract source.
+    // Extract source from keyValueStore.
     Variant v = keyValueStore().get( S.stringof.toLower() );
     S source = v.get!( S )();
 
-    logDebug( "Print source description." );
+    if ( source is null ) {
+      logError( format( "No %s found!", S.stringof.toLower() ) );
+      return false;
+    }
+
+    logDebug( format( "Print %s description.", S.stringof.toLower() ) );
     writeln( sourcesToString( [ source ] ) );
 
     // Look for audio disc (using reader of type T).
@@ -561,14 +528,12 @@ public:
     return true;
   }
 
-  override void simulate()
+  void simulate()
   {
-    super.simulate();
-
     writefln( "Rip audio disc from %s using %s.", S.stringof.toLower(), T.stringof );
   }
 
-  mixin introspection.Override;
+  mixin introspection.Initial;
 }
 
 class SimulateCommand : AbstractCommand

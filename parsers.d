@@ -22,16 +22,18 @@ import std.getopt;
 import std.stdio;
 import std.string;
 
-import commands;
+import readers.jobs;
 
 
 struct Configuration
 {
   Parser.Info parser;
   string sourceFile, sourceDirectory;
+  ReadFromDiscJob[] jobs;
   bool help, quiet, list, simulate, paranoia;
   int verbose;
 }
+
 
 interface Parser
 {
@@ -121,6 +123,7 @@ protected:
 
           // Parsing was successful.
           return true;
+        // TODO: Build ReadFromDiscJobs!
         case Syntax.RIP:
           getopt(
             args,
