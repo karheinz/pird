@@ -122,22 +122,30 @@ class DefaultCommandFactory : CommandFactory
       return command;
     }
     
+    // Used for composing.
+    CompoundCommand c = new CompoundCommand();
+
     // List sources?
     if ( config.list ) {
       // Explore given source.
       if ( config.sourceFile.length ) {
-        return new ExploreSourceCommand!Source( config.sourceFile );
+        c.add( new DetectSourceCommand!Source( config.sourceFile ) );
+        c.add( new ExploreSourceCommand!Source() );
+        return c;
       }
       // List images in dir.
       if ( config.sourceDirectory.length ) {
-        return new ListSourcesCommand!Image( config.sourceDirectory );
+        c.add( new DetectSourcesCommand!Image( config.sourceDirectory ) );
+        c.add( new ListSourcesCommand!Image() );
+        return c;
       }
       // List devices.
-      return new ListSourcesCommand!Device();
+      c.add( new DetectSourcesCommand!Device() );
+      c.add( new ListSourcesCommand!Device() );
+      return c;
     }
 
     // Rip disc.
-    CompoundCommand c = new CompoundCommand();
     if ( config.paranoia ) {
       // Paranoia makes only sense for devices.
       c.add( new DetectSourceCommand!( Device )( config.sourceFile ) );
@@ -344,29 +352,18 @@ public:
   mixin introspection.Initial;
 }
 
-class ListSourcesCommand( T ) : CompoundCommand
+class ListSourcesCommand( T ) : AbstractCommand
 {
-private:
-  string _path;
-
 public:
-  this( string path = "." )
+  bool execute()
   {
-    _path = path;
-
-    add( new DetectSourcesCommand!( T )( _path ) );
-  }
-
-  override bool execute()
-  {
-    // Look for sources.
-    if ( ! super.execute() ) {
-      return false;
-    }
-
     // Fetch sources.
-    Variant variant = keyValueStore().get( T.stringof.pluralize().toLower() );
-    T[] sources = variant.get!( T[] )();
+    T[] sources;
+    try {
+      Variant variant = keyValueStore().get( T.stringof.pluralize().toLower() );
+      sources = variant.get!( T[] )();
+    } catch ( core.exception.RangeError ) {
+    }
 
     // Print.
     logDebug( "Print result." );
@@ -380,39 +377,26 @@ public:
     return true;
   }
 
-  override void simulate()
+  void simulate()
   {
-    super.simulate();
-
     writefln( "List available %s.", T.stringof.pluralize().toLower() );
   }
 
-  mixin introspection.Override;
+  mixin introspection.Initial;
 }
 
-class ExploreSourceCommand( T ) : CompoundCommand
+class ExploreSourceCommand( T ) : AbstractCommand
 {
-protected:
-  string _path;
-  
 public:
-  this( string path ) 
+  bool execute()
   {
-    _path = path;
-
-    add( new DetectSourceCommand!( T )( _path ) );
-  }
-
-  override bool execute()
-  {
-    // Look for source.
-    if ( ! super.execute() ) {
-      return false;
-    }
-
     // Fetch source.
-    Variant variant = keyValueStore().get( T.stringof.toLower() );
-    T source = variant.get!( T );
+    T source;
+    try {
+      Variant variant = keyValueStore().get( T.stringof.toLower() );
+      source = variant.get!( T );
+    } catch ( core.exception.RangeError ) {
+    }
 
     logDebug( "Print source description." );
     writeln( sourcesToString( [ source ] ) );
@@ -442,14 +426,12 @@ public:
     return true;
   }
 
-  override void simulate()
+  void simulate()
   {
-    super.simulate();
-
-    writefln( "Explore %s %s.", T.stringof.pluralize().toLower(), _path );
+    writefln( "Explore %s.", T.stringof.pluralize().toLower() );
   }
 
-  mixin introspection.Override;
+  mixin introspection.Initial;
 }
 
 
@@ -457,6 +439,7 @@ class RipAudioDiscCommand( S, T ) : AbstractCommand
 {
 private:
   ReadFromDiscJob[] _jobs;
+
 public:
   this( ReadFromDiscJob[] jobs )
   {
@@ -466,8 +449,12 @@ public:
   bool execute()
   {
     // Extract source from keyValueStore.
-    Variant v = keyValueStore().get( S.stringof.toLower() );
-    S source = v.get!( S )();
+    S source;
+    try {
+      Variant variant = keyValueStore().get( S.stringof.toLower() );
+      source = variant.get!( S );
+    } catch ( core.exception.RangeError ) {
+    }
 
     if ( source is null ) {
       logError( format( "No %s found!", S.stringof.toLower() ) );
@@ -481,7 +468,7 @@ public:
     logDebug( format( "Looking for audio disc in %s.", source.path() ) );
 
     // Create and configure reader.
-    T reader = new T();
+    AudioDiscReader reader = new T();
     reader.setSource( source );
     // Subscribe for signals emitted by reader.
     reader.connect( &handleSignal );

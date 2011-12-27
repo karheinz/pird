@@ -25,12 +25,26 @@ import media;
 import readers.base;
 
 
+struct Target
+{
+  // Where to write data to.
+  string file;
+  // Something like "w" (write) or "a" (append).
+  string mode;
 
+  // Returns true if stdout should be used as target.
+  bool stdout()
+  {
+    return ( file == "-" );
+  }
+}
 
 interface ReadFromDiscJob
 {
   SectorRange sectorRange( Disc disc );
   bool fits( Disc disc );
+  Target target();
+  void setTarget( Target target );
   string description();
 }
 
@@ -40,6 +54,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   bool _wholeDisc;
   int _trackNumber;
   SectorRange _sectorRange;
+  Target _target = Target( "out.wav", "w" );
 
   this() {
     _wholeDisc = true;
@@ -54,8 +69,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   }
 
   bool fits( Disc disc ) {
-    SectorRange sr = sectorRange( disc );
-    return ( sr.from >= 0 && sr.to > 0 );
+    return sectorRange( disc ).valid();
   }
 
   SectorRange sectorRange( Disc disc )
@@ -114,6 +128,15 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
 
     // Should never come here.
     return failure;
+  }
+
+  Target target()
+  {
+    return _target;
+  }
+
+  void setTarget( Target target ) {
+    _target = target; 
   }
 
   string description()

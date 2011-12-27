@@ -19,6 +19,7 @@ import std.array;
 import std.conv;
 import std.file;
 import std.getopt;
+import std.regex;
 import std.stdio;
 import std.string;
 
@@ -53,6 +54,65 @@ final class DefaultCommandLineParser : Parser
 protected:
   static string _usage = import( this.stringof ~ "Usage.txt" );
   enum Syntax { HELP, LIST, RIP };
+
+  class RangeParser
+  {
+  private:
+    this() {};
+
+  public:
+    enum Tokens : string
+    {
+      CONNECTOR = r"-",
+      SEPARATOR = r",",
+      TRACK = r"\d+",
+      OFFSET_MARKER_L = r"\[",
+      OFFSET_MARKER_R = r"\]",
+      MINUTE = r"\d+",
+      SECOND = r"\d{1,2}",
+      FRAME = r"\d{1,3}",
+      MS_SEPARATOR = r":",
+      SF_SEPARATOR = r"\."
+    }
+
+    enum Patterns : string
+    {
+      LABEL = 
+        "(" ~ Tokens.TRACK ~ ")" ~
+        "(" ~
+          Tokens.OFFSET_MARKER_L ~
+          "(" ~ Tokens.MINUTE ~ ")" ~
+          Tokens.MS_SEPARATOR ~
+          "(" ~ Tokens.SECOND ~ ")" ~
+          Tokens.SF_SEPARATOR ~
+          "(" ~ Tokens.FRAME ~ ")" ~
+          Tokens.OFFSET_MARKER_R ~ 
+        ")?",
+      RANGE_FULL = "(" ~ LABEL ~ ")" ~ Tokens.CONNECTOR ~ "(" ~ LABEL ~ ")",
+      RANGE_FROM = "(" ~ LABEL ~ ")" ~ Tokens.CONNECTOR,
+      RANGE_TO = Tokens.CONNECTOR ~ "(" ~ LABEL ~ ")",
+      RANGE = "(" ~ RANGE_FULL ~ ")|(" ~ RANGE_FROM ~ ")|(" ~ RANGE_TO ~ ")"
+    }
+
+
+    static ReadFromDiscJob[] parse( string r )
+    {
+      ReadFromDiscJob[] result;
+
+      string[] ranges = split( r, to!string( Tokens.SEPARATOR ) );
+      foreach ( range; ranges ) {
+        auto c = match( range, "^(" ~ Patterns.RANGE ~ ")$" ).captures();
+
+        if ( c.empty() ) {
+          throw new Exception( "Invalid range description" );
+        } else {
+          writeln( "Range: " ~ c.front() );
+        }
+      }
+
+      return result;
+    }
+  }
 
   bool parse( Syntax syntax, string[] args, out Configuration config, out string error ) {
     try {
@@ -129,11 +189,21 @@ protected:
             args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
+            std.getopt.config.passThrough,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
             "simulate|s", &config.simulate,
             "paranoia|p", &config.paranoia
           );
+
+
+          // Look for unknown options.
+          for ( int i = 1; i < args.length; i++ ) {
+            auto c = match( args[ i ], r"^--?[a-zA-Z]" ).captures();
+            if ( ! c.empty() ) {
+              throw new Exception( "Unrecognized option " ~ args[ i ] );
+            }
+          }
 
           // Source is second arg left.
           switch ( args.length )
@@ -143,8 +213,23 @@ protected:
             case 2:
               config.sourceFile = args[ 1 ];
               break;
+            case 3:
+              config.sourceFile = args[ 2 ];
+              config.jobs = RangeParser.parse( args[ 1 ] );
+              break;
             default:
-              throw new Exception( "Multiple sources" );
+              config.sourceFile = args[ $ - 1 ];
+              
+              // Ranges start with -.
+              // Remove leading - of arguments (except the first one).
+              // Example: ./pird -4,5 image.toc
+              //   args = { "pird", "-4", "-,", "-5", "image.toc" }
+              string ranges = args[ 1 ];
+              for ( int i = 2; i < args.length - 1; i++ ) {
+                ranges ~= args[ i ][ 1 .. $ ];
+              }
+              config.jobs = RangeParser.parse( ranges );
+              break;
           }
 
           // Either verbose or quiet!
