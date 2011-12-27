@@ -15,6 +15,9 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
+
+module parsers;
+
 import std.array;
 import std.conv;
 import std.file;
@@ -78,19 +81,19 @@ protected:
     enum Patterns : string
     {
       LABEL = 
-        "(" ~ Tokens.TRACK ~ ")" ~
+        "(?P<t>" ~ Tokens.TRACK ~ ")" ~
         "(" ~
           Tokens.OFFSET_MARKER_L ~
-          "(" ~ Tokens.MINUTE ~ ")" ~
+          "(?P<m>" ~ Tokens.MINUTE ~ ")" ~
           Tokens.MS_SEPARATOR ~
-          "(" ~ Tokens.SECOND ~ ")" ~
+          "(?P<s>" ~ Tokens.SECOND ~ ")" ~
           Tokens.SF_SEPARATOR ~
-          "(" ~ Tokens.FRAME ~ ")" ~
+          "(?P<f>" ~ Tokens.FRAME ~ ")" ~
           Tokens.OFFSET_MARKER_R ~ 
         ")?",
-      RANGE_FULL = "(" ~ LABEL ~ ")" ~ Tokens.CONNECTOR ~ "(" ~ LABEL ~ ")",
-      RANGE_FROM = "(" ~ LABEL ~ ")" ~ Tokens.CONNECTOR,
-      RANGE_TO = Tokens.CONNECTOR ~ "(" ~ LABEL ~ ")",
+      RANGE_FULL = "(?P<from>" ~ LABEL ~ ")" ~ Tokens.CONNECTOR ~ "(?P<to>" ~ LABEL ~ ")",
+      RANGE_FROM = "(?P<from>" ~ LABEL ~ ")" ~ Tokens.CONNECTOR,
+      RANGE_TO = Tokens.CONNECTOR ~ "(?P<to>" ~ LABEL ~ ")",
       RANGE = "(" ~ RANGE_FULL ~ ")|(" ~ RANGE_FROM ~ ")|(" ~ RANGE_TO ~ ")"
     }
 
@@ -106,7 +109,43 @@ protected:
         if ( c.empty() ) {
           throw new Exception( "Invalid range description" );
         } else {
-          writeln( "Range: " ~ c.front() );
+          c = match( range, "^(" ~ Patterns.RANGE_TO ~ ")$" ).captures();
+          if ( ! c.empty() ) {
+            writefln( "RANGE_TO: %s", c[ "to" ] );
+            c = match( c[ "to" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
+            string strack = to!string( c[ "t" ] );
+            int track = std.conv.parse!int( strack );
+            writefln( "Track is %d", track );
+            writeln( "m " ~ c[ "m" ] );
+            writeln( "s " ~ c[ "s" ] );
+            writeln( "f " ~ c[ "f" ] );
+            continue;
+          }
+          c = match( range, "^(" ~ Patterns.RANGE_FROM ~ ")$" ).captures();
+          if ( ! c.empty() ) {
+            writefln( "RANGE_FROM: %s", range );
+            c = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
+            writeln( "Track " ~ c[ "t" ] );
+            writeln( "m " ~ c[ "m" ] );
+            writeln( "s " ~ c[ "s" ] );
+            writeln( "f " ~ c[ "f" ] );
+            continue;
+          } 
+          c = match( range, "^(" ~ Patterns.RANGE_FULL ~ ")$" ).captures();
+          if ( ! c.empty() ) {
+            writefln( "RANGE_FULL: %s", range );
+            auto c1 = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
+            writeln( "Track " ~ c1[ "t" ] );
+            writeln( "m " ~ c1[ "m" ] );
+            writeln( "s " ~ c1[ "s" ] );
+            writeln( "f " ~ c1[ "f" ] );
+            c1 = match( c[ "to" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
+            writeln( "Track " ~ c1[ "t" ] );
+            writeln( "m " ~ c1[ "m" ] );
+            writeln( "s " ~ c1[ "s" ] );
+            writeln( "f " ~ c1[ "f" ] );
+            continue;
+          } 
         }
       }
 
@@ -189,6 +228,8 @@ protected:
             args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
+            // Need to pass all options through,
+            // because ranges might start with -.
             std.getopt.config.passThrough,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
@@ -220,7 +261,7 @@ protected:
             default:
               config.sourceFile = args[ $ - 1 ];
               
-              // Ranges start with -.
+              // Specified range(s) start(s) with -.
               // Remove leading - of arguments (except the first one).
               // Example: ./pird -4,5 image.toc
               //   args = { "pird", "-4", "-,", "-5", "image.toc" }
