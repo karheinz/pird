@@ -66,7 +66,8 @@ protected:
   public:
     enum Tokens : string
     {
-      CONNECTOR = r"-",
+      CONNECTOR_INCL = r"[.]{2}",
+      CONNECTOR_EXCL = r"[.]{3}",
       SEPARATOR = r",",
       TRACK = r"\d+",
       OFFSET_MARKER_L = r"\[",
@@ -80,6 +81,8 @@ protected:
 
     enum Patterns : string
     {
+      CONNECTORS = 
+        "(" ~ Tokens.CONNECTOR_INCL ~ ")|(" ~ Tokens.CONNECTOR_EXCL ~ ")",
       LABEL = 
         "(?P<t>" ~ Tokens.TRACK ~ ")" ~
         "(" ~
@@ -91,9 +94,16 @@ protected:
           "(?P<f>" ~ Tokens.FRAME ~ ")" ~
           Tokens.OFFSET_MARKER_R ~ 
         ")?",
-      RANGE_FULL = "(?P<from>" ~ LABEL ~ ")" ~ Tokens.CONNECTOR ~ "(?P<to>" ~ LABEL ~ ")",
-      RANGE_FROM = "(?P<from>" ~ LABEL ~ ")" ~ Tokens.CONNECTOR,
-      RANGE_TO = Tokens.CONNECTOR ~ "(?P<to>" ~ LABEL ~ ")",
+      RANGE_FULL = 
+        "(?P<from>" ~ LABEL ~ ")" ~
+        "(?P<connector>" ~ CONNECTORS ~ ")" ~
+        "(?P<to>" ~ LABEL ~ ")",
+      RANGE_FROM =
+        "(?P<from>" ~ LABEL ~ ")" ~
+        "(?P<connector>" ~ Tokens.CONNECTOR_INCL ~ ")",
+      RANGE_TO =
+        "(?P<connector>" ~ CONNECTORS ~ ")" ~
+        "(?P<to>" ~ LABEL ~ ")",
       RANGE = "(" ~ RANGE_FULL ~ ")|(" ~ RANGE_FROM ~ ")|(" ~ RANGE_TO ~ ")"
     }
 
@@ -112,6 +122,7 @@ protected:
           c = match( range, "^(" ~ Patterns.RANGE_TO ~ ")$" ).captures();
           if ( ! c.empty() ) {
             writefln( "RANGE_TO: %s", c[ "to" ] );
+            writeln( "Connector " ~ c[ "connector" ] );
             c = match( c[ "to" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
             string strack = to!string( c[ "t" ] );
             int track = std.conv.parse!int( strack );
@@ -124,8 +135,11 @@ protected:
           c = match( range, "^(" ~ Patterns.RANGE_FROM ~ ")$" ).captures();
           if ( ! c.empty() ) {
             writefln( "RANGE_FROM: %s", range );
+            writeln( "Connector " ~ c[ "connector" ] );
             c = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            writeln( "Track " ~ c[ "t" ] );
+            string strack = to!string( c[ "t" ] );
+            int track = std.conv.parse!int( strack );
+            writefln( "Track is %d", track );
             writeln( "m " ~ c[ "m" ] );
             writeln( "s " ~ c[ "s" ] );
             writeln( "f " ~ c[ "f" ] );
@@ -134,13 +148,18 @@ protected:
           c = match( range, "^(" ~ Patterns.RANGE_FULL ~ ")$" ).captures();
           if ( ! c.empty() ) {
             writefln( "RANGE_FULL: %s", range );
+            writeln( "Connector " ~ c[ "connector" ] );
             auto c1 = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            writeln( "Track " ~ c1[ "t" ] );
+            string strack = to!string( c1[ "t" ] );
+            int track = std.conv.parse!int( strack );
+            writefln( "Track is %d", track );
             writeln( "m " ~ c1[ "m" ] );
             writeln( "s " ~ c1[ "s" ] );
             writeln( "f " ~ c1[ "f" ] );
             c1 = match( c[ "to" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            writeln( "Track " ~ c1[ "t" ] );
+            strack = to!string( c1[ "t" ] );
+            track = std.conv.parse!int( strack );
+            writefln( "Track is %d", track );
             writeln( "m " ~ c1[ "m" ] );
             writeln( "s " ~ c1[ "s" ] );
             writeln( "f " ~ c1[ "f" ] );
@@ -228,23 +247,12 @@ protected:
             args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
-            // Need to pass all options through,
-            // because ranges might start with -.
-            std.getopt.config.passThrough,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
             "simulate|s", &config.simulate,
             "paranoia|p", &config.paranoia
           );
 
-
-          // Look for unknown options.
-          for ( int i = 1; i < args.length; i++ ) {
-            auto c = match( args[ i ], r"^--?[a-zA-Z]" ).captures();
-            if ( ! c.empty() ) {
-              throw new Exception( "Unrecognized option " ~ args[ i ] );
-            }
-          }
 
           // Source is second arg left.
           switch ( args.length )
@@ -259,18 +267,7 @@ protected:
               config.jobs = RangeParser.parse( args[ 1 ] );
               break;
             default:
-              config.sourceFile = args[ $ - 1 ];
-              
-              // Specified range(s) start(s) with -.
-              // Remove leading - of arguments (except the first one).
-              // Example: ./pird -4,5 image.toc
-              //   args = { "pird", "-4", "-,", "-5", "image.toc" }
-              string ranges = args[ 1 ];
-              for ( int i = 2; i < args.length - 1; i++ ) {
-                ranges ~= args[ i ][ 1 .. $ ];
-              }
-              config.jobs = RangeParser.parse( ranges );
-              break;
+              throw new Exception( "Syntax error" );
           }
 
           // Either verbose or quiet!
