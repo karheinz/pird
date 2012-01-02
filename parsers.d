@@ -61,7 +61,7 @@ protected:
   static string _usage = import( this.stringof ~ "Usage.txt" );
   enum Syntax { HELP, LIST, RIP };
 
-  class RangeParser
+  class JobParser
   {
   private:
     this() {};
@@ -112,11 +112,19 @@ protected:
     }
 
 
-    static ReadFromDiscJob[] parse( string r )
+    static ReadFromDiscJob[] parse( string j )
     {
       ReadFromDiscJob[] result;
 
-      string[] descs = split( r, to!string( Tokens.SEPARATOR ) );
+      // Read full disc?
+      if ( j.empty() ) {
+        result ~= new ReadFromAudioDiscJob();
+        return result;
+      }
+
+      
+      // Extract job descriptions.
+      string[] descs = split( j, to!string( Tokens.SEPARATOR ) );
       foreach ( desc; descs ) {
         auto c = match( desc, "^((" ~ Patterns.RANGE ~ ")|(" ~ Patterns.TRACK ~ "))$" ).captures();
 
@@ -352,10 +360,11 @@ protected:
               throw new Exception( "Missing source" );
             case 2:
               config.sourceFile = args[ 1 ];
+              config.jobs = [ new ReadFromAudioDiscJob() ];
               break;
             case 3:
               config.sourceFile = args[ 2 ];
-              config.jobs = RangeParser.parse( args[ 1 ] );
+              config.jobs = JobParser.parse( args[ 1 ] );
               break;
             default:
               throw new Exception( "Syntax error" );
