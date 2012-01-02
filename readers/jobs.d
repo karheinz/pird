@@ -25,6 +25,13 @@ import media;
 import readers.base;
 
 
+enum Labels
+{
+  NONE,
+  BEGIN,
+  END
+}
+
 struct Target
 {
   // Where to write data to.
@@ -52,7 +59,9 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
 {
   Disc _disc;
   bool _wholeDisc;
-  int _trackNumber;
+  int _track, _fromTrack, _toTrack;
+  lsn_t _fromSector, _toSector;
+  Labels _fromLabel, _toLabel;
   SectorRange _sectorRange;
   Target _target = Target( "out.wav", "w" );
 
@@ -60,8 +69,32 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     _wholeDisc = true;
   }
     
-  this( int trackNumber ) {
-    _trackNumber = trackNumber;
+  this( int track ) {
+    _track = track;
+  }
+
+  this( int fromTrack, lsn_t fromSector, Labels toLabel )
+  {
+    assert( toLabel == Labels.END );
+    _fromTrack = fromTrack;
+    _fromSector = fromSector;
+    _toLabel = toLabel;
+  }
+
+  this( Labels fromLabel, int toTrack, lsn_t toSector )
+  {
+    assert( fromLabel == Labels.BEGIN );
+    _fromLabel = fromLabel;
+    _toTrack = toTrack;
+    _toSector = toSector;
+  }
+
+  this( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector )
+  {
+    _fromTrack = fromTrack;
+    _fromSector = fromSector;
+    _toTrack = toTrack;
+    _toSector = toSector;
   }
 
   this( lsn_t from, lsn_t to ) {
@@ -77,15 +110,18 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     SectorRange failure = SectorRange();
     if ( disc is null ) return failure;
 
+
+    Track[] tracks = disc.tracks();
+
     if ( _wholeDisc ) {
       SectorRange tmp = SectorRange();
-      foreach( track; disc.tracks() ) {
+      foreach( track; tracks ) {
         if ( track.isAudio() ) {
           tmp.from = track.sectorRange().from;
           break;
         }
       }
-      foreach( track; disc.tracks().reverse ) {
+      foreach( track; tracks.dup.reverse ) {
         if ( track.isAudio() ) {
           tmp.to = track.sectorRange().to;
           break;
@@ -99,9 +135,9 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
       }
     }
 
-    if ( _trackNumber > 0 ) {
+    if ( _track > 0 ) {
       try {
-        Track track = disc.tracks[ _trackNumber - 1 ];
+        Track track = tracks[ _track - 1 ];
         if ( track.isAudio() ) {
           return track.sectorRange(); 
         } else {
@@ -113,6 +149,8 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     if ( _sectorRange.from > -1 ) {
+      if ( ! _sectorRange.valid() ) { return failure; }
+
       Track f = disc.track( _sectorRange.from );
       Track t = disc.track( _sectorRange.to );
 
@@ -126,7 +164,117 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
       }
     }
 
-    // Should never come here.
+    if ( _fromTrack > 0 && _toTrack > 0 ) {
+      try {
+        // Is audio track?
+        if ( ! tracks[ _fromTrack - 1 ].isAudio() ) { return failure; }
+        // Is audio track?
+        if ( ! tracks[ _toTrack - 1 ].isAudio() ) { return failure; }
+
+        SectorRange sr = SectorRange();
+        sr.from = tracks[ _fromTrack - 1 ].sectorRange().from + _fromSector;
+        sr.to = tracks[ _toTrack - 1 ].sectorRange().from;
+        // Offset?
+        if ( _toSector >= 0 ) {
+          sr.to += _toSector;
+        } else {
+          sr.to = tracks[ _toTrack - 1 ].sectorRange().to;
+        }
+
+        if ( sr.valid() ) {
+          // OK, lets check if sectors belong to right tracks.
+          if ( disc.track( sr.from ).number() != _fromTrack ) {
+            return failure;
+          }
+          if ( disc.track( sr.to ).number() != _toTrack ) {
+            return failure;
+          }
+
+          // Everything is fine.
+          return sr;
+        } else {
+          return failure;
+        }
+      } catch ( core.exception.RangeError e ) {
+        return failure;
+      }
+    }
+
+    if ( _fromTrack > 0 ) {
+      try {
+        // Is audio track?
+        if ( ! tracks[ _fromTrack - 1 ].isAudio() ) { return failure; }
+
+        // Build sector range.
+        SectorRange sr = SectorRange();
+        sr.from = tracks[ _fromTrack - 1 ].sectorRange().from + _fromSector;
+        // OK, lets check if sector belongs to right track.
+        if ( disc.track( sr.from ).number() != _fromTrack ) {
+          return failure;
+        }
+
+        // Only label END makes sense here.
+        if ( _toLabel == Labels.END ) {
+          // Find last audio track.
+          foreach ( track; tracks.dup.reverse ) {
+            if ( track.isAudio() ) {
+              sr.to = track.sectorRange().to;
+              if ( sr.valid() ) {
+                return sr;
+              } else {
+                break;
+              }
+            }
+          }
+        }
+
+        return failure;
+      } catch ( core.exception.RangeError e ) {
+        return failure;
+      }
+    }
+
+    if ( _toTrack > 0 ) {
+      try {
+        // Is audio track?
+        if ( ! tracks[ _toTrack - 1 ].isAudio() ) { return failure; }
+
+        // Build sector range.
+        SectorRange sr = SectorRange();
+        sr.to = tracks[ _toTrack - 1 ].sectorRange().from; 
+        // Offset?
+        if ( _toSector >= 0 ) {
+          sr.to += _toSector;
+        } else {
+          sr.to = tracks[ _toTrack - 1 ].sectorRange().to;  
+        }
+        // OK, lets check if sector belongs to right track.
+        if ( disc.track( sr.to ).number() != _toTrack ) {
+          return failure;
+        }
+
+        // Only label BEGIN makes sense here.
+        if ( _fromLabel == Labels.BEGIN ) {
+          // Find last audio track.
+          foreach ( track; tracks ) {
+            if ( track.isAudio() ) {
+              sr.from = track.sectorRange().from;
+              if ( sr.valid() ) {
+                return sr;
+              } else {
+                break;
+              }
+            }
+          }
+        }
+
+        return failure;
+      } catch ( core.exception.RangeError e ) {
+        return failure;
+      }
+    }
+
+    // Nothing matched.
     return failure;
   }
 
@@ -143,10 +291,47 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   {
     if ( _wholeDisc ) {
       return "Read the whole disc.";
-    } else if ( _trackNumber > 0 ) {
-      return format( "Read track %d.", _trackNumber );
-    } else {
+    } else if ( _track > 0 ) {
+      return format( "Read track %d.", _track );
+    } else if ( _sectorRange.valid() )  {
       return format( "Read from sector %d to sector %d.", _sectorRange.from, _sectorRange.to );
+    } else if ( _fromTrack > 0 && _toTrack > 0 ) {
+      if ( _toSector < 0 ) {
+        return format(
+            "Read from track %d (sector: %d) to end of track %d.",
+            _fromTrack,
+            _fromSector,
+            _toTrack
+          );
+      }
+      return format(
+          "Read from track %d (sector: %d) to track %d (sector: %d).",
+          _fromTrack,
+          _fromSector,
+          _toTrack,
+          _toSector
+        );
+    } else if ( _fromTrack > 0 ) {
+      return format(
+           "Read from track %d (sector: %d) to end of disc.",
+          _fromTrack,
+          _fromSector
+        );
+    } else if ( _toTrack > 0 ) {
+      if ( _toSector < 0 ) {
+        return format(
+            "Read from begin of disc to end of track %d.",
+            _toTrack
+          );
+      }
+      return format(
+          "Read from begin of disc to track %d (sector: %d).",
+          _toTrack,
+          _toSector
+        );
     }
+
+    // Should never get here.
+    return "Read something.";
   }
 }

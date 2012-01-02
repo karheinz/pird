@@ -193,6 +193,38 @@ public:
   }
 }
 
+msf_t sectors_to_msf( lsn_t sectors ) {
+  msf_t result;
+
+  result.m = cast( ubyte )( sectors / ( CDIO_CD_FRAMES_PER_SEC * CDIO_CD_SECS_PER_MIN ) );
+  result.s = cast( ubyte )( ( sectors % ( CDIO_CD_FRAMES_PER_SEC * CDIO_CD_SECS_PER_MIN ) ) / CDIO_CD_FRAMES_PER_SEC );
+  result.f = cast( ubyte )( ( sectors % ( CDIO_CD_FRAMES_PER_SEC * CDIO_CD_SECS_PER_MIN ) ) % CDIO_CD_FRAMES_PER_SEC );
+
+  return result;
+}
+unittest { 
+  lsn_t from = ( 61 * 75 ) + 1;
+  msf_t to = sectors_to_msf( from );
+  assert( to.m == 1 );
+  assert( to.s == 1 );
+  assert( to.f == 1 );
+}
+
+lsn_t msf_to_sectors( msf_t from ) {
+  lsn_t result;
+
+  result += ( from.m * 60 * CDIO_CD_FRAMES_PER_SEC );
+  result += ( from.s * CDIO_CD_FRAMES_PER_SEC );
+  result += from.f;
+  return result;
+}
+unittest {
+  msf_t from = msf_t( 1, 1, 1 );
+  lsn_t to = msf_to_sectors( from );
+
+  assert( to == 4576 );
+}
+
 string discToString( Disc disc ) {
   string[] lines;
 

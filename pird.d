@@ -42,7 +42,7 @@ int main( string[] args )
 
   if ( ! parser.parse( args, config ) ) {
     // Error message is available here: config.parser.error
-    //stderr.writeln( "ERROR: " ~ config.parser.error ~ "\n" );
+    stderr.writeln( "ERROR: " ~ config.parser.error ~ "\n" );
     stderr.writeln( config.parser.usage );
     return 1;
   }

@@ -26,6 +26,9 @@ import std.regex;
 import std.stdio;
 import std.string;
 
+import c.cdio.types;
+
+import media;
 import readers.jobs;
 
 
@@ -94,6 +97,7 @@ protected:
           "(?P<f>" ~ Tokens.FRAME ~ ")" ~
           Tokens.OFFSET_MARKER_R ~ 
         ")?",
+      TRACK = "(?P<t>" ~ Tokens.TRACK ~ ")",
       RANGE_FULL = 
         "(?P<from>" ~ LABEL ~ ")" ~
         "(?P<connector>" ~ CONNECTORS ~ ")" ~
@@ -112,57 +116,144 @@ protected:
     {
       ReadFromDiscJob[] result;
 
-      string[] ranges = split( r, to!string( Tokens.SEPARATOR ) );
-      foreach ( range; ranges ) {
-        auto c = match( range, "^(" ~ Patterns.RANGE ~ ")$" ).captures();
+      string[] descs = split( r, to!string( Tokens.SEPARATOR ) );
+      foreach ( desc; descs ) {
+        auto c = match( desc, "^((" ~ Patterns.RANGE ~ ")|(" ~ Patterns.TRACK ~ "))$" ).captures();
 
         if ( c.empty() ) {
-          throw new Exception( "Invalid range description" );
+          throw new Exception( "Invalid track/range description" );
         } else {
-          c = match( range, "^(" ~ Patterns.RANGE_TO ~ ")$" ).captures();
+          // Singe track?
+          c = match( desc, "^" ~ Patterns.TRACK ~ "$" ).captures();
           if ( ! c.empty() ) {
-            writefln( "RANGE_TO: %s", c[ "to" ] );
-            writeln( "Connector " ~ c[ "connector" ] );
-            c = match( c[ "to" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            string strack = to!string( c[ "t" ] );
-            int track = std.conv.parse!int( strack );
-            writefln( "Track is %d", track );
-            writeln( "m " ~ c[ "m" ] );
-            writeln( "s " ~ c[ "s" ] );
-            writeln( "f " ~ c[ "f" ] );
+            string st = to!string( c[ "t" ] );
+            int t = std.conv.parse!int( st );
+
+            result ~= new ReadFromAudioDiscJob( t );
             continue;
           }
-          c = match( range, "^(" ~ Patterns.RANGE_FROM ~ ")$" ).captures();
+          // From BEGIN to label?
+          c = match( desc, "^(" ~ Patterns.RANGE_TO ~ ")$" ).captures();
           if ( ! c.empty() ) {
-            writefln( "RANGE_FROM: %s", range );
-            writeln( "Connector " ~ c[ "connector" ] );
-            c = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            string strack = to!string( c[ "t" ] );
-            int track = std.conv.parse!int( strack );
-            writefln( "Track is %d", track );
-            writeln( "m " ~ c[ "m" ] );
-            writeln( "s " ~ c[ "s" ] );
-            writeln( "f " ~ c[ "f" ] );
+            // Connector type?
+            auto c1 = match(
+                c[ "connector" ], "^" ~ Tokens.CONNECTOR_EXCL ~ "$"
+              ).captures();
+            // Get track and offset.
+            auto c2 = match(
+                c[ "to" ], "^" ~ Patterns.LABEL ~ "$"
+              ).captures();
+
+            string st = to!string( c2[ "t" ] );
+            int t = std.conv.parse!int( st );
+            lsn_t o = -1;
+            
+            // Offset?
+            if ( ! c2[ "m" ].empty() ) {
+              string sm = to!string( c2[ "m" ] );
+              ubyte m = std.conv.parse!ubyte( sm );
+              string ss = to!string( c2[ "s" ] );
+              ubyte s = std.conv.parse!ubyte( ss );
+              string sf = to!string( c2[ "f" ] );
+              ubyte f = std.conv.parse!ubyte( sf );
+
+              o = msf_to_sectors( msf_t( m, s, f ) );
+            }
+            // Exclude label?
+            if ( ! c1.empty() ) {
+              // Rip up to track t - 1?
+              if ( o <= 0 ) {
+                t--;
+                o = -1;
+              } else {
+                o--;
+              }
+            }
+
+            result ~= new ReadFromAudioDiscJob( Labels.BEGIN, t, o );
             continue;
-          } 
-          c = match( range, "^(" ~ Patterns.RANGE_FULL ~ ")$" ).captures();
+          }
+          // From label to END?
+          c = match( desc, "^(" ~ Patterns.RANGE_FROM ~ ")$" ).captures();
           if ( ! c.empty() ) {
-            writefln( "RANGE_FULL: %s", range );
-            writeln( "Connector " ~ c[ "connector" ] );
-            auto c1 = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            string strack = to!string( c1[ "t" ] );
-            int track = std.conv.parse!int( strack );
-            writefln( "Track is %d", track );
-            writeln( "m " ~ c1[ "m" ] );
-            writeln( "s " ~ c1[ "s" ] );
-            writeln( "f " ~ c1[ "f" ] );
-            c1 = match( c[ "to" ], "^" ~ Patterns.LABEL ~ "$" ).captures();
-            strack = to!string( c1[ "t" ] );
-            track = std.conv.parse!int( strack );
-            writefln( "Track is %d", track );
-            writeln( "m " ~ c1[ "m" ] );
-            writeln( "s " ~ c1[ "s" ] );
-            writeln( "f " ~ c1[ "f" ] );
+            // Get track and offset.
+            auto c1 = match( c[ "from" ], "^" ~ Patterns.LABEL ~ "$").captures();
+
+            string st = to!string( c1[ "t" ] );
+            int t = std.conv.parse!int( st );
+            lsn_t o;
+            
+            // Offset?
+            if ( ! c1[ "m" ].empty() ) {
+              string sm = to!string( c1[ "m" ] );
+              ubyte m = std.conv.parse!ubyte( sm );
+              string ss = to!string( c1[ "s" ] );
+              ubyte s = std.conv.parse!ubyte( ss );
+              string sf = to!string( c1[ "f" ] );
+              ubyte f = std.conv.parse!ubyte( sf );
+
+              o = msf_to_sectors( msf_t( m, s, f ) );
+            }
+            result ~= new ReadFromAudioDiscJob( t, o, Labels.END );
+            continue;
+          }
+          // From label to label?
+          c = match( desc, "^(" ~ Patterns.RANGE_FULL ~ ")$" ).captures();
+          if ( ! c.empty() ) {
+            // Connector type?
+            auto c1 = match(
+                c[ "connector" ], "^" ~ Tokens.CONNECTOR_EXCL ~ "$"
+              ).captures();
+            // Get tracks and offsets.
+            auto c2 = match(
+                c[ "from" ], "^" ~ Patterns.LABEL ~ "$"
+              ).captures();
+            auto c3 = match(
+                c[ "to" ], "^" ~ Patterns.LABEL ~ "$"
+              ).captures();
+
+            string st1 = to!string( c2[ "t" ] );
+            int t1 = std.conv.parse!int( st1 );
+            lsn_t o1;
+            
+            // Offset?
+            if ( ! c2[ "m" ].empty() ) {
+              string sm1 = to!string( c2[ "m" ] );
+              ubyte m1 = std.conv.parse!ubyte( sm1 );
+              string ss1 = to!string( c2[ "s" ] );
+              ubyte s1 = std.conv.parse!ubyte( ss1 );
+              string sf1 = to!string( c2[ "f" ] );
+              ubyte f1 = std.conv.parse!ubyte( sf1 );
+
+              o1 = msf_to_sectors( msf_t( m1, s1, f1 ) );
+            }
+            string st2 = to!string( c3[ "t" ] );
+            int t2 = std.conv.parse!int( st2 );
+            lsn_t o2 = -1;
+            
+            // Offset?
+            if ( ! c3[ "m" ].empty() ) {
+              string sm2 = to!string( c3[ "m" ] );
+              ubyte m2 = std.conv.parse!ubyte( sm2 );
+              string ss2 = to!string( c3[ "s" ] );
+              ubyte s2 = std.conv.parse!ubyte( ss2 );
+              string sf2 = to!string( c3[ "f" ] );
+              ubyte f2 = std.conv.parse!ubyte( sf2 );
+
+              o2 = msf_to_sectors( msf_t( m2, s2, f2 ) );
+            }
+
+            // Exclude label?
+            if ( ! c1.empty() ) {
+              // Rip up to track t - 1?
+              if ( o2 <= 0 ) {
+                t2--;
+                o2 = -1;
+              } else {
+                o2--;
+              }
+            }
+            result ~= new ReadFromAudioDiscJob( t1, o1, t2, o2 );
             continue;
           } 
         }

@@ -438,12 +438,19 @@ public:
 class RipAudioDiscCommand( S, T ) : AbstractCommand
 {
 private:
-  ReadFromDiscJob[] _jobs;
+  AudioDiscReader _reader;
 
 public:
   this( ReadFromDiscJob[] jobs )
   {
-    _jobs = jobs;
+    // Create reader.
+    _reader = new T();
+    // Subscribe for signals emitted by reader.
+    _reader.connect( &handleSignal );
+    // Add jobs to reader.
+    foreach( job; jobs ) {
+      _reader.add( job );
+    }
   }
 
   bool execute()
@@ -461,43 +468,20 @@ public:
       return false;
     }
 
-    logDebug( format( "Print %s description.", S.stringof.toLower() ) );
-    writeln( sourcesToString( [ source ] ) );
+    // Configure reader.
+    _reader.setSource( source );
 
     // Look for audio disc (using reader of type T).
     logDebug( format( "Looking for audio disc in %s.", source.path() ) );
 
-    // Create and configure reader.
-    AudioDiscReader reader = new T();
-    reader.setSource( source );
-    // Subscribe for signals emitted by reader.
-    reader.connect( &handleSignal );
-
     // Disc?
-    try {
-      if ( reader.disc() is null ) {
-        writeln( "No audio disc found!" );
-        return false;
-      } else {
-        logDebug( "Print disc layout." );
-        writeln();
-        writeln( discToString( reader.disc() ) );
-      }
-    } catch ( Exception e ) {
-      logError( e.msg ~ "!" );
+    if ( _reader.disc() is null ) {
+      writeln( "No audio disc found!" );
       return false;
     }
 
-    // TODO: Rip disc!
-
-    // Add some jobs.
-    //foreach ( track; [ 1, 2, 3, 4, 5, 6 ] ) {
-    foreach ( track; [ 1, 2, 3 ] ) {
-      reader.add( new ReadFromAudioDiscJob( track ) );
-    }
-
     // Make sure all jobs are satisfiable.
-    ReadFromDiscJob[] jobs = reader.unsatisfiableJobs();
+    ReadFromDiscJob[] jobs = _reader.unsatisfiableJobs();
     if ( jobs.length ) {
       logError( format( "Found %d unsatisfiable job(s):", jobs.length ) );
       foreach ( job; jobs ) { logError( job.description() ); }
@@ -505,13 +489,7 @@ public:
     }
 
     // Process jobs.
-    reader.read();
-    reader.add( new ReadFromAudioDiscJob() );
-    reader.read();
-    reader.add( new ReadFromAudioDiscJob( 100 ) );
-    reader.add( new ReadFromAudioDiscJob( 100, 2 ) );
-    reader.read();
-    reader.read();
+    _reader.read();
     return true;
   }
 
