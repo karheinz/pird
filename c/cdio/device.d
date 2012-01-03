@@ -41,6 +41,19 @@ extern (C):
     DEVICE
   }
 
+  enum driver_return_code {
+    DRIVER_OP_MMC_SENSE_DATA = -8,
+    DRIVER_OP_NO_DRIVER,
+    DRIVER_OP_BAD_POINTER,
+    DRIVER_OP_BAD_PARAMETER,
+    DRIVER_OP_NOT_PERMITTED,
+    DRIVER_OP_UNINIT,
+    DRIVER_OP_UNSUPPORTED,
+    DRIVER_OP_ERROR,
+    DRIVER_OP_SUCCESS
+  }
+	alias driver_return_code driver_return_code_t;
+
   // Device capabilities.
   enum CommonCapability : uint {
     ERROR   = 0x40000,

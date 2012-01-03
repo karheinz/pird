@@ -39,12 +39,17 @@ struct SectorRange
 
   bool valid()
   {
-    return ( from >= 0 && to > 0 && from < to );
+    return ( from >= 0 && to >= 0 && from <= to );
   }
 
   uint sectors()
   {
     return ( to - from + 1 );
+  }
+
+  uint length()
+  {
+    return sectors();
   }
 }
 

@@ -27,6 +27,8 @@ import std.string;
 import c.cdio.cdda;
 import c.cdio.device;
 import c.cdio.disc;
+import c.cdio.read;
+import c.cdio.sector;
 import c.cdio.track;
 import c.cdio.types;
 
@@ -36,6 +38,8 @@ import media;
 import readers.base;
 import readers.jobs;
 import sources.base;
+import writers.base;
+import writers.wav;
 
 
 class SimpleAudioDiscReader : AbstractAudioDiscReader
@@ -130,12 +134,50 @@ public:
       job = _jobs.front();
       _jobs.popFront();
 
+      // Check if job fits disc.
       if ( ! job.fits( disc() ) ) {
         logWarning( "Job is unapplicable to disc: " ~ job.description() );
+        logWarning( "Skip job: " ~ job.description() );
         continue;
       }
 
+      // Check if writer is available.
+      logTrace( "Writer class is " ~ job.target().writerClass );
+      Writer writer = job.target().build();
+
+      if ( writer is null ) {
+        logWarning( "No writer specified for job: " ~ job.description() );
+        logWarning( "Skip job: " ~ job.description() );
+        continue;
+      }
+
+      // Heyho, lets go!
       logInfo( "Start job: " ~ job.description() );
+      logInfo( "Data is written to " ~ job.target().file ~ "." );
+
+      // Init some vars.
+      driver_return_code_t rc;
+      ubyte[ CDIO_CD_FRAMESIZE_RAW ] buffer;
+      SectorRange sr = job.sectorRange( disc );
+      // Open writer.
+      writer.open();
+      
+      // Rip!
+      for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
+        rc = cdio_read_audio_sector( _source.handle(), cast( void* )&buffer, sector );        
+        if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
+          writer.write( buffer );
+          logTrace( format( "Read and wrote sector %d.", sector ) );
+          continue;
+        }
+
+        logError( format( "Reading sector %d failed: %d, Abort!", sector, rc ) );
+        break;
+      }
+
+      // Close writer.
+      writer.close();
+      logInfo( format( "Read and wrote %s sectors.", sr.length() ) );
     }
 
     return true;

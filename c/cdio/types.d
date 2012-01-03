@@ -47,3 +47,14 @@ extern (C):
     char* field[ MAX_CDTEXT_FIELDS ];
   };
   alias cdtext cdtext_t;
+
+  /*
+   * Original declarations can be found in:
+   *    /usr/include/types.h
+   *    /usr/include/bits/types.h
+   *    /usr/include/bits/typesizes.h
+   */
+  alias uint uint32_t;
+  alias ushort uint16_t;
+  alias long off_t;
+  alias int ssize_t;

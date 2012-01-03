@@ -79,8 +79,17 @@ public:
   }
 
   final bool open() {
-    _handle = cdio_open( toStringz( _path ), _driver );
-    return _handle != null;
+    string cwd = getcwd();
+
+    try {
+      chdir( dirName( _path ) );
+      _handle = cdio_open( toStringz( baseName( _path ) ), _driver );
+      return _handle != null;
+    } catch ( Exception e ) {
+      return false;
+    } finally {
+      chdir( cwd );
+    } 
   }
 
   final bool close() {

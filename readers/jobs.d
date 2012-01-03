@@ -17,12 +17,14 @@
 
 module readers.jobs;
 
+import std.stream;
 import std.string;
 
 import c.cdio.types;
 
 import media;
 import readers.base;
+import writers.base;
 
 
 enum Labels
@@ -34,15 +36,28 @@ enum Labels
 
 struct Target
 {
+  // Type of writer to use. 
+  string writerClass;
   // Where to write data to.
   string file;
-  // Something like "w" (write) or "a" (append).
-  string mode;
+  // How to open file.
+  FileMode mode;
 
   // Returns true if stdout should be used as target.
   bool stdout()
   {
     return ( file == "-" );
+  }
+
+  Writer build()
+  {
+    Writer w = cast( Writer )Object.factory( writerClass );
+    // Check that writer object was created.
+    if ( w is null ) { return null; };
+
+    w.setPath( file );
+    w.setMode( mode );
+    return w;
   }
 }
 
@@ -63,7 +78,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   lsn_t _fromSector, _toSector;
   Labels _fromLabel, _toLabel;
   SectorRange _sectorRange;
-  Target _target = Target( "out.wav", "w" );
+  Target _target = Target( "writers.wav.WavFileWriter", "out.wav", FileMode.OutNew | FileMode.In );
 
   this() {
     _wholeDisc = true;
