@@ -114,12 +114,15 @@ protected:
 
     static ReadFromDiscJob[] parse( string j )
     {
-      ReadFromDiscJob[] result;
+      ReadFromDiscJob job;
+      ReadFromDiscJob[] jobs;
 
       // Read full disc?
       if ( j.empty() ) {
-        result ~= new ReadFromAudioDiscJob();
-        return result;
+        job = new ReadFromAudioDiscJob();
+        job.target.file = "disc.wav";
+        jobs ~= job;
+        return jobs;
       }
 
       
@@ -137,7 +140,9 @@ protected:
             string st = to!string( c[ "t" ] );
             int t = std.conv.parse!int( st );
 
-            result ~= new ReadFromAudioDiscJob( t );
+            job = new ReadFromAudioDiscJob( t );
+            job.target.file = format( "track_%02d.wav", t );
+            jobs ~= job;
             continue;
           }
           // From BEGIN to label?
@@ -178,7 +183,9 @@ protected:
               }
             }
 
-            result ~= new ReadFromAudioDiscJob( Labels.BEGIN, t, o );
+            job = new ReadFromAudioDiscJob( Labels.BEGIN, t, o );
+            job.target.file = format( "range_%s.wav", desc );
+            jobs ~= job;
             continue;
           }
           // From label to END?
@@ -202,7 +209,10 @@ protected:
 
               o = msf_to_sectors( msf_t( m, s, f ) );
             }
-            result ~= new ReadFromAudioDiscJob( t, o, Labels.END );
+
+            job = new ReadFromAudioDiscJob( t, o, Labels.END );
+            job.target.file = format( "range_%s.wav", desc );
+            jobs ~= job;
             continue;
           }
           // From label to label?
@@ -261,13 +271,15 @@ protected:
                 o2--;
               }
             }
-            result ~= new ReadFromAudioDiscJob( t1, o1, t2, o2 );
+            job = new ReadFromAudioDiscJob( t1, o1, t2, o2 );
+            job.target.file = format( "range_%s.wav", desc );
+            jobs ~= job;
             continue;
           } 
         }
       }
 
-      return result;
+      return jobs;
     }
   }
 
@@ -360,7 +372,7 @@ protected:
               throw new Exception( "Missing source" );
             case 2:
               config.sourceFile = args[ 1 ];
-              config.jobs = [ new ReadFromAudioDiscJob() ];
+              config.jobs = JobParser.parse( "" );
               break;
             case 3:
               config.sourceFile = args[ 2 ];

@@ -94,5 +94,17 @@ class WavFileWriter : FileWriter
     super.write( buffer );
   }
 
+  override void write( ubyte[] buffer, uint bytes )
+  {
+    open();
+
+    // Let 44 bytes for the wav header!
+    if ( _file.seek( 0, SeekPos.Current ) == 0 ) {
+      _file.seek( 44, SeekPos.Set );
+    }
+
+    super.write( buffer, bytes );
+  }
+
   mixin introspection.Initial;
 }

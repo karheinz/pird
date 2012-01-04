@@ -17,6 +17,7 @@
 
 module writers.base;
 
+import std.math;
 import std.stream;
 
 static import introspection;
@@ -39,6 +40,7 @@ interface Writer
   void open( FileMode mode );
   void close();
   void write( ubyte[] buffer );
+  void write( ubyte[] buffer, uint bytes );
   ulong seek( long offset, SeekPos whence );
 }
 
@@ -82,11 +84,21 @@ public:
     if ( _file !is null ) { _file.close(); }
   }
 
+  void write( ubyte[] buffer, uint bytes )
+  {
+    open();
+
+    _file.writeExact(
+        cast( const void* )&( buffer[ 0 ] ),
+        cast( uint )fmin( buffer.length, bytes )
+      );
+  }
+  
   void write( ubyte[] buffer )
   {
     open();
 
-    _file.writeExact( cast( const void* )&buffer, buffer.length );
+    _file.write( buffer );
   }
 
   ulong seek( long offset, SeekPos whence )

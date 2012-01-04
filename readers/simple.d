@@ -38,8 +38,8 @@ import media;
 import readers.base;
 import readers.jobs;
 import sources.base;
+import utils;
 import writers.base;
-import writers.wav;
 
 
 class SimpleAudioDiscReader : AbstractAudioDiscReader
@@ -153,7 +153,6 @@ public:
 
       // Heyho, lets go!
       logInfo( "Start job: " ~ job.description() );
-      logInfo( "Data is written to " ~ job.target().file ~ "." );
 
       // Init some vars.
       driver_return_code_t rc;
@@ -163,21 +162,32 @@ public:
       writer.open();
       
       // Rip!
+      logInfo(
+          format(
+            "Try to read %d %s starting at sector %d.",
+            sr.length(),
+            "sector".pluralize( sr.length() ),
+            sr.from
+          )
+        );
+      logInfo( "Data is written to " ~ job.target().file ~ "." );
+
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
         rc = cdio_read_audio_sector( _source.handle(), cast( void* )&buffer, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
           writer.write( buffer );
-          logTrace( format( "Read and wrote sector %d.", sector ) );
           continue;
         }
 
-        logError( format( "Reading sector %d failed: %d, Abort!", sector, rc ) );
+        logError( format( "Reading sector %d failed: %d, abort!", sector, rc ) );
+        // Set sr.to to last successfully read sector.
+        sr.to = cast( lsn_t )( sector - 1 );
         break;
       }
 
       // Close writer.
       writer.close();
-      logInfo( format( "Read and wrote %s sectors.", sr.length() ) );
+      logInfo( format( "Read and wrote %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
     }
 
     return true;

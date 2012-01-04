@@ -54,7 +54,6 @@ int main( string[] args )
   Logger logger = loggerFactory.build( config );
   command.connect( &logger.handleSignal );
 
-  //cdio_debug( toStringz( "Hello" ) );
   return ( command.execute() ? 0 : 1 );
 
   /+

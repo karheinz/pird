@@ -65,8 +65,8 @@ interface ReadFromDiscJob
 {
   SectorRange sectorRange( Disc disc );
   bool fits( Disc disc );
-  Target target();
-  void setTarget( Target target );
+  @property ref Target target();
+  @property void target( Target target );
   string description();
 }
 
@@ -293,12 +293,12 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     return failure;
   }
 
-  Target target()
+  @property ref Target target()
   {
     return _target;
   }
 
-  void setTarget( Target target ) {
+  @property void target( Target target ) {
     _target = target; 
   }
 
