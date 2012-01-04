@@ -238,15 +238,15 @@ string discToString( Disc disc ) {
   if ( disc.isAudio() ) {
     lines ~= format( "%6s: %s", "Length", disc.length() );
     lines ~= "";
-    lines ~= format( "%2s   %-6s   %-13s   %s", "#", "Length", "Sectors", "Type" );
+    lines ~= format( "%2s   %-6s   %-15s   %s", "#", "Length", "Sectors", "Type" );
     foreach( Track track; disc.tracks() ) {
-      lines ~= format( "%2d   %6s   %5d : %5d   %3.1s", track.number(), track.length(), track.firstSector(), track.lastSector(), ( track.isAudio() ? "A" : "D" ) );
+      lines ~= format( "%2d   %6s   %6d : %6d   %3.1s", track.number(), track.length(), track.firstSector(), track.lastSector(), ( track.isAudio() ? "A" : "D" ) );
     }
   } else {
     lines ~= "";
-    lines ~= format( "%2s   %-13s   %s", "#", "Sectors", "Type" );
+    lines ~= format( "%2s   %-15s   %s", "#", "Sectors", "Type" );
     foreach( Track track; disc.tracks() ) {
-      lines ~= format( "%2d   %5d : %5d   %3.1s", track.number(), track.firstSector(), track.lastSector(), ( track.isAudio() ? "A" : "D" ) );
+      lines ~= format( "%2d   %6d : %6d   %3.1s", track.number(), track.firstSector(), track.lastSector(), ( track.isAudio() ? "A" : "D" ) );
     }
   }
 
