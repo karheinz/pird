@@ -173,13 +173,13 @@ public:
       logInfo( "Data is written to " ~ job.target().file ~ "." );
 
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
-        rc = cdio_read_audio_sector( _source.handle(), cast( void* )&buffer, sector );        
+        rc = cdio_read_audio_sector( _source.handle(), buffer.ptr, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
           writer.write( buffer );
           continue;
         }
 
-        logError( format( "Reading sector %d failed: %d, abort!", sector, rc ) );
+        logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
         // Set sr.to to last successfully read sector.
         sr.to = cast( lsn_t )( sector - 1 );
         break;

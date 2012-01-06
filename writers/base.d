@@ -89,7 +89,7 @@ public:
     open();
 
     _file.writeExact(
-        cast( const void* )&( buffer[ 0 ] ),
+        buffer.ptr,
         cast( uint )fmin( buffer.length, bytes )
       );
   }
@@ -98,7 +98,7 @@ public:
   {
     open();
 
-    _file.write( buffer );
+    _file.writeExact( buffer.ptr, buffer.length );
   }
 
   ulong seek( long offset, SeekPos whence )
