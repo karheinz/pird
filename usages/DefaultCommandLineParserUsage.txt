@@ -1,4 +1,4 @@
-usage: %s [options] [ranges] path
+usage: %s [options] [jobs] path
        %s -l [path]
        %s -h
 
