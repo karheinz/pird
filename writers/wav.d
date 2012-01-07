@@ -133,8 +133,7 @@ public:
       // Write header.
       WavHeader rawHeader = WavHeader();
       rawHeader.setExpectedSize( _expectedSize );
-      ubyte[] header = rawHeader.serialized();
-      stdout.rawWrite!ubyte( header );
+      stdout.rawWrite!ubyte( rawHeader.serialized() );
       _headerWritten = true;
     }
 
