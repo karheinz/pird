@@ -158,6 +158,10 @@ public:
       driver_return_code_t rc;
       ubyte[ CDIO_CD_FRAMESIZE_RAW ] buffer;
       SectorRange sr = job.sectorRange( disc );
+
+      // Tell writer how much bytes (expected) to be written.
+      writer.setExpectedSize( sr.length * CDIO_CD_FRAMESIZE_RAW );
+
       // Open writer.
       writer.open();
       

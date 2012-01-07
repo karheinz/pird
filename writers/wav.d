@@ -20,6 +20,8 @@ module writers.wav;
 import std.c.string;
 
 import std.conv;
+import std.math;
+import std.stdio;
 import std.stream;
 import std.string;
 
@@ -49,10 +51,16 @@ struct WavHeader
   char[ 4 ] dataTag = "data";
   uint dataLength = 0;
 
-  this( File file )
+  this( std.stream.File file )
   {
     chunkSize = cast( uint )( file.size - 8 );
     dataLength = cast( uint )( file.size - 44 );
+  }
+
+  void setExpectedSize( ulong bytes )
+  {
+    chunkSize = cast( uint )( bytes + 44 - 8 );
+    dataLength = cast( uint )( bytes );
   }
 
   ubyte[] serialized()
@@ -60,7 +68,7 @@ struct WavHeader
     ubyte[ WavHeader.sizeof ] bytes;
 
     // Convert struct to bytes.
-    memcpy( &( bytes[ 0 ] ), &this, WavHeader.sizeof );
+    memcpy( bytes.ptr, &this, WavHeader.sizeof );
     assert( "RIFF" == to!string( cast( char[] )bytes[ 0 .. 4 ] ) );
 
     return bytes.dup;
@@ -77,7 +85,7 @@ class WavFileWriter : FileWriter
     _file.seek( 0, SeekPos.Set );
     // Write header.
     ubyte[] header = WavHeader( _file ).serialized();
-    _file.writeExact( &header[ 0 ], header.length );
+    _file.writeExact( header.ptr, header.length );
 
     super.close();
   }
@@ -106,5 +114,38 @@ class WavFileWriter : FileWriter
     super.write( buffer, bytes );
   }
 
-  mixin introspection.Initial;
+  mixin introspection.Override;
+}
+
+class WavStdoutWriter : StdoutWriter
+{
+protected:
+  bool _headerWritten;
+
+public:
+  override void write( ubyte[] buffer )
+  {
+    if ( ! _headerWritten ) {
+      if ( _expectedSize == 0  ) {
+        throw new Exception( "Expected file size is required" );
+      }
+
+      // Write header.
+      WavHeader rawHeader = WavHeader();
+      rawHeader.setExpectedSize( _expectedSize );
+      ubyte[] header = rawHeader.serialized();
+      stdout.rawWrite!ubyte( header );
+      _headerWritten = true;
+    }
+
+    super.write( buffer );
+  }
+
+  override void write( ubyte[] buffer, uint bytes )
+  {
+    uint bound = cast( uint )fmin( buffer.length, bytes );
+    write( buffer[ 0 .. bound ] );
+  }
+
+  mixin introspection.Override;
 }

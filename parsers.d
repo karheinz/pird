@@ -141,7 +141,9 @@ protected:
             int t = std.conv.parse!int( st );
 
             job = new ReadFromAudioDiscJob( t );
-            job.target.file = format( "track_%02d.wav", t );
+            //job.target.file = format( "track_%02d.wav", t );
+            job.target.writerClass = "writers.wav.WavStdoutWriter";
+            job.target.file = "-";
             jobs ~= job;
             continue;
           }

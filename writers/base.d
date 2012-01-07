@@ -18,6 +18,7 @@
 module writers.base;
 
 import std.math;
+import std.stdio;
 import std.stream;
 
 static import introspection;
@@ -27,6 +28,8 @@ interface Writer
 {
   void setPath( string path );
   void setMode( FileMode mode );
+  // Expected number of bytes to write (excluding header).
+  void setExpectedSize( ulong bytes );
   /*
    * // access modes; may be or'ed
    * enum FileMode {
@@ -44,12 +47,13 @@ interface Writer
   ulong seek( long offset, SeekPos whence );
 }
 
-abstract class FileWriter : Writer, introspection.Interface
+class FileWriter : Writer, introspection.Interface
 {
 protected:
   string _path;
-  File _file;
+  std.stream.File _file;
   FileMode _mode;
+  ulong _expectedSize;
 
 public:
   void setPath( string path )
@@ -62,6 +66,11 @@ public:
     _mode = mode;
   }
 
+  void setExpectedSize( ulong bytes )
+  {
+    _expectedSize = bytes;
+  }
+
   void open()
   {
     open( _mode );
@@ -70,7 +79,7 @@ public:
   void open( FileMode mode )
   {
     if ( _file is null ) {
-      _file = new File( _path, mode );
+      _file = new std.stream.File( _path, mode );
       return;
     }
     
@@ -86,12 +95,8 @@ public:
 
   void write( ubyte[] buffer, uint bytes )
   {
-    open();
-
-    _file.writeExact(
-        buffer.ptr,
-        cast( uint )fmin( buffer.length, bytes )
-      );
+    uint bound = cast( uint )fmin( buffer.length, bytes );
+    write( buffer[ 0 .. bound ] );
   }
   
   void write( ubyte[] buffer )
@@ -107,4 +112,65 @@ public:
 
     return _file.seek( offset, whence );
   }
+
+
+  mixin introspection.Initial;
+}
+
+class StdoutWriter : Writer, introspection.Interface
+{
+protected:
+  string _path;
+  FileMode _mode;
+  ulong _expectedSize;
+
+public:
+  void setPath( string path )
+  {
+    _path = path;
+  }
+
+  void setMode( FileMode mode )
+  {
+    _mode = mode;
+  }
+
+  void setExpectedSize( ulong bytes )
+  {
+    _expectedSize = bytes;
+  }
+
+  void open()
+  {
+    open( _mode );
+  }
+
+  void open( FileMode mode )
+  {
+    // Nothing to do, already open.
+  }
+
+  void close()
+  {
+    // Nothing to do, never close.
+  }
+
+  void write( ubyte[] buffer, uint bytes )
+  {
+    uint bound = cast( uint )fmin( buffer.length, bytes );
+    write( buffer[ 0 .. bound ] );
+  }
+  
+  void write( ubyte[] buffer )
+  {
+    stdout.rawWrite!ubyte( buffer );
+  }
+
+  ulong seek( long offset, SeekPos whence )
+  {
+    // Seeking makes no sence here.
+    return 0;
+  }
+
+  mixin introspection.Initial;
 }
