@@ -35,6 +35,7 @@ import c.cdio.types;
 import introspection;
 import log;
 import media;
+import parsers;
 import readers.base;
 import readers.jobs;
 import sources.base;

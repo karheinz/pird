@@ -1,7 +1,8 @@
-pird: *.d c/cdio/*.d readers/*.d writers/*.d sources/*.d
+pird: Makefile *.d c/cdio/*.d readers/*.d writers/*.d sources/*.d usages/*.txt
 	dmd *.d c/cdio/*.d readers/*.d writers/*.d sources/*.d -ofpird \
 		-L-lcdio -L-lcdio_cdda -L-lcdio_paranoia -Jusages \
-		-version=devel -w
+		-w \
+		-version=devel
 
 .PHONY: clean
 clean:

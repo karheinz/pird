@@ -17,21 +17,28 @@
 
 module readers.jobs;
 
+import std.conv;
+import std.file;
+import std.stdio;
 import std.stream;
 import std.string;
 
 import c.cdio.types;
 
 import media;
+import parsers;
 import readers.base;
+import utils;
 import writers.base;
 
 
 enum Labels
 {
   NONE,
-  BEGIN,
-  END
+  DISC_BEGIN,
+  DISC_END,
+  TRACK_BEGIN,
+  TRACK_END
 }
 
 struct Target
@@ -42,12 +49,6 @@ struct Target
   string file;
   // How to open file.
   FileMode mode;
-
-  // Returns true if stdout should be used as target.
-  bool stdout()
-  {
-    return ( file == "-" );
-  }
 
   Writer build()
   {
@@ -68,6 +69,7 @@ interface ReadFromDiscJob
   @property ref Target target();
   @property void target( Target target );
   string description();
+  ReadFromDiscJob[] trackwise( Disc disc, FilenameGenerator generator );
 }
 
 class ReadFromAudioDiscJob : ReadFromDiscJob
@@ -78,7 +80,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   lsn_t _fromSector, _toSector;
   Labels _fromLabel, _toLabel;
   SectorRange _sectorRange;
-  Target _target = Target( "writers.wav.WavFileWriter", "out.wav", FileMode.OutNew | FileMode.In );
+  Target _target = Target( "writers.wav.FileWriter", "out.wav", FileMode.OutNew | FileMode.In );
 
   this() {
     _wholeDisc = true;
@@ -88,20 +90,19 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     _track = track;
   }
 
-  this( int fromTrack, lsn_t fromSector, Labels toLabel )
+  this( Labels label, int track, lsn_t sector )
   {
-    assert( toLabel == Labels.END );
-    _fromTrack = fromTrack;
-    _fromSector = fromSector;
-    _toLabel = toLabel;
-  }
-
-  this( Labels fromLabel, int toTrack, lsn_t toSector )
-  {
-    assert( fromLabel == Labels.BEGIN );
-    _fromLabel = fromLabel;
-    _toTrack = toTrack;
-    _toSector = toSector;
+    if ( label == Labels.DISC_BEGIN || label == Labels.TRACK_BEGIN ) {
+      _fromLabel = label;
+      _toTrack = track;
+      _toSector = sector;
+    } else if ( label == Labels.DISC_END || label == Labels.TRACK_END ) {
+      _fromTrack = track;
+      _fromSector = sector;
+      _toLabel = label;
+    } else {
+      throw new Exception( format( "Label %s is not supported", to!string( label ) ) );
+    }
   }
 
   this( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector )
@@ -229,7 +230,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         }
 
         // Only label END makes sense here.
-        if ( _toLabel == Labels.END ) {
+        if ( _toLabel == Labels.DISC_END ) {
           // Find last audio track.
           foreach ( track; tracks.dup.reverse ) {
             if ( track.isAudio() ) {
@@ -241,6 +242,10 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
               }
             }
           }
+        }
+        if (  _toLabel == Labels.TRACK_END ) {
+          sr.to = tracks[ _fromTrack - 1 ].sectorRange().to;
+          return sr;
         }
 
         return failure;
@@ -269,7 +274,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         }
 
         // Only label BEGIN makes sense here.
-        if ( _fromLabel == Labels.BEGIN ) {
+        if ( _fromLabel == Labels.DISC_BEGIN ) {
           // Find last audio track.
           foreach ( track; tracks ) {
             if ( track.isAudio() ) {
@@ -281,6 +286,10 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
               }
             }
           }
+        }
+        if ( _fromLabel == Labels.TRACK_BEGIN ) {
+          sr.from = tracks[ _toTrack - 1 ].sectorRange().from; 
+          return sr;
         }
 
         return failure;
@@ -300,6 +309,80 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
 
   @property void target( Target target ) {
     _target = target; 
+  }
+
+  ReadFromDiscJob[] trackwise( Disc disc, FilenameGenerator generator )
+  {
+    if ( generator is null ) {
+      throw new Exception( "No filename generator passed" );
+    }
+
+    ReadFromDiscJob[] jobs;
+
+    // If target is stdout then splitting makes no sense!
+    if ( this.target.file == generator.generate( stdout ) ) { return [ this ]; }
+
+
+    // Check if multiple tracks are covered by job.
+    SectorRange sr = sectorRange( disc );
+    Track t1 = disc.track( sr.from );
+    Track t2 = disc.track( sr.to );
+
+    // One track.
+    if ( t1 == t2 ) {
+      this.target.file = generator.generate( sr.from, sr.to );
+      jobs ~= this;
+      return jobs;
+    }
+
+    // FIXME: Use original file extension!!!
+    // Multiple tracks.
+    ReadFromAudioDiscJob j;
+
+    // Add first job.
+    if ( sr.from == t1.firstSector() ) {
+      j = new ReadFromAudioDiscJob( t1.number() );
+      j.target = this.target;
+      j.target.file = generator.generate( t1.number() );
+    } else {
+      j = new ReadFromAudioDiscJob( sr.from, t1.lastSector() );
+      j.target = this.target;
+      j.target.file = generator.generate( 
+          Labels.TRACK_END,
+          t1.number(),
+          SectorRange( t1.firstSector(), sr.from ).length() - 1
+        );
+    }
+    jobs ~= j;
+
+    // Add jobs between first and last job.
+    foreach( Track t; disc.tracks()[ t1.number() .. t2.number() - 1 ] ) {
+      j = new ReadFromAudioDiscJob( t.number() );
+      j.target = this.target;
+      j.target.file = generator.generate( t.number() );
+
+      jobs ~= j;
+    }
+
+    // Add last job.
+    if ( t2.lastSector() == sr.to ) {
+      j = new ReadFromAudioDiscJob( t2.number() );
+      j.target = this.target;
+      j.target.file = generator.generate( t2.number );
+    } else {
+      j = new ReadFromAudioDiscJob( t2.firstSector(), sr.to );
+      j.target = this.target;
+      j.target.file = generator.generate( 
+          Labels.TRACK_BEGIN,
+          t2.number(),
+          SectorRange( t2.firstSector(), sr.to ).length() - 1
+        );
+
+    }
+    jobs ~= j;
+       
+
+    return jobs;
   }
 
   string description()

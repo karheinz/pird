@@ -149,10 +149,10 @@ class DefaultCommandFactory : CommandFactory
     if ( config.paranoia ) {
       // Paranoia makes only sense for devices.
       c.add( new DetectSourceCommand!( Device )( config.sourceFile ) );
-      c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config.jobs ) );
+      c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config ) );
     } else {
       c.add( new DetectSourceCommand!( Source )( config.sourceFile ) );
-      c.add( new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config.jobs ) );
+      c.add( new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config ) );
     }
 
     // Simulate?
@@ -439,16 +439,19 @@ class RipAudioDiscCommand( S, T ) : AbstractCommand
 {
 private:
   AudioDiscReader _reader;
+  Configuration _config;
 
 public:
-  this( ReadFromDiscJob[] jobs )
+  this( Configuration config )
   {
+    _config = config;
+
     // Create reader.
     _reader = new T();
     // Subscribe for signals emitted by reader.
     _reader.connect( &handleSignal );
     // Add jobs to reader.
-    foreach( job; jobs ) {
+    foreach( job; config.jobs ) {
       _reader.add( job );
     }
   }
@@ -480,12 +483,30 @@ public:
       return false;
     }
 
+
     // Make sure all jobs are satisfiable.
     ReadFromDiscJob[] jobs = _reader.unsatisfiableJobs();
     if ( jobs.length ) {
       logError( format( "Found %d unsatisfiable job(s):", jobs.length ) );
       foreach ( job; jobs ) { logError( job.description() ); }
       return false;
+    }
+
+    // Split jobs?
+    if ( _config.trackwise ) {
+      foreach( job; _reader.jobs() ) {
+        ReadFromDiscJob[] subJobs = job.trackwise( _reader.disc(), _config.parser.generator ); 
+        if ( subJobs.length > 1 ) {
+          logDebug( 
+              format(
+                  "Split job into %d jobs: %s",
+                  subJobs.length,
+                  job.description()
+                )
+            );
+          _reader.replace( job, subJobs );
+        }
+      }
     }
 
     // Process jobs.

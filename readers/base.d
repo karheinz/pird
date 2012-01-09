@@ -17,6 +17,8 @@
 
 module readers.base;
 
+import std.array;
+
 import introspection;
 import log;
 import media;
@@ -29,8 +31,10 @@ interface DiscReader : introspection.Interface
   void setSource( Source source );
   Disc disc();
   void add( ReadFromDiscJob job );
+  void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
   void clear();
   bool read();
+  ReadFromDiscJob[] jobs();
   ReadFromDiscJob[] unsatisfiableJobs();
   void connect( void delegate( string, LogLevel, string ) signalHandler );
   void disconnect( void delegate( string, LogLevel, string ) signalHandler );
@@ -60,9 +64,23 @@ public:
     _jobs ~= job;
   }
 
+  void replace( ReadFromDiscJob from, ReadFromDiscJob[] to )
+  {
+    foreach( i, job; _jobs ) {
+      if ( job is from ) {
+        _jobs.replaceInPlace( i, i + 1, to );
+        return;
+      }
+    }
+  }
+
   void clear()
   {
     _jobs.clear();
+  }
+
+  ReadFromDiscJob[] jobs() {
+    return _jobs;
   }
 
   ReadFromDiscJob[] unsatisfiableJobs() {

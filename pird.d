@@ -55,35 +55,4 @@ int main( string[] args )
   command.connect( &logger.handleSignal );
 
   return ( command.execute() ? 0 : 1 );
-
-  /+
-  Device.Capabilities c;
-  writefln( "%032b", c.read );
-
-  Source[] sources = Device.find().generalize() ~ Image.find().generalize();
-  // toLower() might by of interest.
-  writeln( Source.type().pluralize(), ":" );
-  sources.print();
-
-  writeln( Device.type().pluralize(), ":" );
-  Device.find().print();
-  writeln( Image.type().pluralize(), ":" );
-  Image.find().print();
-
-  writeln( Source.type().pluralize(), ":" );
-  Source.find().print();
-
-  foreach( source; convert!( Device[] )( Source.find() ) ) {
-    writeln( source.path() );
-    writeln( "Open ", source.path(), "? ", source.open() );
-    writeln( "Close? ", source.path(), "? ", source.close() );
-
-    Device device = cast( Device )source;
-    writeln( device.path(), " reads CD-DA? ", device.readsAudioDiscs() );
-  }
-
-  writeln( "/dev/cdrom exists as Source? ", Source.exists( "/dev/cdrom" ) );
-  writeln( "/dev/cdrom exists as Device? ", Device.exists( "/dev/cdrom" ) );
-  writeln( "/dev/cdrom exists as Image? ", Image.exists( "/dev/cdrom" ) );
-  +/
 }

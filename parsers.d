@@ -30,6 +30,7 @@ import c.cdio.types;
 
 import media;
 import readers.jobs;
+import utils;
 
 
 struct Configuration
@@ -37,8 +38,19 @@ struct Configuration
   Parser.Info parser;
   string sourceFile, sourceDirectory;
   ReadFromDiscJob[] jobs;
-  bool help, quiet, list, simulate, paranoia;
+  bool help, quiet, list, simulate, paranoia, stdout, trackwise;
   int verbose;
+}
+unittest
+{
+  Configuration config;
+  config.parser = Parser.Info();
+  config.parser.generator = new DefaultFilenameGenerator();
+
+  Configuration copy = config;
+  assert( copy.parser.generator !is null );
+  config.parser.generator = null;
+  assert( copy.parser.generator is null );
 }
 
 
@@ -47,6 +59,7 @@ interface Parser
   struct Info
   {
     string name, usage, error;
+    FilenameGenerator generator;
   }
   
   static immutable string command = "pird";
@@ -55,18 +68,87 @@ interface Parser
   string usage( string command = Parser.command );
 }
 
+interface FilenameGenerator
+{
+  final static string generate( File file )
+  {
+    if ( file is stdout ) { return "stdout"; }
+    if ( file is stderr ) { return "stderr"; }
+
+    throw new Exception( "Only stdout and stderr are allowed" );
+  }
+  string generate();
+  string generate( int track );
+  string generate( Labels label, int track, lsn_t sector );
+  string generate( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector );
+  string generate( lsn_t fromSector, lsn_t toSector );
+}
+
 final class DefaultCommandLineParser : Parser
 {
-protected:
+public:
+  this()
+  {
+    _generator = new DefaultFilenameGenerator();
+  }
+
+  this( FilenameGenerator generator )
+  {
+    _generator = generator;
+  }
+
+  FilenameGenerator filenameGenerator()
+  {
+    return _generator;
+  }
+
+  void setFilenameGenerator( FilenameGenerator generator )
+  {
+    _generator = generator;
+  }
+
+  bool parse( string[] args, out Configuration config )
+  {
+    // Build info about parser.
+    Parser.Info info;
+    info.name = typeof( this ).stringof;
+    info.usage = usage( args[ 0 ] );
+    info.generator = _generator;
+
+    // Add to parser info to config.
+    config.parser = info;
+
+    // For parse errors.
+    string error;
+
+    // Parse command line till first syntax matches.
+    for( Syntax syntax = Syntax.min; syntax <= Syntax.max; syntax++ ) {
+      if ( parse( syntax, args, config, error ) ) {
+        return true;
+      }
+
+      // Failure! Struct config got cleared, so add info again.
+      config.parser = info;
+    }
+
+    // No syntax matched!
+    config.parser.error = error ~ "!";
+    return false;
+  }
+
+  string usage( string command )
+  {
+    // Replace command place holders and last linebreak.
+    return replace( _usage, "%s", command )[ 0 .. ( $ - 1 ) ];
+  }
+
+private:
   static string _usage = import( this.stringof ~ "Usage.txt" );
   enum Syntax { HELP, LIST, RIP };
+  FilenameGenerator _generator;
 
   class JobParser
   {
-  private:
-    this() {};
-
-  public:
     enum Tokens : string
     {
       CONNECTOR_INCL = r"[.]{2}",
@@ -112,22 +194,32 @@ protected:
     }
 
 
-    static ReadFromDiscJob[] parse( string j )
+    static ReadFromDiscJob[] parse( string input, Configuration config )
     {
       ReadFromDiscJob job;
       ReadFromDiscJob[] jobs;
 
       // Read full disc?
-      if ( j.empty() ) {
+      if ( input.empty() ) {
         job = new ReadFromAudioDiscJob();
-        job.target.file = "disc.wav";
+
+        // Stdout is target?
+        if ( config.stdout ) {
+          job.target.file = config.parser.generator.generate( stdout );
+          job.target.writerClass = "writers.wav.StdoutWriter";
+        // Write to file.
+        } else {
+          job.target.file = config.parser.generator.generate();
+          job.target.writerClass = "writers.wav.FileWriter";
+        }
+
         jobs ~= job;
         return jobs;
       }
 
       
       // Extract job descriptions.
-      string[] descs = split( j, to!string( Tokens.SEPARATOR ) );
+      string[] descs = split( input, to!string( Tokens.SEPARATOR ) );
       foreach ( desc; descs ) {
         auto c = match( desc, "^((" ~ Patterns.RANGE ~ ")|(" ~ Patterns.TRACK ~ "))$" ).captures();
 
@@ -141,9 +233,15 @@ protected:
             int t = std.conv.parse!int( st );
 
             job = new ReadFromAudioDiscJob( t );
-            //job.target.file = format( "track_%02d.wav", t );
-            job.target.writerClass = "writers.wav.WavStdoutWriter";
-            job.target.file = "-";
+            // Stdout is target?
+            if ( config.stdout ) {
+              job.target.file = config.parser.generator.generate( stdout );
+              job.target.writerClass = "writers.wav.StdoutWriter";
+            // Write to file.
+            } else {
+              job.target.file = config.parser.generator.generate( t );
+              job.target.writerClass = "writers.wav.FileWriter";
+            }
             jobs ~= job;
             continue;
           }
@@ -185,8 +283,16 @@ protected:
               }
             }
 
-            job = new ReadFromAudioDiscJob( Labels.BEGIN, t, o );
-            job.target.file = format( "range_%s.wav", desc );
+            job = new ReadFromAudioDiscJob( Labels.DISC_BEGIN, t, o );
+            // Stdout is target?
+            if ( config.stdout ) {
+              job.target.file = config.parser.generator.generate( stdout );
+              job.target.writerClass = "writers.wav.StdoutWriter";
+            // Write to file.
+            } else {
+              job.target.file = config.parser.generator.generate( Labels.DISC_BEGIN, t, o );
+              job.target.writerClass = "writers.wav.FileWriter";
+            }
             jobs ~= job;
             continue;
           }
@@ -212,8 +318,16 @@ protected:
               o = msf_to_sectors( msf_t( m, s, f ) );
             }
 
-            job = new ReadFromAudioDiscJob( t, o, Labels.END );
-            job.target.file = format( "range_%s.wav", desc );
+            job = new ReadFromAudioDiscJob( Labels.DISC_END, t, o );
+            // Stdout is target?
+            if ( config.stdout ) {
+              job.target.file = config.parser.generator.generate( stdout );
+              job.target.writerClass = "writers.wav.StdoutWriter";
+            // Write to file.
+            } else {
+              job.target.file = config.parser.generator.generate( Labels.DISC_END, t, o );
+              job.target.writerClass = "writers.wav.FileWriter";
+            }
             jobs ~= job;
             continue;
           }
@@ -274,18 +388,27 @@ protected:
               }
             }
             job = new ReadFromAudioDiscJob( t1, o1, t2, o2 );
-            job.target.file = format( "range_%s.wav", desc );
+            // Stdout is target?
+            if ( config.stdout ) {
+              job.target.file = config.parser.generator.generate( stdout );
+              job.target.writerClass = "writers.wav.StdoutWriter";
+            // Write to file.
+            } else {
+              job.target.file = config.parser.generator.generate( t1, o1, t2, o2 );
+              job.target.writerClass = "writers.wav.FileWriter";
+            }
             jobs ~= job;
             continue;
           } 
         }
       }
 
+      // Return jobs.
       return jobs;
     }
   }
 
-  bool parse( Syntax syntax, string[] args, out Configuration config, out string error ) {
+  bool parse( Syntax syntax, string[] args, ref Configuration config, out string error ) {
     try {
       // Apply syntax to command line.
       final switch( syntax )
@@ -309,7 +432,10 @@ protected:
 
           }
 
-          if ( !config.help || args.length > 1 ) {
+          // Drop command.
+          args.popFront();
+
+          if ( !config.help || args.length ) {
             throw new Exception( "Syntax error" );
           }
 
@@ -333,52 +459,68 @@ protected:
             );
           }
 
-          if ( !config.list || args.length > 2 ) {
+          // Drop command.
+          args.popFront();
+
+          if ( !config.list || args.length > 1 ) {
             throw new Exception( "Syntax error" );
           }
 
           // Store directory/source to list if passed.
-          if ( args.length == 2 ) {
+          if ( args.length == 1 ) {
             // Source does not exist.
-            if ( ! exists( args[ 1 ] ) ) {
-              config.sourceFile = args[ 1 ]; 
+            if ( ! exists( args[ 0 ] ) ) {
+              config.sourceFile = args[ 0 ]; 
             // Source exists.
             } else {
-              if ( isDir( args[ 1 ] ) ) {
-                config.sourceDirectory = args[ 1 ];
+              if ( isDir( args[ 0 ] ) ) {
+                config.sourceDirectory = args[ 0 ];
               } else {
-                config.sourceFile = args[ 1 ];
+                config.sourceFile = args[ 0 ];
               }
             }
           }
 
           // Parsing was successful.
           return true;
-        // TODO: Build ReadFromDiscJobs!
         case Syntax.RIP:
           getopt(
             args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
+            std.getopt.config.passThrough,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
             "simulate|s", &config.simulate,
-            "paranoia|p", &config.paranoia
+            "paranoia|p", &config.paranoia,
+            "trackwise|t", &config.trackwise
           );
 
+          // Drop command.
+          args.popFront();
 
-          // Source is second arg left.
+          // Check for target stdout.
+          if ( args.length && args.back() == "-" ) {
+            args.popBack();
+            config.stdout = true;
+          }
+
+          // Unset trackwise if target is stdout!
+          if ( config.stdout ) { config.trackwise = false; }
+
+
+          // Parse job descriptions and source.
           switch ( args.length )
           {
-            case 1:
+            case 0:
               throw new Exception( "Missing source" );
+            case 1:
+              config.sourceFile = args[ 0 ];
+              config.jobs = JobParser.parse( "", config );
+              break;
             case 2:
               config.sourceFile = args[ 1 ];
-              config.jobs = JobParser.parse( "" );
-              break;
-            case 3:
-              config.sourceFile = args[ 2 ];
-              config.jobs = JobParser.parse( args[ 1 ] );
+              config.jobs = JobParser.parse( args[ 0 ], config );
               break;
             default:
               throw new Exception( "Syntax error" );
@@ -398,36 +540,55 @@ protected:
       return false;
     }       
   }
-    
+}
 
-public:
-  bool parse( string[] args, out Configuration config )
+class DefaultFilenameGenerator : FilenameGenerator
+{
+ 
+  // FIXME: Return right file extension.
+  string generate()
   {
-    // Build info about parser.
-    Parser.Info info;
-    info.name = this.stringof;
-    info.usage = usage( args[ 0 ] );
-
-    // For parse errors.
-    string error;
-
-    // Parse command line till first syntax matches.
-    for( Syntax syntax = Syntax.min; syntax <= Syntax.max; syntax++ ) {
-      if ( parse( syntax, args, config, error ) ) {
-        config.parser = info;
-        return true;
-      }
-    }
-
-    // No syntax matched!
-    info.error = error ~ "!";
-    config.parser = info;
-    return false;
+    return "disc.wav";
   }
 
-  string usage( string command )
+  string generate( int track )
   {
-    // Replace command place holders and last linebreak.
-    return replace( _usage, "%s", command )[ 0 .. ( $ - 1 ) ];
+    return format( "track_%02d.wav", track );
+  }
+
+  string generate( Labels label, int track, lsn_t sector )
+  {
+    switch ( label ) {
+      case Labels.DISC_BEGIN:
+        return format( "range_..%02d%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
+      case Labels.DISC_END:
+        return format( "range_%02d%s...wav", track, msfToString( sectors_to_msf( sector ) ) );
+      case Labels.TRACK_BEGIN:
+        return format( "track_..%02d%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
+      case Labels.TRACK_END:
+        return format( "track_%02d%s...wav", track, msfToString( sectors_to_msf( sector ) ) );
+      default:
+        throw new Exception( format( "Unsupported label %s", to!string( label ) ) );
+    }
+  }
+
+  string generate( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector )
+  {
+    return format(
+        "range_%02d%s..%02d%s.wav",
+        fromTrack,
+        msfToString( sectors_to_msf( fromSector ) ),
+        toTrack,
+        msfToString( sectors_to_msf( toSector ) )
+      );
+  }
+
+  string generate( lsn_t fromSector, lsn_t toSector )
+  {
+    return format(
+        "range_%s..%s.wav",
+        msfToString( sectors_to_msf( fromSector ) ),
+        msfToString( sectors_to_msf( toSector ) )
+      );
   }
 }

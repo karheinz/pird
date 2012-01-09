@@ -1,10 +1,10 @@
-usage: %s [options] [jobs] path
-       %s -l [path]
-       %s -h
+usage:
+%s [options] [jobs] path [-]
+%s -l [path]
+%s -h
 
 options:
--h print help
--l list source(s)
 -q be quiet
 -s simulate
+-t trackwise
 -v be verbose (specifiy as often as required)
