@@ -26,7 +26,7 @@ import std.stream;
 import std.string;
 
 static import introspection;
-import writers.base;
+static import writers.base;
 
 
 /*
@@ -75,7 +75,7 @@ struct WavHeader
   }
 }
 
-class WavFileWriter : FileWriter
+class FileWriter : writers.base.FileWriter
 {
   override void close()
   {
@@ -117,7 +117,7 @@ class WavFileWriter : FileWriter
   mixin introspection.Override;
 }
 
-class WavStdoutWriter : StdoutWriter
+class StdoutWriter : writers.base.StdoutWriter
 {
 protected:
   bool _headerWritten;
