@@ -19,9 +19,12 @@ module utils;
 
 import std.conv;
 import std.math;
+import std.string;
 import std.traits;
 
 import std.c.string;
+
+import c.cdio.types;
 
 
 /*
@@ -65,4 +68,10 @@ unittest {
 
 string pluralize( string s, long count = 0 ) {
   return ( abs( count ) == 1 ) ? s : s ~ "s";
+}
+
+string msfToString( msf_t v )
+{
+  return format( "[%02d:%02d.%02d]", v.m, v.s, v.f );
+
 }
