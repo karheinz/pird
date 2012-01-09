@@ -560,11 +560,11 @@ class DefaultFilenameGenerator : FilenameGenerator
   {
     switch ( label ) {
       case Labels.DISC_BEGIN:
-        return format( "range_..%02d%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
+        return format( "range_01[00:00.00]..%02d%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
       case Labels.DISC_END:
         return format( "range_%02d%s...wav", track, msfToString( sectors_to_msf( sector ) ) );
       case Labels.TRACK_BEGIN:
-        return format( "track_..%02d%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
+        return format( "track_%02d[00:00.00]..%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
       case Labels.TRACK_END:
         return format( "track_%02d%s...wav", track, msfToString( sectors_to_msf( sector ) ) );
       default:
