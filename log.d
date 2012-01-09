@@ -96,7 +96,8 @@ private:
     cdio_log_set_handler( &logCdIoMessage );
     _logLevel = defaultLogLevel;
   }
-  static cdio_log_level_t defaultLogLevel = cdio_log_level_t.CDIO_LOG_WARN;
+  // Emit all libcdio messages by default.
+  static cdio_log_level_t defaultLogLevel = cdio_log_level_t.CDIO_LOG_DEBUG;
   static CdIoLogGateway _instance;
 
   cdio_log_level_t _logLevel;
@@ -176,14 +177,19 @@ protected:
   };
 
 public:
-  void handleSignal( string emitter, LogLevel logLevel, string message ) 
+  void handleSignal( string emitter, LogLevel logLevel, string message )
   {
-    if ( logLevel <= _logLevel ) {
-      version( devel ) {
-        _file.writefln( "%s %s: %s", logLevel, emitter, message );
-      } else {
-        _file.writefln( "%s: %s", logLevel, message );
-      }
+    // Filter messages by CdIo library, which is very verbose by default.
+    if ( emitter == "CdIoLib" && ( logLevel + 1 ) > _logLevel ) { return; }
+      
+    // Filter other messages by log level.
+    if ( logLevel > _logLevel ) { return; } 
+
+    // Write log message.
+    version( devel ) {
+      _file.writefln( "%s %s: %s", logLevel, emitter, message );
+    } else {
+      _file.writefln( "%s: %s", logLevel, message );
     }
   }
 
