@@ -77,7 +77,7 @@ private:
       if ( handle is null ) { continue; }
 
       // Source was opened successfully.
-      normalizedPath = buildNormalizedPath( absolutePath( path ) );
+      normalizedPath = buildNormalizedPath( getcwd(), baseName( path ) );
       if ( cdio_is_device( cast( char* )toStringz( baseName( path ) ), driver ) ) {
         d = new Device( normalizedPath, driver );
         // We are only interested in optical devices!
@@ -125,7 +125,7 @@ private:
       // Evaluate result.
       if ( *dl != null ) {
         for ( char** p = dl; *p != null; p++ ) {
-          path = buildNormalizedPath( dir, to!string( *p ) );
+          path = buildNormalizedPath( getcwd(), to!string( *p ) );
 
           // Only add to array if source wasn't added before.
           if ( path !in sourcesByPath ) {
