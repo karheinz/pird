@@ -170,7 +170,7 @@ private:
     }
 
 
-    static ReadFromDiscJob[] parse( string input, Configuration config )
+    static ReadFromDiscJob[] parse( string input = "" )
     {
       // Read full disc?
       if ( input.empty() ) {
@@ -450,11 +450,11 @@ private:
               throw new Exception( "Missing source" );
             case 1:
               config.sourceFile = args[ 0 ];
-              config.jobs = JobParser.parse( "", config );
+              config.jobs = JobParser.parse();
               break;
             case 2:
               config.sourceFile = args[ 1 ];
-              config.jobs = JobParser.parse( args[ 0 ], config );
+              config.jobs = JobParser.parse( args[ 0 ] );
               break;
             default:
               throw new Exception( "Syntax error" );
