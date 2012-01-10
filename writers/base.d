@@ -27,7 +27,9 @@ static import introspection;
 interface Writer
 {
   void setPath( string path );
+  string path();
   void setMode( FileMode mode );
+  FileMode mode();
   // Expected number of bytes to write (excluding header).
   void setExpectedSize( ulong bytes );
   /*
@@ -61,9 +63,19 @@ public:
     _path = path;
   }
 
+  string path()
+  {
+    return _path;
+  }
+
   void setMode( FileMode mode )
   {
     _mode = mode;
+  }
+
+  FileMode mode()
+  {
+    return _mode;
   }
 
   void setExpectedSize( ulong bytes )
@@ -130,9 +142,19 @@ public:
     _path = path;
   }
 
+  string path()
+  {
+    return _path;
+  }
+
   void setMode( FileMode mode )
   {
     _mode = mode;
+  }
+
+  FileMode mode()
+  {
+    return _mode;
   }
 
   void setExpectedSize( ulong bytes )

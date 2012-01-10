@@ -45,19 +45,20 @@ struct Target
 {
   // Type of writer to use. 
   string writerClass;
-  // Where to write data to.
-  string file;
+  // Used to generate a filename.
+  FilenameGenerator filenameGenerator;
   // How to open file.
-  FileMode mode;
+  FileMode fileMode = FileMode.In | FileMode.OutNew;
 
-  Writer build()
+  // Build and configure writer for job and disc.
+  Writer build( ReadFromDiscJob job, Disc disc )
   {
     Writer w = cast( Writer )Object.factory( writerClass );
     // Check that writer object was created.
     if ( w is null ) { return null; };
 
-    w.setPath( file );
-    w.setMode( mode );
+    w.setPath( filenameGenerator.generate( job, disc ) );
+    w.setMode( fileMode );
     return w;
   }
 }
@@ -66,10 +67,8 @@ interface ReadFromDiscJob
 {
   SectorRange sectorRange( Disc disc );
   bool fits( Disc disc );
-  @property ref Target target();
-  @property void target( Target target );
-  string description();
-  ReadFromDiscJob[] trackwise( Disc disc, FilenameGenerator generator );
+  string description( Disc disc = null );
+  ReadFromDiscJob[] split( Disc disc );
 }
 
 class ReadFromAudioDiscJob : ReadFromDiscJob
@@ -80,7 +79,6 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   lsn_t _fromSector, _toSector;
   Labels _fromLabel, _toLabel;
   SectorRange _sectorRange;
-  Target _target = Target( "writers.wav.FileWriter", "out.wav", FileMode.OutNew | FileMode.In );
 
   this() {
     _wholeDisc = true;
@@ -232,7 +230,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         // Only label END makes sense here.
         if ( _toLabel == Labels.DISC_END ) {
           // Find last audio track.
-          foreach ( track; tracks.dup.reverse ) {
+          foreach_reverse ( track; tracks ) {
             if ( track.isAudio() ) {
               sr.to = track.sectorRange().to;
               if ( sr.valid() ) {
@@ -302,90 +300,51 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     return failure;
   }
 
-  @property ref Target target()
+  ReadFromDiscJob[] split( Disc disc )
   {
-    return _target;
-  }
-
-  @property void target( Target target ) {
-    _target = target; 
-  }
-
-  ReadFromDiscJob[] trackwise( Disc disc, FilenameGenerator generator )
-  {
-    if ( generator is null ) {
-      throw new Exception( "No filename generator passed" );
+    // Return self if disc doesn't fit job.
+    if ( ! this.fits( disc ) ) {
+      return [ this ];
     }
-
-    ReadFromDiscJob[] jobs;
-
-    // If target is stdout then splitting makes no sense!
-    if ( this.target.file == generator.generate( stdout ) ) { return [ this ]; }
 
 
     // Check if multiple tracks are covered by job.
     SectorRange sr = sectorRange( disc );
+
     Track t1 = disc.track( sr.from );
     Track t2 = disc.track( sr.to );
 
     // One track.
     if ( t1 == t2 ) {
-      this.target.file = generator.generate( sr.from, sr.to );
-      jobs ~= this;
-      return jobs;
+      return [ this ];
     }
 
-    // FIXME: Use original file extension!!!
     // Multiple tracks.
-    ReadFromAudioDiscJob j;
+    ReadFromDiscJob[] jobs;
 
     // Add first job.
     if ( sr.from == t1.firstSector() ) {
-      j = new ReadFromAudioDiscJob( t1.number() );
-      j.target = this.target;
-      j.target.file = generator.generate( t1.number() );
+      jobs ~= new ReadFromAudioDiscJob( t1.number() );
     } else {
-      j = new ReadFromAudioDiscJob( sr.from, t1.lastSector() );
-      j.target = this.target;
-      j.target.file = generator.generate( 
-          Labels.TRACK_END,
-          t1.number(),
-          SectorRange( t1.firstSector(), sr.from ).length() - 1
-        );
+      jobs ~= new ReadFromAudioDiscJob( sr.from, t1.lastSector() );
     }
-    jobs ~= j;
 
     // Add jobs between first and last job.
     foreach( Track t; disc.tracks()[ t1.number() .. t2.number() - 1 ] ) {
-      j = new ReadFromAudioDiscJob( t.number() );
-      j.target = this.target;
-      j.target.file = generator.generate( t.number() );
-
-      jobs ~= j;
+      jobs ~= new ReadFromAudioDiscJob( t.number() );
     }
 
     // Add last job.
     if ( t2.lastSector() == sr.to ) {
-      j = new ReadFromAudioDiscJob( t2.number() );
-      j.target = this.target;
-      j.target.file = generator.generate( t2.number );
+      jobs ~= new ReadFromAudioDiscJob( t2.number() );
     } else {
-      j = new ReadFromAudioDiscJob( t2.firstSector(), sr.to );
-      j.target = this.target;
-      j.target.file = generator.generate( 
-          Labels.TRACK_BEGIN,
-          t2.number(),
-          SectorRange( t2.firstSector(), sr.to ).length() - 1
-        );
-
+      jobs ~= new ReadFromAudioDiscJob( t2.firstSector(), sr.to );
     }
-    jobs ~= j;
-       
 
     return jobs;
   }
 
-  string description()
+  string description( Disc disc = null )
   {
     if ( _wholeDisc ) {
       return "Read the whole disc.";

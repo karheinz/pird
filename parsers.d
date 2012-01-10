@@ -37,20 +37,10 @@ struct Configuration
 {
   Parser.Info parser;
   string sourceFile, sourceDirectory;
+  Target target;
   ReadFromDiscJob[] jobs;
   bool help, quiet, list, simulate, paranoia, stdout, trackwise;
   int verbose;
-}
-unittest
-{
-  Configuration config;
-  config.parser = Parser.Info();
-  config.parser.generator = new DefaultFilenameGenerator();
-
-  Configuration copy = config;
-  assert( copy.parser.generator !is null );
-  config.parser.generator = null;
-  assert( copy.parser.generator is null );
 }
 
 
@@ -59,7 +49,6 @@ interface Parser
   struct Info
   {
     string name, usage, error;
-    FilenameGenerator generator;
   }
   
   static immutable string command = "pird";
@@ -70,18 +59,7 @@ interface Parser
 
 interface FilenameGenerator
 {
-  final static string generate( File file )
-  {
-    if ( file is stdout ) { return "stdout"; }
-    if ( file is stderr ) { return "stderr"; }
-
-    throw new Exception( "Only stdout and stderr are allowed" );
-  }
-  string generate();
-  string generate( int track );
-  string generate( Labels label, int track, lsn_t sector );
-  string generate( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector );
-  string generate( lsn_t fromSector, lsn_t toSector );
+  string generate( ReadFromDiscJob job, Disc disc );
 }
 
 final class DefaultCommandLineParser : Parser
@@ -113,10 +91,6 @@ public:
     Parser.Info info;
     info.name = typeof( this ).stringof;
     info.usage = usage( args[ 0 ] );
-    info.generator = _generator;
-
-    // Add to parser info to config.
-    config.parser = info;
 
     // For parse errors.
     string error;
@@ -124,12 +98,14 @@ public:
     // Parse command line till first syntax matches.
     for( Syntax syntax = Syntax.min; syntax <= Syntax.max; syntax++ ) {
       if ( parse( syntax, args, config, error ) ) {
+        // Add parser info to config.
+        config.parser = info;
         return true;
       }
-
-      // Failure! Struct config got cleared, so add info again.
-      config.parser = info;
     }
+
+    // Add parser info to config.
+    config.parser = info;
 
     // No syntax matched!
     config.parser.error = error ~ "!";
@@ -196,29 +172,15 @@ private:
 
     static ReadFromDiscJob[] parse( string input, Configuration config )
     {
-      ReadFromDiscJob job;
-      ReadFromDiscJob[] jobs;
-
       // Read full disc?
       if ( input.empty() ) {
-        job = new ReadFromAudioDiscJob();
-
-        // Stdout is target?
-        if ( config.stdout ) {
-          job.target.file = config.parser.generator.generate( stdout );
-          job.target.writerClass = "writers.wav.StdoutWriter";
-        // Write to file.
-        } else {
-          job.target.file = config.parser.generator.generate();
-          job.target.writerClass = "writers.wav.FileWriter";
-        }
-
-        jobs ~= job;
-        return jobs;
+        return [ new ReadFromAudioDiscJob() ];
       }
-
       
+
       // Extract job descriptions.
+      ReadFromDiscJob[] jobs;
+
       string[] descs = split( input, to!string( Tokens.SEPARATOR ) );
       foreach ( desc; descs ) {
         auto c = match( desc, "^((" ~ Patterns.RANGE ~ ")|(" ~ Patterns.TRACK ~ "))$" ).captures();
@@ -232,17 +194,7 @@ private:
             string st = to!string( c[ "t" ] );
             int t = std.conv.parse!int( st );
 
-            job = new ReadFromAudioDiscJob( t );
-            // Stdout is target?
-            if ( config.stdout ) {
-              job.target.file = config.parser.generator.generate( stdout );
-              job.target.writerClass = "writers.wav.StdoutWriter";
-            // Write to file.
-            } else {
-              job.target.file = config.parser.generator.generate( t );
-              job.target.writerClass = "writers.wav.FileWriter";
-            }
-            jobs ~= job;
+            jobs ~= new ReadFromAudioDiscJob( t );
             continue;
           }
           // From BEGIN to label?
@@ -283,17 +235,7 @@ private:
               }
             }
 
-            job = new ReadFromAudioDiscJob( Labels.DISC_BEGIN, t, o );
-            // Stdout is target?
-            if ( config.stdout ) {
-              job.target.file = config.parser.generator.generate( stdout );
-              job.target.writerClass = "writers.wav.StdoutWriter";
-            // Write to file.
-            } else {
-              job.target.file = config.parser.generator.generate( Labels.DISC_BEGIN, t, o );
-              job.target.writerClass = "writers.wav.FileWriter";
-            }
-            jobs ~= job;
+            jobs ~= new ReadFromAudioDiscJob( Labels.DISC_BEGIN, t, o );
             continue;
           }
           // From label to END?
@@ -318,17 +260,7 @@ private:
               o = msf_to_sectors( msf_t( m, s, f ) );
             }
 
-            job = new ReadFromAudioDiscJob( Labels.DISC_END, t, o );
-            // Stdout is target?
-            if ( config.stdout ) {
-              job.target.file = config.parser.generator.generate( stdout );
-              job.target.writerClass = "writers.wav.StdoutWriter";
-            // Write to file.
-            } else {
-              job.target.file = config.parser.generator.generate( Labels.DISC_END, t, o );
-              job.target.writerClass = "writers.wav.FileWriter";
-            }
-            jobs ~= job;
+            jobs ~= new ReadFromAudioDiscJob( Labels.DISC_END, t, o );
             continue;
           }
           // From label to label?
@@ -387,17 +319,7 @@ private:
                 o2--;
               }
             }
-            job = new ReadFromAudioDiscJob( t1, o1, t2, o2 );
-            // Stdout is target?
-            if ( config.stdout ) {
-              job.target.file = config.parser.generator.generate( stdout );
-              job.target.writerClass = "writers.wav.StdoutWriter";
-            // Write to file.
-            } else {
-              job.target.file = config.parser.generator.generate( t1, o1, t2, o2 );
-              job.target.writerClass = "writers.wav.FileWriter";
-            }
-            jobs ~= job;
+            jobs ~= new ReadFromAudioDiscJob( t1, o1, t2, o2 );
             continue;
           } 
         }
@@ -408,7 +330,7 @@ private:
     }
   }
 
-  bool parse( Syntax syntax, string[] args, ref Configuration config, out string error ) {
+  bool parse( Syntax syntax, string[] args, out Configuration config, out string error ) {
     try {
       // Apply syntax to command line.
       final switch( syntax )
@@ -509,6 +431,18 @@ private:
           if ( config.stdout ) { config.trackwise = false; }
 
 
+          // Build target.
+          config.target = Target();
+          config.target.filenameGenerator = _generator;
+          // Stdout is target?
+          if ( config.stdout ) {
+            config.target.writerClass = "writers.wav.StdoutWriter";
+          // Or file?
+          } else {
+            config.target.writerClass = "writers.wav.FileWriter";
+          }
+
+
           // Parse job descriptions and source.
           switch ( args.length )
           {
@@ -544,51 +478,8 @@ private:
 
 class DefaultFilenameGenerator : FilenameGenerator
 {
- 
-  // FIXME: Return right file extension.
-  string generate()
+  string generate( ReadFromDiscJob job, Disc disc )
   {
-    return "disc.wav";
-  }
-
-  string generate( int track )
-  {
-    return format( "track_%02d.wav", track );
-  }
-
-  string generate( Labels label, int track, lsn_t sector )
-  {
-    switch ( label ) {
-      case Labels.DISC_BEGIN:
-        return format( "range_01[00:00.00]..%02d%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
-      case Labels.DISC_END:
-        return format( "range_%02d%s...wav", track, msfToString( sectors_to_msf( sector ) ) );
-      case Labels.TRACK_BEGIN:
-        return format( "track_%02d[00:00.00]..%s.wav", track, msfToString( sectors_to_msf( sector ) ) );
-      case Labels.TRACK_END:
-        return format( "track_%02d%s...wav", track, msfToString( sectors_to_msf( sector ) ) );
-      default:
-        throw new Exception( format( "Unsupported label %s", to!string( label ) ) );
-    }
-  }
-
-  string generate( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector )
-  {
-    return format(
-        "range_%02d%s..%02d%s.wav",
-        fromTrack,
-        msfToString( sectors_to_msf( fromSector ) ),
-        toTrack,
-        msfToString( sectors_to_msf( toSector ) )
-      );
-  }
-
-  string generate( lsn_t fromSector, lsn_t toSector )
-  {
-    return format(
-        "range_%s..%s.wav",
-        msfToString( sectors_to_msf( fromSector ) ),
-        msfToString( sectors_to_msf( toSector ) )
-      );
+    return "out.wav";  
   }
 }

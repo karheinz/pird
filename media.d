@@ -148,8 +148,8 @@ public:
   this( ubyte number, msf_t begin, msf_t end, bool audio )
   {
     _number = number;
-    lsn_t firstSector = cdio_msf_to_lsn( &begin );
-    lsn_t lastSector = cdio_msf_to_lsn( &end );
+    lsn_t firstSector = msf_to_sectors( begin );
+    lsn_t lastSector = msf_to_sectors( end );
     _sectorRange = SectorRange( firstSector, lastSector );
     _audio = audio;
   }

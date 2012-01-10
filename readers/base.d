@@ -34,6 +34,7 @@ interface DiscReader : introspection.Interface
   void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
   void clear();
   bool read();
+  void setTarget( Target target );
   ReadFromDiscJob[] jobs();
   ReadFromDiscJob[] unsatisfiableJobs();
   void connect( void delegate( string, LogLevel, string ) signalHandler );
@@ -50,6 +51,7 @@ abstract class AbstractAudioDiscReader : AudioDiscReader
 protected:
   Source _source;
   Disc _disc;
+  Target _target;
   ReadFromDiscJob[] _jobs;
 
 public:
@@ -57,6 +59,11 @@ public:
   {
     _source = source;
     _disc = null;
+  }
+
+  void setTarget( Target target )
+  {
+    _target = target;
   }
 
   void add( ReadFromDiscJob job )

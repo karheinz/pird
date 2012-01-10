@@ -125,6 +125,7 @@ public:
 
   bool read()
   {
+    // Something to do?
     if ( _jobs.length == 0 ) {
       logInfo( "Nothing to do." );
       return true;
@@ -143,13 +144,12 @@ public:
       }
 
       // Check if writer is available.
-      logTrace( "Writer class is " ~ job.target().writerClass );
-      Writer writer = job.target().build();
+      logTrace( "Writer class is " ~ _target.writerClass );
+      Writer writer = _target.build( job, disc() );
 
       if ( writer is null ) {
-        logWarning( "No writer specified for job: " ~ job.description() );
-        logWarning( "Skip job: " ~ job.description() );
-        continue;
+        logWarning( "Failed to create writer instance!" );
+        return false;
       }
 
       // Heyho, lets go!
@@ -158,7 +158,7 @@ public:
       // Init some vars.
       driver_return_code_t rc;
       ubyte[ CDIO_CD_FRAMESIZE_RAW ] buffer;
-      SectorRange sr = job.sectorRange( disc );
+      SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
       writer.setExpectedSize( sr.length * CDIO_CD_FRAMESIZE_RAW );
@@ -175,7 +175,7 @@ public:
             sr.from
           )
         );
-      logInfo( "Data is written to " ~ job.target().file ~ "." );
+      logInfo( "Data is written to " ~ writer.path() ~ "." );
 
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
         rc = cdio_read_audio_sector( _source.handle(), buffer.ptr, sector );        

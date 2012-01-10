@@ -473,6 +473,7 @@ public:
 
     // Configure reader.
     _reader.setSource( source );
+    _reader.setTarget( _config.target );
 
     // Look for audio disc (using reader of type T).
     logDebug( format( "Looking for audio disc in %s.", source.path() ) );
@@ -482,7 +483,6 @@ public:
       writeln( "No audio disc found!" );
       return false;
     }
-
 
     // Make sure all jobs are satisfiable.
     ReadFromDiscJob[] jobs = _reader.unsatisfiableJobs();
@@ -495,7 +495,7 @@ public:
     // Split jobs?
     if ( _config.trackwise ) {
       foreach( job; _reader.jobs() ) {
-        ReadFromDiscJob[] subJobs = job.trackwise( _reader.disc(), _config.parser.generator ); 
+        ReadFromDiscJob[] subJobs = job.split( _reader.disc() );
         if ( subJobs.length > 1 ) {
           logDebug( 
               format(
