@@ -31,13 +31,14 @@ import c.cdio.types;
 import media;
 import readers.jobs;
 import utils;
+import writers.base;
 
 
-struct Configuration
+struct Config
 {
   Parser.Info parser;
   string sourceFile, sourceDirectory;
-  Target target;
+  Writer.Config writer;
   ReadFromDiscJob[] jobs;
   bool help, quiet, list, simulate, paranoia, stdout, trackwise;
   int verbose;
@@ -53,7 +54,7 @@ interface Parser
   
   static immutable string command = "pird";
 
-  bool parse( string[] args, out Configuration config );
+  bool parse( string[] args, out Config config );
   string usage( string command = Parser.command );
 }
 
@@ -85,7 +86,7 @@ public:
     _generator = generator;
   }
 
-  bool parse( string[] args, out Configuration config )
+  bool parse( string[] args, out Config config )
   {
     // Build info about parser.
     Parser.Info info;
@@ -222,7 +223,7 @@ private:
               string sf = to!string( c2[ "f" ] );
               ubyte f = std.conv.parse!ubyte( sf );
 
-              o = msf_to_sectors( msf_t( m, s, f ) );
+              o = msfToSectors( msf_t( m, s, f ) );
             }
             // Exclude label?
             if ( ! c1.empty() ) {
@@ -257,7 +258,7 @@ private:
               string sf = to!string( c1[ "f" ] );
               ubyte f = std.conv.parse!ubyte( sf );
 
-              o = msf_to_sectors( msf_t( m, s, f ) );
+              o = msfToSectors( msf_t( m, s, f ) );
             }
 
             jobs ~= new ReadFromAudioDiscJob( Labels.DISC_END, t, o );
@@ -291,7 +292,7 @@ private:
               string sf1 = to!string( c2[ "f" ] );
               ubyte f1 = std.conv.parse!ubyte( sf1 );
 
-              o1 = msf_to_sectors( msf_t( m1, s1, f1 ) );
+              o1 = msfToSectors( msf_t( m1, s1, f1 ) );
             }
             string st2 = to!string( c3[ "t" ] );
             int t2 = std.conv.parse!int( st2 );
@@ -306,7 +307,7 @@ private:
               string sf2 = to!string( c3[ "f" ] );
               ubyte f2 = std.conv.parse!ubyte( sf2 );
 
-              o2 = msf_to_sectors( msf_t( m2, s2, f2 ) );
+              o2 = msfToSectors( msf_t( m2, s2, f2 ) );
             }
 
             // Exclude label?
@@ -330,7 +331,7 @@ private:
     }
   }
 
-  bool parse( Syntax syntax, string[] args, out Configuration config, out string error ) {
+  bool parse( Syntax syntax, string[] args, out Config config, out string error ) {
     try {
       // Apply syntax to command line.
       final switch( syntax )
@@ -432,14 +433,15 @@ private:
 
 
           // Build target.
-          config.target = Target();
-          config.target.filenameGenerator = _generator;
+          config.writer = Writer.Config();
+          config.writer.filenameGenerator = _generator;
           // Stdout is target?
           if ( config.stdout ) {
-            config.target.writerClass = "writers.wav.StdoutWriter";
+            config.writer.writerClass = "writers.wav.StdoutWriter";
+            config.writer.filenameGenerator = new StdoutFilenameGenerator();
           // Or file?
           } else {
-            config.target.writerClass = "writers.wav.FileWriter";
+            config.writer.writerClass = "writers.wav.FileWriter";
           }
 
 
@@ -478,8 +480,98 @@ private:
 
 class DefaultFilenameGenerator : FilenameGenerator
 {
+  // FIXME: Use right extension.
   string generate( ReadFromDiscJob job, Disc disc )
-  {
-    return "out.wav";  
-  }
+    in
+    {
+      assert( job !is null && disc !is null );
+    }
+    body
+    {
+      // Fetch relevant data.
+      SectorRange sr = job.sectorRange( disc );
+      Track[] tracks = disc.tracks();
+      Track fromTrack = disc.track( sr.from );
+      Track toTrack = disc.track( sr.to );
+
+      // Calc filename.
+
+      // Full disc?
+      if ( sr.from == tracks.front.firstSector() && sr.to == tracks.back.lastSector() ) {
+        return "disc.wav";
+      }
+
+
+      // Multiple tracks?
+      if ( fromTrack != toTrack ) {
+        // Both tracks full?
+        if ( sr.from == fromTrack.firstSector() && sr.to == toTrack.lastSector() ) {
+          return format( "tracks_%02d..%02d.wav", fromTrack.number(), toTrack.number() );
+        }
+        // First track full?
+        if ( sr.from == fromTrack.firstSector() ) {
+          return format( 
+              "range_%02d..%02d%s.wav",
+              fromTrack.number(),
+              toTrack.number(),
+              msfToString( sectorsToMsf( sr.to - toTrack.firstSector() ) )
+            );
+        }
+        // Last track full?
+        if ( sr.to == toTrack.lastSector() ) {
+          return format( 
+              "range_%02d%s..%02d.wav",
+              fromTrack.number(),
+              msfToString( sectorsToMsf( sr.from - fromTrack.firstSector() ) ),
+              toTrack.number()
+            );
+        }
+        // No track full.
+        return format( 
+            "range_%02d%s..%02d%s.wav",
+            fromTrack.number(),
+            msfToString( sectorsToMsf( sr.from - fromTrack.firstSector() ) ),
+            toTrack.number(),
+            msfToString( sectorsToMsf( sr.to - toTrack.firstSector() ) )
+          );
+      }
+
+
+      // One track.
+      Track track = fromTrack;
+      // Full?
+      if ( sr.from == track.firstSector() && sr.to == track.lastSector() ) {
+        return format( "track_%02d.wav", track.number() );
+      }
+      // From the beginning?
+      if ( sr.from == track.firstSector() ) {
+        return format( 
+            "track_%02d%s..%s.wav",
+            fromTrack.number(),
+            msfToString( msf_t( 0, 0, 0 ) ),
+            msfToString( sectorsToMsf( sr.to - fromTrack.firstSector() ) )
+          );
+      }
+
+      // Other cases.
+      return format( 
+          "track_%02d%s..%s.wav",
+          fromTrack.number(),
+          msfToString( sectorsToMsf( sr.from - fromTrack.firstSector() ) ),
+          msfToString( sectorsToMsf( sr.to - fromTrack.firstSector() ) )
+        );
+    }
+}
+
+final class StdoutFilenameGenerator : FilenameGenerator
+{
+  string generate( ReadFromDiscJob job, Disc disc )
+    in
+    {
+      assert( job !is null && disc !is null );
+    }
+    body
+    {
+      return "stdout";
+    }
 }
