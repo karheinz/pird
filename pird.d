@@ -26,6 +26,8 @@ import std.c.string;
 import c.cdio.device;
 import c.cdio.logging;
 
+import c.cdio.disc;
+
 import commands;
 import log;
 import parsers;
@@ -37,7 +39,7 @@ import utils;
 
 int main( string[] args )
 {
-  Configuration config;
+  Config config;
   Parser parser = new DefaultCommandLineParser();
 
   if ( ! parser.parse( args, config ) ) {

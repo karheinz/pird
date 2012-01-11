@@ -24,6 +24,7 @@ import log;
 import media;
 import readers.jobs;
 import sources.base;
+import writers.base;
 
 
 interface DiscReader : introspection.Interface
@@ -34,7 +35,7 @@ interface DiscReader : introspection.Interface
   void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
   void clear();
   bool read();
-  void setTarget( Target target );
+  void setWriterConfig( Writer.Config config );
   ReadFromDiscJob[] jobs();
   ReadFromDiscJob[] unsatisfiableJobs();
   void connect( void delegate( string, LogLevel, string ) signalHandler );
@@ -51,7 +52,7 @@ abstract class AbstractAudioDiscReader : AudioDiscReader
 protected:
   Source _source;
   Disc _disc;
-  Target _target;
+  Writer.Config _writerConfig;
   ReadFromDiscJob[] _jobs;
 
 public:
@@ -61,9 +62,9 @@ public:
     _disc = null;
   }
 
-  void setTarget( Target target )
+  void setWriterConfig( Writer.Config config )
   {
-    _target = target;
+    _writerConfig = config;
   }
 
   void add( ReadFromDiscJob job )

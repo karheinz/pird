@@ -148,8 +148,8 @@ public:
   this( ubyte number, msf_t begin, msf_t end, bool audio )
   {
     _number = number;
-    lsn_t firstSector = msf_to_sectors( begin );
-    lsn_t lastSector = msf_to_sectors( end );
+    lsn_t firstSector = msfToSectors( begin );
+    lsn_t lastSector = msfToSectors( end );
     _sectorRange = SectorRange( firstSector, lastSector );
     _audio = audio;
   }
@@ -198,7 +198,7 @@ public:
   }
 }
 
-msf_t sectors_to_msf( lsn_t sectors ) {
+msf_t sectorsToMsf( lsn_t sectors ) {
   msf_t result;
 
   result.m = cast( ubyte )( sectors / ( CDIO_CD_FRAMES_PER_SEC * CDIO_CD_SECS_PER_MIN ) );
@@ -209,13 +209,13 @@ msf_t sectors_to_msf( lsn_t sectors ) {
 }
 unittest { 
   lsn_t from = ( 61 * 75 ) + 1;
-  msf_t to = sectors_to_msf( from );
+  msf_t to = sectorsToMsf( from );
   assert( to.m == 1 );
   assert( to.s == 1 );
   assert( to.f == 1 );
 }
 
-lsn_t msf_to_sectors( msf_t from ) {
+lsn_t msfToSectors( msf_t from ) {
   lsn_t result;
 
   result += ( from.m * 60 * CDIO_CD_FRAMES_PER_SEC );
@@ -225,7 +225,7 @@ lsn_t msf_to_sectors( msf_t from ) {
 }
 unittest {
   msf_t from = msf_t( 1, 1, 1 );
-  lsn_t to = msf_to_sectors( from );
+  lsn_t to = msfToSectors( from );
 
   assert( to == 4576 );
 }

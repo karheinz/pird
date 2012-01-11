@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<refentry id="ls1">
+  <refmeta>
+    <refentrytitle>PIRD</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">PIRD</refmiscinfo>
+    <refmiscinfo class="manual">Users Manual</refmiscinfo>
+  </refmeta>
+  <refnamediv id="name">
+    <refname>pird</refname>
+    <refpurpose>rip audio data from a disc or an image</refpurpose>
+  </refnamediv>
+  <!-- body begins here -->
+  <refsynopsisdiv id="synopsis">
+    <variablelist>
+      <varlistentry>
+        <term>
+          Print out a help message:
+        </term>
+        <listitem>
+          <cmdsynopsis>
+            <command>pird</command>
+            <arg choice="plain">-h</arg>
+          </cmdsynopsis>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          List available devices,
+          images in <replaceable class="parameter">DIR</replaceable> or
+          content of <replaceable class="parameter">FILE</replaceable>:
+        </term>
+        <listitem>
+          <cmdsynopsis>
+            <command>pird</command>
+            <arg choice="plain">-l</arg>
+            <group choice="opt">
+              <arg choice="plain"><replaceable class="parameter">DIR</replaceable></arg>
+              <arg choice="plain"><replaceable class="parameter">FILE</replaceable></arg>
+            </group>
+          </cmdsynopsis>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          Extract audio data from <replaceable class="parameter">FILE</replaceable>:
+        </term>
+        <listitem>
+          <cmdsynopsis>
+            <command>pird</command>
+            <arg choice="opt" rep="repeat">
+              <replaceable class="option">OPTION</replaceable>
+            </arg>
+            <arg choice="opt" rep="repeat">
+              <replaceable class="parameter">JOB,</replaceable>
+            </arg>
+            <arg choice="plain">
+              <replaceable class="parameter">FILE</replaceable>
+            </arg>
+            <arg choice="opt">-</arg>
+          </cmdsynopsis>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsynopsisdiv>
+  <refsect1 id="description">
+    <title>DESCRIPTION</title>
+    <para>
+      Rips audio data from a disc (<literal>CD-DA</literal> or
+      <literal>CD-ROM Mixed</literal>) or an image (<literal>TOC</literal>,
+      <literal>CUE</literal> or <literal>NRG</literal>).
+    </para>
+  </refsect1>
+  <refsect1 id="jobs">
+    <title>JOBS</title>
+    <para>
+      A <replaceable class="parameter">JOB</replaceable> describes
+      what data should be ripped. If no
+      <replaceable class="parameter">JOB</replaceable> is specified,
+      <command>pird</command> rips the whole disc. Multiple
+      <replaceable class="parameter">JOB</replaceable>s are
+      delimited by <literal>,</literal>
+    </para>
+    <para>
+      There are different types of
+      <replaceable class="parameter">JOB</replaceable>s:
+    </para>
+    <orderedlist>
+      <listitem>
+        <para>
+          Rip a single track.
+        </para>
+      <cmdsynopsis>
+        <arg choice="plain">
+          <replaceable class="parameter">TRACK_NUMBER</replaceable>
+        </arg>
+      </cmdsynopsis>
+      </listitem>
+      <listitem>
+        <para>
+          Rip a range of tracks. A range is specified by either two dots
+          (include right bound) or three dots (exclude right bound).
+        </para>
+      <cmdsynopsis>
+        <arg choice="plain">
+          <replaceable class="parameter">TRACK_NUMBER</replaceable>..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>
+        </arg>
+      </cmdsynopsis>
+      </listitem>
+      <listitem>
+        <para>
+          Track numbers can be followed by a timestamp, which indicates
+          where to start or stop reading. NOTE: A second consists
+          of 75 <replaceable class="parameter">FRAME</replaceable>s.
+        </para>
+        <cmdsynopsis>
+          <arg choice="plain">
+            <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
+          </arg>
+        </cmdsynopsis>
+      </listitem>
+      <listitem>
+        <para>
+          If one side of a range has no bound, <command>pird</command>
+          reads from the beginning of or to the end of the disc.
+        </para>
+        <cmdsynopsis>
+          <arg choice="plain">
+            <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..
+          </arg>
+        </cmdsynopsis>
+        <cmdsynopsis>
+          <arg choice="plain">
+            ..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
+          </arg>
+        </cmdsynopsis>
+      </listitem>
+    </orderedlist>
+  </refsect1>
+  <refsect1 id="options">
+    <title>OPTIONS</title>
+    <para>
+      There are some options to tell <command>pird</command>
+      how to proceed:
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term>
+          <option>-t</option>, 
+          <option>--trackwise</option>
+        </term>
+        <listitem>
+          <para>split ranges at track bounds</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-p</option>, 
+          <option>--paranoia</option>
+        </term>
+        <listitem>
+          <para>
+            rip in paranoia mode (makes only sense if
+            <replaceable class="parameter">FILE</replaceable>
+            is an optical drive)
+          </para>
+          <para>
+            NOTE: This feature isn't implemented yet!
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-v</option>
+          <option>--verbose</option>
+        </term>
+        <listitem>
+          <para>
+            be verbose, each occurrence increases log level
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-q</option>, 
+          <option>--quiet</option>
+        </term>
+        <listitem>
+          <para>
+            be quiet
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-s</option>
+          <option>--simulate</option>
+        </term>
+        <listitem>
+          <para>
+            simulate execution of jobs
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="output">
+    <title>OUTPUT</title>
+    <para>
+      By default <command>pird</command> writes all audio data
+      read by a job to a single file in the current working directory.
+      Option <option>--trackwise</option> can be used to split
+      audio data at track bounds.
+    </para>
+    <para>
+      If the last parameter is a dash <option>-</option>,
+      the audio data of all jobs is writen to <literal>stdout</literal>.
+    </para>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>EXAMPLES</title>
+    <para>
+      None yet ;)
+    </para>
+  </refsect1>
+  <refsect1 id="author">
+    <title>AUTHOR</title>
+    <para>
+      Written by Karsten Heinze &lt;<email>karsten@sidenotes.de</email>&gt;.
+    </para>
+  </refsect1>
+  <refsect1 id="license">
+    <title>License</title>
+    <para>
+      <ulink url="http://gnu.org/licenses/gpl.html">
+        GNU General Public License
+      </ulink> version 3 or later. 
+    </para>
+    <para>
+      This is free software: you are free to change and redistribute
+      it. There is NO WARRANTY, to the extent permitted by law.
+    </para>
+  </refsect1>
+  <refsect1 id="see_also">
+    <title>SEE ALSO</title>
+    <para>
+      <ulink url="http://gnu.org/software/libcdio">
+        GNU Compact Disc Input and Control Library
+      </ulink> (libcdio)
+    </para>
+  </refsect1>
+</refentry>

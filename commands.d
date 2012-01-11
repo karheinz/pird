@@ -109,12 +109,12 @@ abstract class AbstractCommand : Command
 
 interface CommandFactory
 {
-  Command build( Configuration config );
+  Command build( Config config );
 }
 
 class DefaultCommandFactory : CommandFactory
 {
-  Command build( Configuration config ) {
+  Command build( Config config ) {
     // Help requested?
     if ( config.help ) {
       PrintCommand command = new PrintCommand();
@@ -439,10 +439,10 @@ class RipAudioDiscCommand( S, T ) : AbstractCommand
 {
 private:
   AudioDiscReader _reader;
-  Configuration _config;
+  Config _config;
 
 public:
-  this( Configuration config )
+  this( Config config )
   {
     _config = config;
 
@@ -473,7 +473,7 @@ public:
 
     // Configure reader.
     _reader.setSource( source );
-    _reader.setTarget( _config.target );
+    _reader.setWriterConfig( _config.writer );
 
     // Look for audio disc (using reader of type T).
     logDebug( format( "Looking for audio disc in %s.", source.path() ) );

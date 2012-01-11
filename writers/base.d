@@ -22,10 +22,35 @@ import std.stdio;
 import std.stream;
 
 static import introspection;
+import media;
+import parsers;
+import readers.jobs;
 
 
 interface Writer
 {
+  struct Config
+  {
+    // Type of writer to use. 
+    string writerClass;
+    // Used to generate a filename.
+    FilenameGenerator filenameGenerator;
+    // How to open file.
+    FileMode fileMode = FileMode.In | FileMode.OutNew;
+
+    // Build and configure writer for job and disc.
+    Writer build( ReadFromDiscJob job, Disc disc )
+    {
+      Writer w = cast( Writer )Object.factory( writerClass );
+      // Check that writer object was created.
+      if ( w is null ) { return null; };
+
+      w.setPath( filenameGenerator.generate( job, disc ) );
+      w.setMode( fileMode );
+      return w;
+    }
+  }
+
   void setPath( string path );
   string path();
   void setMode( FileMode mode );

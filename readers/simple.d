@@ -71,7 +71,7 @@ public:
     discmode_t discmode = cdio_get_discmode( _source.handle() );
     if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
         discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logTrace( format( "Discmode %s is not supported!", discmode2str[ discmode ] ) );
+      logTrace( format( "Discmode %s is not supported!", to!string( discmode ) ) );
       logDebug( "No audio disc found!" );
       return null;
     }
@@ -144,8 +144,8 @@ public:
       }
 
       // Check if writer is available.
-      logTrace( "Writer class is " ~ _target.writerClass );
-      Writer writer = _target.build( job, disc() );
+      logTrace( "Writer class is " ~ _writerConfig.writerClass );
+      Writer writer = _writerConfig.build( job, disc() );
 
       if ( writer is null ) {
         logWarning( "Failed to create writer instance!" );

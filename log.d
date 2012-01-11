@@ -206,12 +206,12 @@ public:
 
 interface LoggerFactory
 {
-  Logger build( Configuration config );
+  Logger build( Config config );
 }
 
 class DefaultLoggerFactory : LoggerFactory
 {
-  Logger build( Configuration config )
+  Logger build( Config config )
   {
     DefaultLogger logger = new DefaultLogger();
     if ( config.verbose ) {

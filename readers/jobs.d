@@ -41,28 +41,6 @@ enum Labels
   TRACK_END
 }
 
-struct Target
-{
-  // Type of writer to use. 
-  string writerClass;
-  // Used to generate a filename.
-  FilenameGenerator filenameGenerator;
-  // How to open file.
-  FileMode fileMode = FileMode.In | FileMode.OutNew;
-
-  // Build and configure writer for job and disc.
-  Writer build( ReadFromDiscJob job, Disc disc )
-  {
-    Writer w = cast( Writer )Object.factory( writerClass );
-    // Check that writer object was created.
-    if ( w is null ) { return null; };
-
-    w.setPath( filenameGenerator.generate( job, disc ) );
-    w.setMode( fileMode );
-    return w;
-  }
-}
-
 interface ReadFromDiscJob
 {
   SectorRange sectorRange( Disc disc );
@@ -135,7 +113,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
           break;
         }
       }
-      foreach( track; tracks.dup.reverse ) {
+      foreach_reverse ( track; tracks ) {
         if ( track.isAudio() ) {
           tmp.to = track.sectorRange().to;
           break;

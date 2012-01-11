@@ -18,6 +18,7 @@
 module readers.paranoia;
 
 import std.array;
+import std.conv;
 import std.math;
 import std.signals;
 import std.stdio;
@@ -73,7 +74,7 @@ public:
     discmode_t discmode = cdio_get_discmode( _source.handle() );
     if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
         discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logDebug( format( "Discmode %s is not supported!", discmode2str[ discmode ] ) );
+      logDebug( format( "Discmode %s is not supported!", to!string( discmode ) ) );
       logDebug( "No audio disc found!" );
       return null;
     }
