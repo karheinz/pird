@@ -50,7 +50,7 @@ There are some options to tell pird how to proceed:
 -v --verbose
     be verbose, each occurrence increases log level
 -q, --quiet
-      be quiet
+    be quiet
 -s --simulate
     simulate execution of jobs
  
