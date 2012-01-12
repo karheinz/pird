@@ -22,8 +22,8 @@ Extract audio data from FILE:
 There are some options to tell pird how to proceed:
 
 -j, --job, --jobs JOB[,...]
-    A JOB describes what data should be ripped. If no JOB is specified, pird
-    rips the whole disc. Multiple JOBs are delimited by ,
+    A JOB describes what data should be ripped. If no JOB is specified,
+    pird rips the whole disc. Multiple JOBs are delimited by ,
     There are different types of JOBs:
 
     1. Rip a single track.
@@ -37,10 +37,11 @@ There are some options to tell pird how to proceed:
     4. If one side of a range has no bound, pird reads from the beginning
        of or to the end of the disc.
          TRACK_NUMBER[[MIN:SEC.FRAME]]..
-        ..[.]TRACK_NUMBER[[MIN:SEC.FRAME]]
+         ..[.]TRACK_NUMBER[[MIN:SEC.FRAME]]
+
 -f, --format FORMAT
-    The audio format used for output. Available formats are: WAV (default)
-    and PCM.
+    The audio format used for output.
+    Available formats are: WAV (default) and PCM.
 -t, --trackwise
     split ranges at track bounds
 -p, --paranoia
@@ -57,8 +58,8 @@ There are some options to tell pird how to proceed:
 By default pird writes all audio data read by a job to a single file in the
 current working directory. Option --trackwise can be used to split audio data
 at track bounds.
-If the last parameter is a dash -, the audio data of all jobs
-is writen to stdout.  
+If the last parameter is a dash -, the audio data of
+all jobs is written to stdout.  
 
 ***** EXAMPLES *****
 Rip audio disc in /dev/cdrom to a single WAV-file:

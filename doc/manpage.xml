@@ -233,7 +233,7 @@
     </para>
     <para>
       If the last parameter is a dash <parameter>-</parameter>,
-      the audio data of all jobs is writen to <literal>stdout</literal>.
+      the audio data of all jobs is written to <literal>stdout</literal>.
     </para>
   </refsect1>
   <refsect1 id="examples">
