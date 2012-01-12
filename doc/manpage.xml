@@ -14,7 +14,7 @@
   </refnamediv>
   <!-- body begins here -->
   <refsynopsisdiv id="synopsis">
-    <variablelist>
+    <variablelist remap="TP">
       <varlistentry>
         <term>
           Print out a help message:
@@ -53,9 +53,6 @@
             <arg choice="opt" rep="repeat">
               <replaceable class="option">OPTION</replaceable>
             </arg>
-            <arg choice="opt" rep="repeat">
-              <replaceable class="parameter">JOB,</replaceable>
-            </arg>
             <arg choice="plain">
               <replaceable class="parameter">FILE</replaceable>
             </arg>
@@ -73,79 +70,99 @@
       <literal>CUE</literal> or <literal>NRG</literal>).
     </para>
   </refsect1>
-  <refsect1 id="jobs">
-    <title>JOBS</title>
-    <para>
-      A <replaceable class="parameter">JOB</replaceable> describes
-      what data should be ripped. If no
-      <replaceable class="parameter">JOB</replaceable> is specified,
-      <command>pird</command> rips the whole disc. Multiple
-      <replaceable class="parameter">JOB</replaceable>s are
-      delimited by <literal>,</literal>
-    </para>
-    <para>
-      There are different types of
-      <replaceable class="parameter">JOB</replaceable>s:
-    </para>
-    <orderedlist>
-      <listitem>
-        <para>
-          Rip a single track.
-        </para>
-      <cmdsynopsis>
-        <arg choice="plain">
-          <replaceable class="parameter">TRACK_NUMBER</replaceable>
-        </arg>
-      </cmdsynopsis>
-      </listitem>
-      <listitem>
-        <para>
-          Rip a range of tracks. A range is specified by either two dots
-          (include right bound) or three dots (exclude right bound).
-        </para>
-      <cmdsynopsis>
-        <arg choice="plain">
-          <replaceable class="parameter">TRACK_NUMBER</replaceable>..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>
-        </arg>
-      </cmdsynopsis>
-      </listitem>
-      <listitem>
-        <para>
-          Track numbers can be followed by a timestamp, which indicates
-          where to start or stop reading. NOTE: A second consists
-          of 75 <replaceable class="parameter">FRAME</replaceable>s.
-        </para>
-        <cmdsynopsis>
-          <arg choice="plain">
-            <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
-          </arg>
-        </cmdsynopsis>
-      </listitem>
-      <listitem>
-        <para>
-          If one side of a range has no bound, <command>pird</command>
-          reads from the beginning of or to the end of the disc.
-        </para>
-        <cmdsynopsis>
-          <arg choice="plain">
-            <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..
-          </arg>
-        </cmdsynopsis>
-        <cmdsynopsis>
-          <arg choice="plain">
-            ..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
-          </arg>
-        </cmdsynopsis>
-      </listitem>
-    </orderedlist>
-  </refsect1>
   <refsect1 id="options">
     <title>OPTIONS</title>
     <para>
       There are some options to tell <command>pird</command>
       how to proceed:
     </para>
-    <variablelist>
+    <variablelist remap="TP">
+      <varlistentry>
+        <term>
+          <option>-j</option>, 
+          <option>--job</option>,
+          <option>--jobs</option>
+          <replaceable class="parameter">JOB</replaceable>[,...]
+        </term>
+        <listitem>
+          <para>
+            A <replaceable class="parameter">JOB</replaceable> describes
+            what data should be ripped. If no
+            <replaceable class="parameter">JOB</replaceable> is specified,
+            <command>pird</command> rips the whole disc. Multiple
+            <replaceable class="parameter">JOB</replaceable>s are
+            delimited by <literal>,</literal>
+          </para>
+          <para>
+            There are different types of
+            <replaceable class="parameter">JOB</replaceable>s:
+          </para>
+          <orderedlist>
+            <listitem>
+              <para>
+                Rip a single track.
+              </para>
+            <cmdsynopsis>
+              <arg choice="plain">
+                <replaceable class="parameter">TRACK_NUMBER</replaceable>
+              </arg>
+            </cmdsynopsis>
+            </listitem>
+            <listitem>
+              <para>
+                Rip a range of tracks. A range is specified by either two dots
+                (include right bound) or three dots (exclude right bound).
+              </para>
+            <cmdsynopsis>
+              <arg choice="plain">
+                <replaceable class="parameter">TRACK_NUMBER</replaceable>..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>
+              </arg>
+            </cmdsynopsis>
+            </listitem>
+            <listitem>
+              <para>
+                Track numbers can be followed by a timestamp, which indicates
+                where to start or stop reading. NOTE: A second consists
+                of 75 <replaceable class="parameter">FRAME</replaceable>s.
+              </para>
+              <cmdsynopsis>
+                <arg choice="plain">
+                  <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
+                </arg>
+              </cmdsynopsis>
+            </listitem>
+            <listitem>
+              <para>
+                If one side of a range has no bound, <command>pird</command>
+                reads from the beginning of or to the end of the disc.
+              </para>
+              <cmdsynopsis>
+                <arg choice="plain">
+                  <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..
+                </arg>
+              </cmdsynopsis>
+              <cmdsynopsis>
+                <arg choice="plain">
+                  ..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
+                </arg>
+              </cmdsynopsis>
+            </listitem>
+          </orderedlist>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-f</option>, 
+          <option>--format</option>
+          <replaceable class="parameter">FORMAT</replaceable>
+        </term>
+        <listitem>
+          <para>
+            The audio format used for output.
+            Available formats are: WAV (default) and PCM.
+          </para>
+        </listitem>
+      </varlistentry>
       <varlistentry>
         <term>
           <option>-t</option>, 
@@ -215,15 +232,38 @@
       audio data at track bounds.
     </para>
     <para>
-      If the last parameter is a dash <option>-</option>,
+      If the last parameter is a dash <parameter>-</parameter>,
       the audio data of all jobs is writen to <literal>stdout</literal>.
     </para>
   </refsect1>
   <refsect1 id="examples">
     <title>EXAMPLES</title>
-    <para>
-      None yet ;)
-    </para>
+    <variablelist remap="TP">
+      <varlistentry>
+        <term>
+          Rip audio disc in <parameter>/dev/cdrom</parameter> to a single WAV-file:
+        </term>
+        <listitem>
+          <cmdsynopsis>
+            <command>pird</command>
+            <arg choice="plain">/dev/cdrom</arg>
+          </cmdsynopsis>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          Rip audio disc in <parameter>/dev/cdrom</parameter> writing
+          each track to a separate WAV-file:
+        </term>
+        <listitem>
+          <cmdsynopsis>
+            <command>pird</command>
+            <arg choice="plain">-t</arg>
+            <arg choice="plain">/dev/cdrom</arg>
+          </cmdsynopsis>
+        </listitem>
+      </varlistentry>
+    </variablelist>
   </refsect1>
   <refsect1 id="author">
     <title>AUTHOR</title>

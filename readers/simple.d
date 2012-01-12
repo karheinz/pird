@@ -144,7 +144,7 @@ public:
       }
 
       // Check if writer is available.
-      logTrace( "Writer class is " ~ _writerConfig.writerClass );
+      logTrace( "Writer class is " ~ _writerConfig.klass );
       Writer writer = _writerConfig.build( job, disc() );
 
       if ( writer is null ) {

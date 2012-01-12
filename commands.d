@@ -494,7 +494,7 @@ public:
 
     // Split jobs?
     if ( _config.trackwise ) {
-      foreach( job; _reader.jobs() ) {
+      foreach( job; _reader.jobs().dup ) {
         ReadFromDiscJob[] subJobs = job.split( _reader.disc() );
         if ( subJobs.length > 1 ) {
           logDebug( 

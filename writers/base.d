@@ -21,6 +21,7 @@ import std.math;
 import std.stdio;
 import std.stream;
 
+import eponyms;
 static import introspection;
 import media;
 import parsers;
@@ -32,21 +33,21 @@ interface Writer
   struct Config
   {
     // Type of writer to use. 
-    string writerClass;
+    string klass;
     // Used to generate a filename.
-    FilenameGenerator filenameGenerator;
+    Eponym eponym;
     // How to open file.
-    FileMode fileMode = FileMode.In | FileMode.OutNew;
+    FileMode mode = FileMode.In | FileMode.OutNew;
 
     // Build and configure writer for job and disc.
     Writer build( ReadFromDiscJob job, Disc disc )
     {
-      Writer w = cast( Writer )Object.factory( writerClass );
+      Writer w = cast( Writer )Object.factory( klass );
       // Check that writer object was created.
       if ( w is null ) { return null; };
 
-      w.setPath( filenameGenerator.generate( job, disc ) );
-      w.setMode( fileMode );
+      w.setPath( eponym.generate( job, disc ) );
+      w.setMode( mode );
       return w;
     }
   }
@@ -74,7 +75,7 @@ interface Writer
   ulong seek( long offset, SeekPos whence );
 }
 
-class FileWriter : Writer, introspection.Interface
+abstract class FileWriter : Writer, introspection.Interface
 {
 protected:
   string _path;
@@ -154,7 +155,7 @@ public:
   mixin introspection.Initial;
 }
 
-class StdoutWriter : Writer, introspection.Interface
+abstract class StdoutWriter : Writer, introspection.Interface
 {
 protected:
   string _path;

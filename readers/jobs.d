@@ -32,7 +32,7 @@ import utils;
 import writers.base;
 
 
-enum Labels
+enum Label
 {
   NONE,
   DISC_BEGIN,
@@ -55,7 +55,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
   bool _wholeDisc;
   int _track, _fromTrack, _toTrack;
   lsn_t _fromSector, _toSector;
-  Labels _fromLabel, _toLabel;
+  Label _fromLabel, _toLabel;
   SectorRange _sectorRange;
 
   this() {
@@ -66,13 +66,13 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     _track = track;
   }
 
-  this( Labels label, int track, lsn_t sector )
+  this( Label label, int track, lsn_t sector )
   {
-    if ( label == Labels.DISC_BEGIN || label == Labels.TRACK_BEGIN ) {
+    if ( label == Label.DISC_BEGIN || label == Label.TRACK_BEGIN ) {
       _fromLabel = label;
       _toTrack = track;
       _toSector = sector;
-    } else if ( label == Labels.DISC_END || label == Labels.TRACK_END ) {
+    } else if ( label == Label.DISC_END || label == Label.TRACK_END ) {
       _fromTrack = track;
       _fromSector = sector;
       _toLabel = label;
@@ -206,7 +206,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         }
 
         // Only label END makes sense here.
-        if ( _toLabel == Labels.DISC_END ) {
+        if ( _toLabel == Label.DISC_END ) {
           // Find last audio track.
           foreach_reverse ( track; tracks ) {
             if ( track.isAudio() ) {
@@ -219,7 +219,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
             }
           }
         }
-        if (  _toLabel == Labels.TRACK_END ) {
+        if (  _toLabel == Label.TRACK_END ) {
           sr.to = tracks[ _fromTrack - 1 ].sectorRange().to;
           return sr;
         }
@@ -250,7 +250,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
         }
 
         // Only label BEGIN makes sense here.
-        if ( _fromLabel == Labels.DISC_BEGIN ) {
+        if ( _fromLabel == Label.DISC_BEGIN ) {
           // Find last audio track.
           foreach ( track; tracks ) {
             if ( track.isAudio() ) {
@@ -263,7 +263,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
             }
           }
         }
-        if ( _fromLabel == Labels.TRACK_BEGIN ) {
+        if ( _fromLabel == Label.TRACK_BEGIN ) {
           sr.from = tracks[ _toTrack - 1 ].sectorRange().from; 
           return sr;
         }
