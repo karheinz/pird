@@ -446,6 +446,17 @@ private:
             config.stdout = true;
           }
 
+          // Parse source.
+          switch ( args.length ) {
+            case 0:
+              throw new Exception( "Missing source" );
+            case 1:
+              config.sourceFile = args[ 0 ];
+              break;
+            default:
+              throw new Exception( "Syntax error" );
+          }
+
           // Either verbose or quiet!
           if ( config.verbose && config.quiet ) {
             throw new Exception( "Switches -v and -q are mutual exclusiv" );
@@ -473,18 +484,6 @@ private:
           // Or file?
           } else {
             config.writer.klass = format( "writers.%s.FileWriter", to!string( audioFormat ).toLower() );
-          }
-
-
-          // Parse source.
-          switch ( args.length ) {
-            case 0:
-              throw new Exception( "Missing source" );
-            case 1:
-              config.sourceFile = args[ 0 ];
-              break;
-            default:
-              throw new Exception( "Syntax error" );
           }
 
           // Parsing was successful.
