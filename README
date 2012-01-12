@@ -8,50 +8,50 @@ pird - rip audio data from a disc or an image  
 
 ***** SYNOPSIS *****
 Print out a help message:
-        pird -h
-      List available devices, images in DIR or content of FILE:
-        pird -l [DIR | FILE]
-      Extract audio data from FILE:
-        pird [OPTION...] FILE [-]
+    pird -h
+List available devices, images in DIR or content of FILE:
+    pird -l [DIR | FILE]
+Extract audio data from FILE:
+    pird [OPTION...] FILE [-]
  
 ***** DESCRIPTION *****
-      Rips audio data from a disc (CD-DA or CD-ROM Mixed) or
-      an image (TOC, CUE or NRG).  
+    Rips audio data from a disc (CD-DA or CD-ROM Mixed) or
+    an image (TOC, CUE or NRG).  
 
 ***** OPTIONS *****
 There are some options to tell pird how to proceed:
 
 -j, --job, --jobs JOB[,...]
-      A JOB describes what data should be ripped. If no JOB is specified, pird
-      rips the whole disc. Multiple JOBs are delimited by ,
-      There are different types of JOBs:
+    A JOB describes what data should be ripped. If no JOB is specified, pird
+    rips the whole disc. Multiple JOBs are delimited by ,
+    There are different types of JOBs:
 
-      1. Rip a single track.
-           TRACK_NUMBER
-      2. Rip a range of tracks. A range is specified by either two dots
-         (include right bound) or three dots (exclude right bound).
-           TRACK_NUMBER..[.]TRACK_NUMBER
-      3. Track numbers can be followed by a timestamp, which indicates where
-         to start or stop reading. NOTE: A second consists of 75 FRAMEs.
-           TRACK_NUMBER[[MINUTE:SECOND.FRAME]]..[.]TRACK_NUMBER[[MINUTE:SECOND.FRAME]]
-      4. If one side of a range has no bound, pird reads from the beginning
-         of or to the end of the disc.
-           TRACK_NUMBER[[MINUTE:SECOND.FRAME]]..
-          ..[.]TRACK_NUMBER[[MINUTE:SECOND.FRAME]]
+    1. Rip a single track.
+         TRACK_NUMBER
+    2. Rip a range of tracks. A range is specified by either two dots
+       (include right bound) or three dots (exclude right bound).
+         TRACK_NUMBER..[.]TRACK_NUMBER
+    3. Track numbers can be followed by a timestamp, which indicates where
+       to start or stop reading. NOTE: A second consists of 75 FRAMEs.
+         TRACK_NUMBER[[MIN:SEC.FRAME]]..[.]TRACK_NUMBER[[MIN:SEC.FRAME]]
+    4. If one side of a range has no bound, pird reads from the beginning
+       of or to the end of the disc.
+         TRACK_NUMBER[[MIN:SEC.FRAME]]..
+        ..[.]TRACK_NUMBER[[MIN:SEC.FRAME]]
 -f, --format FORMAT
-      The audio format used for output. Available formats are: WAV (default)
-      and PCM.
+    The audio format used for output. Available formats are: WAV (default)
+    and PCM.
 -t, --trackwise
-      split ranges at track bounds
+    split ranges at track bounds
 -p, --paranoia
-      rip in paranoia mode (makes only sense if FILE is an optical drive)
-      NOTE: This feature isn't implemented yet!
+    rip in paranoia mode (makes only sense if FILE is an optical drive)
+    NOTE: This feature isn't implemented yet!
 -v --verbose
-      be verbose, each occurrence increases log level
+    be verbose, each occurrence increases log level
 -q, --quiet
       be quiet
 -s --simulate
-      simulate execution of jobs
+    simulate execution of jobs
  
 ***** OUTPUT *****
 By default pird writes all audio data read by a job to a single file in the
@@ -62,12 +62,12 @@ is writen to stdout.  
 
 ***** EXAMPLES *****
 Rip audio disc in /dev/cdrom to a single WAV-file:
-        pird /dev/cdrom
+    pird /dev/cdrom
 Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
-        pird -t /dev/cdrom
+    pird -t /dev/cdrom
  
 ***** AUTHOR *****
-      Written by Karsten Heinze <karsten@sidenotes.de>.  
+Written by Karsten Heinze <karsten@sidenotes.de>.  
 
 ***** LICENSE *****
 GNU General Public License[1] version 3 or later.
@@ -75,10 +75,10 @@ This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.  
 
 ***** SEE ALSO *****
-GNU Compact Disc Input and Control Librarym[2] (libcdio)  
+GNU Compact Disc Input and Control Library[2] (libcdio)  
 
 ***** NOTES *****
-  1. GNU General Public License
-            http://gnu.org/licenses/gpl.html
-  2. GNU Compact Disc Input and Control Library
-            http://gnu.org/software/libcdio
+1. GNU General Public License
+      http://gnu.org/licenses/gpl.html
+2. GNU Compact Disc Input and Control Library
+      http://gnu.org/software/libcdio
