@@ -350,6 +350,12 @@ private:
       final switch( syntax )
       {
         case Syntax.HELP:
+          // No arguments passed? Show help!
+          if ( args.length == 1 ) {
+            config.help = true;
+            return true;
+          }
+
           version( devel ) {
             getopt(
               args,

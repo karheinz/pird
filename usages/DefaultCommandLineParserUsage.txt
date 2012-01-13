@@ -1,4 +1,4 @@
-pird - a cd ripper written by Karsten Heinze <karsten@sidenotes.de>
+pird - (C) 2011,2012 Karsten Heinze <karsten@sidenotes.de>
 
 USAGE:
   Print out a help message:
@@ -10,30 +10,13 @@ USAGE:
    
 OPTIONS:
   -j, --job, --jobs JOB[,...]
-      A JOB describes what data should be ripped. If no JOB is specified,
-      pird rips the whole disc. Multiple JOBs are delimited by ,
-      There are different types of JOBs:
-
-      1. Rip a single track.
-           TRACK_NUMBER
-      2. Rip a range of tracks. A range is specified by either two dots
-         (include right bound) or three dots (exclude right bound).
-           TRACK_NUMBER..[.]TRACK_NUMBER
-      3. Track numbers can be followed by a timestamp, which indicates where
-         to start or stop reading. NOTE: A second consists of 75 FRAMEs.
-           TRACK_NUMBER[[MIN:SEC.FRAME]]..[.]TRACK_NUMBER[[MIN:SEC.FRAME]]
-      4. If one side of a range has no bound, pird reads from the beginning
-         of or to the end of the disc.
-           TRACK_NUMBER[[MIN:SEC.FRAME]]..
-           ..[.]TRACK_NUMBER[[MIN:SEC.FRAME]]
-
+      what should be ripped, multiple JOBs are delimited by ,
   -f, --format FORMAT
-      The audio format used for output.
-      Available formats are: WAV (default) and PCM.
+      the audio format used for output: WAV (default) or PCM
   -t, --trackwise
       split ranges at track bounds
   -p, --paranoia
-      rip in paranoia mode (makes only sense if FILE is an optical drive)
+      rip in paranoia mode (FILE has to be an optical drive)
       NOTE: This feature isn't implemented yet!
   -v --verbose
       be verbose, each occurrence increases log level
@@ -41,9 +24,3 @@ OPTIONS:
       be quiet
   -s --simulate
       simulate execution of jobs
- 
-EXAMPLES:
-  Rip audio disc in /dev/cdrom to a single WAV-file:
-      pird /dev/cdrom
-  Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
-      pird -t /dev/cdrom
