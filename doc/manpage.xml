@@ -104,7 +104,7 @@
               </para>
             <cmdsynopsis>
               <arg choice="plain">
-                <replaceable class="parameter">TRACK_NUMBER</replaceable>
+                <replaceable class="parameter">TRACK_NUM</replaceable>
               </arg>
             </cmdsynopsis>
             </listitem>
@@ -115,7 +115,7 @@
               </para>
             <cmdsynopsis>
               <arg choice="plain">
-                <replaceable class="parameter">TRACK_NUMBER</replaceable>..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>
+                <replaceable class="parameter">TRACK_NUM</replaceable>..[.]<replaceable class="parameter">TRACK_NUM</replaceable>
               </arg>
             </cmdsynopsis>
             </listitem>
@@ -127,7 +127,7 @@
               </para>
               <cmdsynopsis>
                 <arg choice="plain">
-                  <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
+                  <replaceable class="parameter">TRACK_NUM</replaceable>[[<replaceable class="parameter">MIN:SEC.FRAME</replaceable>]]..[.]<replaceable class="parameter">TRACK_NUM</replaceable>[[<replaceable class="parameter">MIN:SEC.FRAME</replaceable>]]
                 </arg>
               </cmdsynopsis>
             </listitem>
@@ -138,12 +138,12 @@
               </para>
               <cmdsynopsis>
                 <arg choice="plain">
-                  <replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]..
+                  <replaceable class="parameter">TRACK_NUM</replaceable>[[<replaceable class="parameter">MIN:SEC.FRAME</replaceable>]]..
                 </arg>
               </cmdsynopsis>
               <cmdsynopsis>
                 <arg choice="plain">
-                  ..[.]<replaceable class="parameter">TRACK_NUMBER</replaceable>[[<replaceable class="parameter">MINUTE:SECOND.FRAME</replaceable>]]
+                  ..[.]<replaceable class="parameter">TRACK_NUM</replaceable>[[<replaceable class="parameter">MIN:SEC.FRAME</replaceable>]]
                 </arg>
               </cmdsynopsis>
             </listitem>
