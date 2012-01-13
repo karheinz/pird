@@ -3,7 +3,7 @@ STYLESHEET_PATH=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages
 XSLTPROC=xsltproc
 SRC=manpage.xml
 
-all: readme
+all: usage
 usage: readme
 	awk -f usage.awk ../README > ../usages/DefaultCommandLineParserUsage.txt
 readme: doc

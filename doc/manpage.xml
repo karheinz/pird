@@ -10,7 +10,7 @@
   </refmeta>
   <refnamediv id="name">
     <refname>pird</refname>
-    <refpurpose>rip audio data from a disc or an image</refpurpose>
+    <refpurpose>rip audio data from a disc or disc image</refpurpose>
   </refnamediv>
   <!-- body begins here -->
   <refsynopsisdiv id="synopsis">
@@ -66,7 +66,7 @@
     <title>DESCRIPTION</title>
     <para>
       Rips audio data from a disc (<literal>CD-DA</literal> or
-      <literal>CD-ROM Mixed</literal>) or an image (<literal>TOC</literal>,
+      <literal>CD-ROM Mixed</literal>) or a disc image (<literal>TOC</literal>,
       <literal>CUE</literal> or <literal>NRG</literal>).
     </para>
   </refsect1>

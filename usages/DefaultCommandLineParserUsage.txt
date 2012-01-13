@@ -1,5 +1,5 @@
 NAME
-       pird - rip audio data from a disc or an image
+       pird - rip audio data from a disc or disc image
 
 SYNOPSIS
        Print out a help message:
@@ -15,8 +15,8 @@ SYNOPSIS
            pird [OPTION...] FILE [-]
 
 DESCRIPTION
-       Rips audio data from a disc (CD-DA or CD-ROM Mixed) or an image (TOC,
-       CUE or NRG).
+       Rips audio data from a disc (CD-DA or CD-ROM Mixed) or a disc image
+       (TOC, CUE or NRG).
 
 OPTIONS
        There are some options to tell pird how to proceed:
