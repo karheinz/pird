@@ -1,26 +1,108 @@
-pird - (C) 2011,2012 Karsten Heinze <karsten@sidenotes.de>
+NAME
+       pird - rip audio data from a disc or an image
 
-USAGE:
-  Print out a help message:
-      pird -h
-  List available devices, images in DIR or content of FILE:
-      pird -l [DIR | FILE]
-  Extract audio data from FILE:
-      pird [OPTION...] FILE [-]
-   
-OPTIONS:
-  -j, --job, --jobs JOB[,...]
-      what should be ripped, multiple JOBs are delimited by ,
-  -f, --format FORMAT
-      the audio format used for output: WAV (default) or PCM
-  -t, --trackwise
-      split ranges at track bounds
-  -p, --paranoia
-      rip in paranoia mode (FILE has to be an optical drive)
-      NOTE: This feature isn't implemented yet!
-  -v --verbose
-      be verbose, each occurrence increases log level
-  -q, --quiet
-      be quiet
-  -s --simulate
-      simulate execution of jobs
+SYNOPSIS
+       Print out a help message:
+
+           pird -h
+
+       List available devices, images in DIR or content of FILE:
+
+           pird -l [DIR | FILE]
+
+       Extract audio data from FILE:
+
+           pird [OPTION...] FILE [-]
+
+DESCRIPTION
+       Rips audio data from a disc (CD-DA or CD-ROM Mixed) or an image (TOC,
+       CUE or NRG).
+
+OPTIONS
+       There are some options to tell pird how to proceed:
+
+       -j, --job, --jobs JOB[,...]
+           A JOB describes what data should be ripped. If no JOB is specified,
+           pird rips the whole disc. Multiple JOBs are delimited by ,
+
+           There are different types of JOBs:
+
+            1. Rip a single track.
+
+               TRACK_NUM
+
+            2. Rip a range of tracks. A range is specified by either two dots
+               (include right bound) or three dots (exclude right bound).
+
+               TRACK_NUM..[.]TRACK_NUM
+
+            3. Track numbers can be followed by a timestamp, which indicates
+               where to start or stop reading. NOTE: A second consists of 75
+               FRAMEs.
+
+               TRACK_NUM[[MIN:SEC.FRAME]]..[.]TRACK_NUM[[MIN:SEC.FRAME]]
+
+            4. If one side of a range has no bound, pird reads from the
+               beginning of or to the end of the disc.
+
+               TRACK_NUM[[MIN:SEC.FRAME]]..
+
+               ..[.]TRACK_NUM[[MIN:SEC.FRAME]]
+
+       -f, --format FORMAT
+           The audio format used for output. Available formats are: WAV
+           (default) and PCM.
+
+       -t, --trackwise
+           split ranges at track bounds
+
+       -p, --paranoia
+           rip in paranoia mode (makes only sense if FILE is an optical drive)
+
+           NOTE: This feature isn't implemented yet!
+
+       -v --verbose
+           be verbose, each occurrence increases log level
+
+       -q, --quiet
+           be quiet
+
+       -s --simulate
+           simulate execution of jobs
+
+OUTPUT
+       By default pird writes all audio data read by a job to a single file in
+       the current working directory. Option --trackwise can be used to split
+       audio data at track bounds.
+
+       If the last parameter is a dash -, the audio data of all jobs is
+       written to stdout.
+
+EXAMPLES
+       Rip audio disc in /dev/cdrom to a single WAV-file:
+
+           pird /dev/cdrom
+
+       Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
+
+           pird -t /dev/cdrom
+
+AUTHOR
+       Written by Karsten Heinze <karsten@sidenotes.de>.
+
+LICENSE
+       GNU General Public License[1] version 3 or later.
+
+       This is free software: you are free to change and redistribute it.
+       There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       GNU Compact Disc Input and Control Library[2] (libcdio)
+
+NOTES
+        1. GNU General Public License
+           http://gnu.org/licenses/gpl.html
+
+        2. GNU Compact Disc Input and Control Library
+           http://gnu.org/software/libcdio
+
