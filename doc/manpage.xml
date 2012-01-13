@@ -10,7 +10,7 @@
   </refmeta>
   <refnamediv id="name">
     <refname>pird</refname>
-    <refpurpose>rip audio data from a disc or disc image</refpurpose>
+    <refpurpose>rip audio data from a disc or a disc image</refpurpose>
   </refnamediv>
   <!-- body begins here -->
   <refsynopsisdiv id="synopsis">
@@ -29,7 +29,7 @@
       <varlistentry>
         <term>
           List available devices,
-          images in <replaceable class="parameter">DIR</replaceable> or
+          disc images in <replaceable class="parameter">DIR</replaceable> or
           content of <replaceable class="parameter">FILE</replaceable>:
         </term>
         <listitem>

@@ -1,12 +1,12 @@
 NAME
-       pird - rip audio data from a disc or disc image
+       pird - rip audio data from a disc or a disc image
 
 SYNOPSIS
        Print out a help message:
 
            pird -h
 
-       List available devices, images in DIR or content of FILE:
+       List available devices, disc images in DIR or content of FILE:
 
            pird -l [DIR | FILE]
 
