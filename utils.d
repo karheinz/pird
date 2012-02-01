@@ -34,7 +34,7 @@ import c.cdio.types;
 T bufferTo( T )( char[] buffer )
 {
    char[] tmp;
-   ulong length;
+   size_t length;
    
    length = strlen( cast( char* )buffer );
    tmp.length = length;
