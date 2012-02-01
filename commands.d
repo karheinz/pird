@@ -40,6 +40,7 @@ import sources.base;
 import sources.utils;
 import utils;
 
+import core.vararg;
 
 class KeyValueStore
 {
