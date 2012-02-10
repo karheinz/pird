@@ -51,7 +51,7 @@ T[] convert( T : T[], F )( F[] from )
 
   foreach( F from_elem; from ) {
     to_elem = cast( T )from_elem; 
-    if ( isIntegral!F ) {
+    static if ( isIntegral!F ) {
       to ~= to_elem;
     } else {
       if ( to_elem !is null ) { to ~= to_elem; }
@@ -61,9 +61,11 @@ T[] convert( T : T[], F )( F[] from )
   return to;
 }
 unittest {
-  int a = [ 0, 1, 2, 3 ];
-  uint b = convert!( uint[] )( a );
-  assert( a == b );
+  int[] a = [ 0, 1, 2, 3 ];
+  uint[] b = convert!( uint[] )( a );
+  assert( 2 == b[ 2 ] );
+  assert( cast( uint )a[ 0 ] == b[ 0 ] );
+  assert( cast( uint[] )a == b );
 }
 
 string pluralize( string s, long count = 0 ) {
