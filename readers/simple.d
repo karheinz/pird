@@ -184,7 +184,12 @@ public:
           continue;
         }
 
-        logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
+        // Following code does not compile with DMD 2.059 (enum to string):
+        // http://d.puremagic.com/issues/show_bug.cgi?id=7909
+        //logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
+        // Workaround.
+        logError( format( "Reading sector %d failed: %d, abort!", sector, rc ) );
+
         // Set sr.to to last successfully read sector.
         sr.to = cast( lsn_t )( sector - 1 );
         break;

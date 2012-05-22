@@ -267,7 +267,7 @@ class PrintCommand : AbstractCommand
     foreach( i, line; lines ) {
       logTrace( format( "Print line %d.", i + 1 ) );
       _target.writeln( line );
-    };
+    }
 
     return true;
   }

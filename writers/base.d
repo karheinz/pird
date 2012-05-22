@@ -44,7 +44,7 @@ interface Writer
     {
       Writer w = cast( Writer )Object.factory( klass );
       // Check that writer object was created.
-      if ( w is null ) { return null; };
+      if ( w is null ) { return null; }
 
       w.setPath( eponym.generate( job, disc ) );
       w.setMode( mode );
