@@ -27,6 +27,7 @@ import std.string;
 import c.cdio.cdda;
 import c.cdio.device;
 import c.cdio.disc;
+import c.cdio.sector;
 import c.cdio.track;
 import c.cdio.types;
 
@@ -36,6 +37,8 @@ import media;
 import readers.base;
 import readers.jobs;
 import sources.base;
+import utils;
+import writers.base;
 
 
 class ParanoiaAudioDiscReader : AbstractAudioDiscReader
@@ -80,13 +83,26 @@ public:
     }
 
     // Build disc.
+    Disc disc = new Disc();
+
+    // Retrieve media catalog number and apply to disc.
+    char* mcn = cdio_get_mcn( _source.handle() );
+    disc.setMcn( to!string( mcn ) );
+    delete mcn;
+
+    // Get paranoia handle.
     char** dummy;
     _handle = cdio_cddap_identify_cdio( _source.handle(), 0, dummy );
     if ( _handle is null ) {
       throw new Exception( "No cdrom_drive_t handle available" );
     }
 
-    Disc disc = new Disc();
+    // Call open using paranoia handle.
+    if ( cdio_cddap_open( _handle ) ) {
+      throw new Exception( format( "Failed to open %s in paranoia mode.", _source.path() ) ); 
+    }
+
+
     track_t tracks = cdio_cddap_tracks( _handle );
     track_format_t trackFormat;
     lsn_t firstSector, lastSector;
@@ -135,7 +151,66 @@ public:
       job = _jobs.front();
       _jobs.popFront();
 
+      // Check if job fits disc.
+      if ( ! job.fits( disc() ) ) {
+        logWarning( "Job is unapplicable to disc: " ~ job.description() );
+        logWarning( "Skip job: " ~ job.description() );
+        continue;
+      }
+
+      // Check if writer is available.
+      logTrace( "Writer class is " ~ _writerConfig.klass );
+      Writer writer = _writerConfig.build( job, disc() );
+
+      if ( writer is null ) {
+        logWarning( "Failed to create writer instance!" );
+        return false;
+      }
+
+      // Heyho, lets go!
       logInfo( "Start job: " ~ job.description() );
+
+      // Init some vars.
+      long rc;
+      ubyte[ CDIO_CD_FRAMESIZE_RAW ] buffer;
+      SectorRange sr = job.sectorRange( disc() );
+
+      // Tell writer how much bytes (expected) to be written.
+      writer.setExpectedSize( sr.length * CDIO_CD_FRAMESIZE_RAW );
+
+      // Open writer.
+      writer.open();
+      
+      // Rip!
+      logInfo(
+          format(
+            "Try to read %d %s starting at sector %d.",
+            sr.length(),
+            "sector".pluralize( sr.length() ),
+            sr.from
+          )
+        );
+      logInfo( "Data is written to " ~ writer.path() ~ "." );
+
+      for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
+        rc = cdio_cddap_read( _handle, buffer.ptr, sector, 1 );        
+
+        // FIXME: What does a negative value of rc mean?
+        if ( rc != 0 ) {
+          writer.write( buffer );
+          continue;
+        }
+
+        logError( format( "Reading sector %d failed, abort!", sector ) );
+
+        // Set sr.to to last successfully read sector.
+        sr.to = cast( lsn_t )( sector - 1 );
+        break;
+      }
+
+      // Close writer.
+      writer.close();
+      logInfo( format( "Read and wrote %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
     }
 
     return true;
