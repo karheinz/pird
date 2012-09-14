@@ -106,7 +106,7 @@ private:
     chdir( dir );
 
     // Available sources, paths used as keys.
-    Source[ string ] sourcesByPath;
+    GenericSource[ string ] sourcesByPath;
 
     uint driver;
     string path;
@@ -232,7 +232,7 @@ mixin template Comparators()
     if ( other is null ) return false;
 
     // Important: Only compare instances of Source!
-    auto o = cast( Source )other;
+    auto o = cast( GenericSource )other;
     if ( o is null ) return false;
 
     // Path and driver have to be equal.
@@ -244,7 +244,7 @@ mixin template Comparators()
     if ( other is null ) return 1;   // this is greater
 
     // Important: Only compare instances of Source!
-    auto o = cast( Source )other;
+    auto o = cast( GenericSource )other;
     if ( o is null ) return 1;   // this is greater
 
     // Compare driver and path of sources.

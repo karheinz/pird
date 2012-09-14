@@ -38,6 +38,7 @@ import media;
 import parsers;
 import readers.base;
 import readers.jobs;
+import readers.mixins;
 import sources.base;
 import utils;
 import writers.base;
@@ -46,85 +47,32 @@ import writers.base;
 class SimpleAudioDiscReader : AbstractAudioDiscReader
 {
 public:
-  this() {};
-  this( Source source )
+  override void setSource( GenericSource source )
   {
+    // We need access to a CdIo_t pointer! Cast is required.
+    if ( cast( Source!CdIo_t )( source ) is null ) {
+      throw new Exception( format( "%s is no %", source.path(), typeid( Source!CdIo_t ) ) ); 
+    }
     _source = source;
+    _disc = null;
   }
 
-  Disc disc()
+  this() {};
+  this( GenericSource source )
   {
-    // Open source.
-    if ( ! _source.open() ) {
-      throw new Exception( format( "Failed to open %s", _source.path() ) ); 
-    }
-
-    // Media changed since last call?
-    if ( ! cdio_get_media_changed( _source.handle() ) ) {
-      // Maybe we already explored the disc.
-      if ( _disc !is null ) return _disc;
-    }
-
-    // Either media is unknown or media changed.
-
-    // Default reader only supports audio discs.
-    discmode_t discmode = cdio_get_discmode( _source.handle() );
-    if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
-        discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logTrace( format( "Discmode %s is not supported!", to!string( discmode ) ) );
-      logDebug( "No audio disc found!" );
-      return null;
-    }
-
-    logTrace( "Found audio disc." );
-
-    // Build disc.
-    Disc disc = new Disc();
-
-    // Retrieve media catalog number and apply to disc.
-    char* mcn = cdio_get_mcn( _source.handle() );
-    disc.setMcn( to!string( mcn ) );
-    delete mcn;
-
-    // Retrieve tracks and add them to disc.
-    track_t tracks = cdio_get_num_tracks( _source.handle() );
-    track_format_t trackFormat;
-    lsn_t firstSector, lastSector;
-    for ( track_t track = 1; track <= tracks; track++ ) {
-      trackFormat = cdio_get_track_format( _source.handle(), track );
-      firstSector = cdio_get_track_lsn( _source.handle(), track );
-      lastSector = cdio_get_track_last_lsn( _source.handle(), track );
-      if ( trackFormat == track_format_t.TRACK_FORMAT_AUDIO ) {
-        logTrace( format( "Found audio track %d (%d - %d).", track, firstSector, lastSector ) ); 
-      } else {
-        logTrace( format( "Found non audio track %d (%d - %d).", track, firstSector, lastSector ) ); 
-      }
-
-      disc.addTrack(
-        new Track( 
-          track,
-          firstSector,
-          lastSector,
-          trackFormat == track_format_t.TRACK_FORMAT_AUDIO
-        )
-      );
-
-      // In case tracks is 255.
-      if ( track == track_t.max ) break;
-    }
-
-    // Log what we found.
-    string word = ( disc.mcn().length ? format( " %s", disc.mcn() ) : "" );
-    logDebug( format( "Found audio disc%s with %d tracks.", word, tracks ) );
-
-    // Cache result.
-    _disc = disc;
-
-    return _disc;
+    setSource( source );
   }
 
   bool read()
   {
+    // Handle.
+    CdIo_t* handle;
+
+    // Open source.
+    if ( ! ( cast( Source!CdIo_t )( _source ) ).open( handle ) ) {
+      throw new Exception( format( "Failed to open %s", _source.path() ) ); 
+    }
+
     // Something to do?
     if ( _jobs.length == 0 ) {
       logInfo( "Nothing to do." );
@@ -178,7 +126,7 @@ public:
       logInfo( "Data is written to " ~ writer.path() ~ "." );
 
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
-        rc = cdio_read_audio_sector( _source.handle(), buffer.ptr, sector );        
+        rc = cdio_read_audio_sector( handle, buffer.ptr, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
           writer.write( buffer );
           continue;
@@ -200,6 +148,7 @@ public:
   }
 
 
+  mixin CdIoAudioDiscReader;
   mixin introspection.Override;
   mixin Log;
 }

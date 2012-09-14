@@ -23,6 +23,7 @@ import std.file;
 import std.path;
 import std.string;
 
+import c.cdio.cdda;
 import c.cdio.device;
 import c.cdio.logging;
 import c.cdio.types;
@@ -32,14 +33,11 @@ import utils;
 import sources.mixins;
 
 
-interface Source : introspection.Interface
+
+interface GenericSource
 {
   string path();
   uint driver();
-
-  bool open();
-  bool close();
-  CdIo_t* handle();
 
   bool isDevice();
   bool isImage();
@@ -48,58 +46,37 @@ interface Source : introspection.Interface
 
   string[] aliases();
   void addAlias( string path );
+}
+
+interface Source( T ) : GenericSource, introspection.Interface
+{
+  bool open( out T* handle );
+  bool handle( out T* handle );
+  bool close( out T* handle );
 
   // Allows to search for all sources.
   mixin Finders;
 }
 
-abstract class AbstractSource : Source
+abstract class AbstractSource : Source!CdIo_t
 {
 protected:
   string _path;
   string[] _aliases;
   uint _driver = Driver.UNKNOWN;
-  CdIo_t* _handle;
+  CdIo_t* _cdio_t_handle;
     
   void addAlias( string path ) {
     _aliases ~= path;
   }
 
 public:
-  final CdIo_t* handle() {
-    return _handle;
-  }
-
   final string path() {
     return _path;
   }
 
   final uint driver() {
     return _driver;
-  }
-
-  final bool open() {
-    string cwd = getcwd();
-
-    try {
-      chdir( dirName( _path ) );
-      _handle = cdio_open( toStringz( baseName( _path ) ), _driver );
-      return _handle != null;
-    } catch ( Exception e ) {
-      return false;
-    } finally {
-      chdir( cwd );
-    } 
-  }
-
-  final bool close() {
-    if ( _handle == null ) return false;
-
-    // Free memory.
-    cdio_destroy( _handle );
-    _handle = null;
-
-    return true;
   }
 
   final bool isDevice() {
@@ -117,6 +94,45 @@ public:
   final string[] aliases() {
     return _aliases;
   }
+
+  bool handle( out CdIo_t* handle ) {
+    if ( _cdio_t_handle ) {
+      handle = _cdio_t_handle;
+      return true;
+    }
+
+    return open( handle );
+  }
+
+  bool open( out CdIo_t* handle ) {
+    if ( _cdio_t_handle ) {
+      handle = _cdio_t_handle;
+      return true;
+    }
+
+    string cwd;
+    try {
+      cwd = getcwd();
+      chdir( dirName( _path ) );
+      handle = _cdio_t_handle = cdio_open( toStringz( baseName( _path ) ), _driver );
+      return _cdio_t_handle != null;
+    } catch ( Exception e ) {
+      handle = null;
+      return false;
+    } finally {
+      chdir( cwd );
+    } 
+  }
+
+  bool close( out CdIo_t* handle ) {
+    if ( ! _cdio_t_handle ) return false;
+
+    // Free memory.
+    cdio_destroy( _cdio_t_handle );
+    handle = _cdio_t_handle = null;
+
+    return true;
+  }
 }
 
 
@@ -128,7 +144,7 @@ class Image : AbstractSource
   mixin Comparators;
 }
 
-class Device : AbstractSource
+class Device : AbstractSource, Source!cdrom_drive_t, Source!cdrom_paranoia_t
 {
   mixin Constructors;
   mixin Finders;
@@ -145,11 +161,13 @@ class Device : AbstractSource
     bool fetched;
   };
 
-private:
+protected:
   Capabilities _capabilities;
   Info _info;
+  //CdIo_t* _cdio_t_handle;
+  cdrom_drive_t* _cdrom_drive_t_handle;
+  cdrom_paranoia_t* _cdrom_paranoia_t_handle;
 
-protected:
   Capabilities capabilities() {
     if ( _capabilities.fetched ) return _capabilities;
 
@@ -164,16 +182,35 @@ protected:
   }
 
 public:
+  // Need (dummy) overriden methods here, otherwise unittests will fail.
+  // Problem arises when different Source interfaces implemented by a class.
+  override bool open( out CdIo_t* handle ) {
+    return super.open( handle );
+  }
+  override bool handle( out CdIo_t* handle ) {
+    return super.handle( handle );
+  }
+  override bool close( out CdIo_t* handle ) {
+    return super.close( handle );
+  }
+
+  bool open( out cdrom_drive_t* handle ) { handle = null; return false; }
+  bool handle( out cdrom_drive_t* handle ) { handle = null; return false; }
+  bool close( out cdrom_drive_t* handle ) { handle = null; return false; }
+  bool open( out cdrom_paranoia_t* handle ) { handle = null; return false; }
+  bool handle( out cdrom_paranoia_t* handle ) { handle = null; return false; }
+  bool close( out cdrom_paranoia_t* handle ) { handle = null; return false; }
+
   Info info() {
     if ( _info.fetched ) return _info;
 
     // Device has to be open!
-    if ( ! open() ) { return _info; }
+    if ( ! open( _cdio_t_handle ) ) { return _info; }
 
     // Fetch data.
     cdio_hwinfo_t data;
     _info.fetched = cdio_get_hwinfo(
-        _handle,
+        _cdio_t_handle,
         &data
       );
 
@@ -190,4 +227,34 @@ public:
   bool readsAudioDiscs() {
     return ( capabilities().read & ReadCapability.CD_DA ) > 0;
   }
+}
+
+unittest {
+  CdIo_t* cdio_t_handle;
+  cdrom_drive_t* cdrom_drive_t_handle;
+  cdrom_paranoia_t* cdrom_paranoia_t_handle;
+
+  // Create device and call open for all three handles.
+  Device device = new Device( "/device/does/not/exist", Driver.UNKNOWN );
+  assert( device !is null );
+  assert( ! device.open( cdio_t_handle ) );
+  assert( ! device.handle( cdio_t_handle ) );
+  assert( ! device.close( cdio_t_handle ) );
+  assert( ! device.open( cdrom_drive_t_handle ) );
+  assert( ! device.handle( cdrom_drive_t_handle ) );
+  assert( ! device.close( cdrom_drive_t_handle ) );
+  assert( ! device.open( cdrom_paranoia_t_handle ) );
+  assert( ! device.handle( cdrom_paranoia_t_handle ) );
+  assert( ! device.close( cdrom_paranoia_t_handle ) );
+  assert( cast( Source!CdIo_t )( device ) !is null );
+  assert( cast( Source!cdrom_drive_t )( device ) !is null );
+  assert( cast( Source!cdrom_paranoia_t )( device ) !is null );
+
+  // Create image and call open for one handle.
+  Image image = new Image( "/file/does/not/exist", Driver.UNKNOWN );
+  assert( image !is null );
+  assert( ! image.open( cdio_t_handle ) );
+  assert( ! image.handle( cdio_t_handle ) );
+  assert( ! image.close( cdio_t_handle ) );
+  assert( cast( Source!CdIo_t )( image ) !is null );
 }

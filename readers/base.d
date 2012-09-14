@@ -19,6 +19,8 @@ module readers.base;
 
 import std.array;
 
+import c.cdio.types;
+
 import introspection;
 import log;
 import media;
@@ -29,7 +31,7 @@ import writers.base;
 
 interface DiscReader : introspection.Interface
 {
-  void setSource( Source source );
+  void setSource( GenericSource source );
   Disc disc();
   void add( ReadFromDiscJob job );
   void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
@@ -50,13 +52,13 @@ interface AudioDiscReader : DiscReader
 abstract class AbstractAudioDiscReader : AudioDiscReader
 {
 protected:
-  Source _source;
+  GenericSource _source;
   Disc _disc;
   Writer.Config _writerConfig;
   ReadFromDiscJob[] _jobs;
 
 public:
-  void setSource( Source source )
+  void setSource( GenericSource source )
   {
     _source = source;
     _disc = null;

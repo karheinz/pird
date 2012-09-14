@@ -27,6 +27,7 @@ import std.string;
 import std.variant;
 
 import c.cdio.logging;
+import c.cdio.types;
 
 static import introspection;
 import log;
@@ -130,8 +131,8 @@ class DefaultCommandFactory : CommandFactory
     if ( config.list ) {
       // Explore given source.
       if ( config.sourceFile.length ) {
-        c.add( new DetectSourceCommand!Source( config.sourceFile ) );
-        c.add( new ExploreSourceCommand!Source() );
+        c.add( new DetectSourceCommand!( Source!CdIo_t )( config.sourceFile ) );
+        c.add( new ExploreSourceCommand!( Source!CdIo_t )() );
         return c;
       }
       // List images in dir.
@@ -150,10 +151,10 @@ class DefaultCommandFactory : CommandFactory
     if ( config.paranoia ) {
       // Paranoia makes only sense for devices.
       c.add( new DetectSourceCommand!( Device )( config.sourceFile ) );
-      c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config ) );
+      //c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config ) );
     } else {
-      c.add( new DetectSourceCommand!( Source )( config.sourceFile ) );
-      c.add( new RipAudioDiscCommand!( Source, SimpleAudioDiscReader )( config ) );
+      c.add( new DetectSourceCommand!( Source!CdIo_t )( config.sourceFile ) );
+      c.add( new RipAudioDiscCommand!( Source!CdIo_t, SimpleAudioDiscReader )( config ) );
     }
 
     // Simulate?

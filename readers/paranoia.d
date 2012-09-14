@@ -17,6 +17,7 @@
 
 module readers.paranoia;
 
+/+
 import std.array;
 import std.conv;
 import std.math;
@@ -220,3 +221,4 @@ public:
   mixin introspection.Override;
   mixin Log;
 }
++/
