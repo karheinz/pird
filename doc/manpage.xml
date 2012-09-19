@@ -183,9 +183,6 @@
             <replaceable class="parameter">FILE</replaceable>
             is an optical drive)
           </para>
-          <para>
-            NOTE: This feature isn't implemented yet!
-          </para>
         </listitem>
       </varlistentry>
       <varlistentry>

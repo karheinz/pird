@@ -59,8 +59,6 @@ OPTIONS
        -p, --paranoia
            rip in paranoia mode (makes only sense if FILE is an optical drive)
 
-           NOTE: This feature isn't implemented yet!
-
        -v --verbose
            be verbose, each occurrence increases log level
 
