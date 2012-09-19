@@ -151,7 +151,7 @@ class DefaultCommandFactory : CommandFactory
     if ( config.paranoia ) {
       // Paranoia makes only sense for devices.
       c.add( new DetectSourceCommand!( Device )( config.sourceFile ) );
-      //c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config ) );
+      c.add( new RipAudioDiscCommand!( Device, ParanoiaAudioDiscReader )( config ) );
     } else {
       c.add( new DetectSourceCommand!( Source!CdIo_t )( config.sourceFile ) );
       c.add( new RipAudioDiscCommand!( Source!CdIo_t, SimpleAudioDiscReader )( config ) );

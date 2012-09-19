@@ -72,6 +72,7 @@ interface Writer
   void close();
   void write( ubyte[] buffer );
   void write( ubyte[] buffer, uint bytes );
+  void write( ubyte* buffer, uint bytes );
   ulong seek( long offset, SeekPos whence );
 }
 
@@ -129,6 +130,13 @@ public:
   void close()
   {
     if ( _file !is null ) { _file.close(); }
+  }
+
+  void write( ubyte* buffer, uint bytes )
+  {
+    open();
+
+    _file.writeExact( buffer, bytes );
   }
 
   void write( ubyte[] buffer, uint bytes )
@@ -201,6 +209,18 @@ public:
   void close()
   {
     // Nothing to do, never close.
+  }
+
+  void write( ubyte* buffer, uint bytes )
+  {
+    uint times = bytes / 1024;
+    if ( times > 0 ) { 
+      fwrite( buffer, 1024, times, stdout.getFP() ); 
+    }
+    uint rest = bytes - ( 1024 * times );
+    if ( rest > 0 ) {
+      fwrite( buffer, rest, 1, stdout.getFP() ); 
+    }
   }
 
   void write( ubyte[] buffer, uint bytes )

@@ -17,7 +17,6 @@
 
 module readers.paranoia;
 
-/+
 import std.array;
 import std.conv;
 import std.math;
@@ -28,6 +27,7 @@ import std.string;
 import c.cdio.cdda;
 import c.cdio.device;
 import c.cdio.disc;
+import c.cdio.paranoia;
 import c.cdio.sector;
 import c.cdio.track;
 import c.cdio.types;
@@ -37,6 +37,7 @@ import log;
 import media;
 import readers.base;
 import readers.jobs;
+import readers.mixins;
 import sources.base;
 import utils;
 import writers.base;
@@ -44,104 +45,39 @@ import writers.base;
 
 class ParanoiaAudioDiscReader : AbstractAudioDiscReader
 {
-private:
-  cdrom_drive_t* _handle;
-
 public:
-  this() {};
-  this( Source source )
+  override void setSource( GenericSource source )
   {
+    // We need access to a cdrom_paranoia_t pointer! Cast is required.
+    if ( cast( Source!cdrom_paranoia_t )( source ) is null ) {
+      throw new Exception( format( "%s is no %", source.path(), typeid( Source!cdrom_paranoia_t ) ) ); 
+    }
     _source = source;
+    _disc = null;
   }
 
-  Disc disc()
+  this() {};
+  this( GenericSource source )
+  {
+    setSource( source );
+  }
+
+  bool read()
   {
     // Abort if source is no device.
     if ( ! _source.isDevice() ) {
       throw new Exception( format( "%s is no device", _source.path() ) );
     }
 
+    // Handle.
+    cdrom_paranoia_t* handle;
+
     // Open source.
-    if ( ! _source.open() ) {
+    if ( ! ( cast( Source!cdrom_paranoia_t )( _source ) ).open( handle ) ) {
       throw new Exception( format( "Failed to open %s", _source.path() ) ); 
     }
 
-    // Media changed since last call?
-    if ( ! cdio_get_media_changed( _source.handle() ) ) {
-      // Maybe we already explored the disc.
-      if ( _disc !is null ) return _disc;
-    }
-
-    // Either media is unknown or media changed.
-
-    // Paranoia reader only supports audio discs.
-    discmode_t discmode = cdio_get_discmode( _source.handle() );
-    if ( discmode != discmode_t.CDIO_DISC_MODE_CD_DA &&
-        discmode != discmode_t.CDIO_DISC_MODE_CD_MIXED ) {
-      logDebug( format( "Discmode %s is not supported!", to!string( discmode ) ) );
-      logDebug( "No audio disc found!" );
-      return null;
-    }
-
-    // Build disc.
-    Disc disc = new Disc();
-
-    // Retrieve media catalog number and apply to disc.
-    char* mcn = cdio_get_mcn( _source.handle() );
-    disc.setMcn( to!string( mcn ) );
-    delete mcn;
-
-    // Get paranoia handle.
-    char** dummy;
-    _handle = cdio_cddap_identify_cdio( _source.handle(), 0, dummy );
-    if ( _handle is null ) {
-      throw new Exception( "No cdrom_drive_t handle available" );
-    }
-
-    // Call open using paranoia handle.
-    if ( cdio_cddap_open( _handle ) ) {
-      throw new Exception( format( "Failed to open %s in paranoia mode.", _source.path() ) ); 
-    }
-
-
-    track_t tracks = cdio_cddap_tracks( _handle );
-    track_format_t trackFormat;
-    lsn_t firstSector, lastSector;
-    for ( track_t track = 1; track <= tracks; track++ ) {
-      trackFormat = cdio_get_track_format( _source.handle(), track );
-      firstSector= cdio_cddap_track_firstsector( _handle, track );
-      lastSector= cdio_cddap_track_lastsector( _handle, track );
-      if ( trackFormat == track_format_t.TRACK_FORMAT_AUDIO ) {
-        logTrace( format( "Found audio track %d (%d - %d).", track, firstSector, lastSector) ); 
-      } else {
-        logTrace( format( "Found non audio track %d (%d - %d).", track, firstSector, lastSector) ); 
-      }
-
-      disc.addTrack(
-        new Track(
-          track,
-          firstSector,
-          lastSector,
-          trackFormat == track_format_t.TRACK_FORMAT_AUDIO
-        )
-      );
-
-      // In case tracks is 255.
-      if ( track == track_t.max ) break;
-    }
-
-    // Log what we found.
-    string word = ( disc.mcn().length ? format( " %s", disc.mcn() ) : "" );
-    logDebug( format( "Found audio disc%s with %d tracks.", word, tracks ) );
-
-    // Cache result.
-    _disc = disc;
-
-    return _disc;
-  }
-
-  bool read()
-  {
+    // Something to do?
     if ( _jobs.length == 0 ) {
       logInfo( "Nothing to do." );
       return true;
@@ -173,7 +109,8 @@ public:
 
       // Init some vars.
       long rc;
-      ubyte[ CDIO_CD_FRAMESIZE_RAW ] buffer;
+      short* buffer;
+
       SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
@@ -193,12 +130,19 @@ public:
         );
       logInfo( "Data is written to " ~ writer.path() ~ "." );
 
+      // Configure paranoia.
+      cdio_paranoia_modeset( handle, paranoia_mode_t.PARANOIA_MODE_FULL );
+
+      // Go to first sector (SEEK_SET is defined in std.c.stdio).
+      cdio_paranoia_seek( handle, cast( short )( sr.from ), SEEK_SET );
+
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
-        rc = cdio_cddap_read( _handle, buffer.ptr, sector, 1 );        
+        // Read sector, max 10 retries.
+        buffer = cdio_paranoia_read_limited( handle, null, 10 );
 
         // FIXME: What does a negative value of rc mean?
-        if ( rc != 0 ) {
-          writer.write( buffer );
+        if ( buffer ) {
+          writer.write( cast( ubyte* )( buffer ), CDIO_CD_FRAMESIZE_RAW );
           continue;
         }
 
@@ -218,7 +162,7 @@ public:
   }
 
 
+  mixin CdIoAudioDiscReader;
   mixin introspection.Override;
   mixin Log;
 }
-+/

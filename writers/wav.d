@@ -90,6 +90,18 @@ class FileWriter : writers.base.FileWriter
     super.close();
   }
 
+  override void write( ubyte* buffer, uint bytes )
+  {
+    open();
+
+    // Let 44 bytes for the wav header!
+    if ( _file.seek( 0, SeekPos.Current ) == 0 ) {
+      _file.seek( 44, SeekPos.Set );
+    }
+
+    super.write( buffer, bytes );
+  }
+
   override void write( ubyte[] buffer )
   {
     open();
@@ -144,6 +156,23 @@ public:
   {
     uint bound = cast( uint )fmin( buffer.length, bytes );
     write( buffer[ 0 .. bound ] );
+  }
+
+  override void write( ubyte* buffer, uint bytes )
+  {
+    if ( ! _headerWritten ) {
+      if ( _expectedSize == 0  ) {
+        throw new Exception( "Expected file size is required" );
+      }
+
+      // Write header.
+      WavHeader rawHeader = WavHeader();
+      rawHeader.setExpectedSize( _expectedSize );
+      stdout.rawWrite!ubyte( rawHeader.serialized() );
+      _headerWritten = true;
+    }
+
+    super.write( buffer, bytes );
   }
 
   mixin introspection.Override;

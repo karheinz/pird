@@ -26,6 +26,7 @@ import std.string;
 import c.cdio.cdda;
 import c.cdio.device;
 import c.cdio.logging;
+import c.cdio.paranoia;
 import c.cdio.types;
 
 static import introspection;
@@ -51,7 +52,6 @@ interface GenericSource
 interface Source( T ) : GenericSource, introspection.Interface
 {
   bool open( out T* handle );
-  bool handle( out T* handle );
   bool close( out T* handle );
 
   // Allows to search for all sources.
@@ -95,15 +95,6 @@ public:
     return _aliases;
   }
 
-  bool handle( out CdIo_t* handle ) {
-    if ( _cdio_t_handle ) {
-      handle = _cdio_t_handle;
-      return true;
-    }
-
-    return open( handle );
-  }
-
   bool open( out CdIo_t* handle ) {
     if ( _cdio_t_handle ) {
       handle = _cdio_t_handle;
@@ -125,11 +116,13 @@ public:
   }
 
   bool close( out CdIo_t* handle ) {
-    if ( ! _cdio_t_handle ) return false;
+    handle = null;
 
-    // Free memory.
-    cdio_destroy( _cdio_t_handle );
-    handle = _cdio_t_handle = null;
+    if ( _cdio_t_handle ) {
+      // Free memory.
+      cdio_destroy( _cdio_t_handle );
+      _cdio_t_handle = null;
+    }
 
     return true;
   }
@@ -164,7 +157,6 @@ class Device : AbstractSource, Source!cdrom_drive_t, Source!cdrom_paranoia_t
 protected:
   Capabilities _capabilities;
   Info _info;
-  //CdIo_t* _cdio_t_handle;
   cdrom_drive_t* _cdrom_drive_t_handle;
   cdrom_paranoia_t* _cdrom_paranoia_t_handle;
 
@@ -187,19 +179,70 @@ public:
   override bool open( out CdIo_t* handle ) {
     return super.open( handle );
   }
-  override bool handle( out CdIo_t* handle ) {
-    return super.handle( handle );
-  }
   override bool close( out CdIo_t* handle ) {
     return super.close( handle );
   }
 
-  bool open( out cdrom_drive_t* handle ) { handle = null; return false; }
-  bool handle( out cdrom_drive_t* handle ) { handle = null; return false; }
-  bool close( out cdrom_drive_t* handle ) { handle = null; return false; }
-  bool open( out cdrom_paranoia_t* handle ) { handle = null; return false; }
-  bool handle( out cdrom_paranoia_t* handle ) { handle = null; return false; }
-  bool close( out cdrom_paranoia_t* handle ) { handle = null; return false; }
+  bool open( out cdrom_drive_t* handle ) {
+    // Handle exists.
+    if ( _cdrom_drive_t_handle ) {
+      handle = _cdrom_drive_t_handle;
+      // Already opened?
+      if ( _cdrom_drive_t_handle.opened ) {
+        return true;
+      // Try to open.
+      } else {
+        return ( cdio_cddap_open( _cdrom_drive_t_handle ) == 0 );
+      }
+    }
+
+    // Get the handle using CdIo_t struct.
+    CdIo_t* tmp;
+    if ( ! open( tmp ) ) { return false; }
+
+    handle = _cdrom_drive_t_handle = cdio_cddap_identify_cdio( tmp, 0, null );
+    if ( _cdrom_drive_t_handle == null ) { return false; }
+
+    // Try to open.
+    return ( cdio_cddap_open( _cdrom_drive_t_handle ) == 0 );
+  }
+
+  
+  bool close( out cdrom_drive_t* handle ) {
+    handle = null;
+
+    if ( _cdrom_drive_t_handle ) {
+      // Free memory.
+      cdio_cddap_close_no_free_cdio( _cdrom_drive_t_handle );
+    }
+
+    return true;
+  }
+
+  bool open( out cdrom_paranoia_t* handle ) {
+    // Handle exists.
+    if ( _cdrom_paranoia_t_handle ) {
+      handle = _cdrom_paranoia_t_handle;
+      return true;
+    }
+
+    // Get the handle using cdrom_drive_t struct.
+    cdrom_drive_t* tmp;
+    if ( ! open( tmp ) ) { return false; }
+
+    handle = _cdrom_paranoia_t_handle = cdio_paranoia_init( tmp );
+    return ( _cdrom_paranoia_t_handle != null );
+  }
+
+  bool close( out cdrom_paranoia_t* handle ) {
+    handle = null;
+
+    if ( _cdrom_paranoia_t_handle ) {
+      cdio_paranoia_free( _cdrom_paranoia_t_handle );
+    }
+
+    return true;
+  }
 
   Info info() {
     if ( _info.fetched ) return _info;
@@ -238,14 +281,11 @@ unittest {
   Device device = new Device( "/device/does/not/exist", Driver.UNKNOWN );
   assert( device !is null );
   assert( ! device.open( cdio_t_handle ) );
-  assert( ! device.handle( cdio_t_handle ) );
-  assert( ! device.close( cdio_t_handle ) );
+  assert( device.close( cdio_t_handle ) );
   assert( ! device.open( cdrom_drive_t_handle ) );
-  assert( ! device.handle( cdrom_drive_t_handle ) );
-  assert( ! device.close( cdrom_drive_t_handle ) );
+  assert( device.close( cdrom_drive_t_handle ) );
   assert( ! device.open( cdrom_paranoia_t_handle ) );
-  assert( ! device.handle( cdrom_paranoia_t_handle ) );
-  assert( ! device.close( cdrom_paranoia_t_handle ) );
+  assert( device.close( cdrom_paranoia_t_handle ) );
   assert( cast( Source!CdIo_t )( device ) !is null );
   assert( cast( Source!cdrom_drive_t )( device ) !is null );
   assert( cast( Source!cdrom_paranoia_t )( device ) !is null );
@@ -254,7 +294,6 @@ unittest {
   Image image = new Image( "/file/does/not/exist", Driver.UNKNOWN );
   assert( image !is null );
   assert( ! image.open( cdio_t_handle ) );
-  assert( ! image.handle( cdio_t_handle ) );
-  assert( ! image.close( cdio_t_handle ) );
+  assert( image.close( cdio_t_handle ) );
   assert( cast( Source!CdIo_t )( image ) !is null );
 }
