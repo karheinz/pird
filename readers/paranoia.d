@@ -83,6 +83,15 @@ public:
       return true;
     }
 
+    // Init some vars.
+    long rc;
+    short* buffer;
+    lsn_t position;
+
+    // Configure paranoia.
+    cdio_paranoia_modeset( handle, paranoia_mode_t.PARANOIA_MODE_FULL );
+
+
     ReadFromDiscJob job;
     while ( _jobs.length ) {
       job = _jobs.front();
@@ -107,10 +116,6 @@ public:
       // Heyho, lets go!
       logInfo( "Start job: " ~ job.description() );
 
-      // Init some vars.
-      long rc;
-      short* buffer;
-
       SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
@@ -128,19 +133,32 @@ public:
             sr.from
           )
         );
+
+      // SEEK_SET, SEEK_CUR, SEEK_END are defined in std.c.stdio
+      // Note: SEEK_SET seems not to work.
+      // Current position?
+      position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
+      // Go to first sector of range (use relative offset).
+      cdio_paranoia_seek( handle, cast( short )( sr.from - position ), SEEK_CUR );
+      position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
+      // Check result of seeking.
+      if ( position != sr.from ) {
+        logError(
+          format(
+            "Failed to seek to sector %d! Stuck at sector %d",
+            sr.from,
+            position
+          )
+        );
+        continue;
+      }
+
+      // Rip data.
       logInfo( "Data is written to " ~ writer.path() ~ "." );
-
-      // Configure paranoia.
-      cdio_paranoia_modeset( handle, paranoia_mode_t.PARANOIA_MODE_FULL );
-
-      // Go to first sector (SEEK_SET is defined in std.c.stdio).
-      cdio_paranoia_seek( handle, cast( short )( sr.from ), SEEK_SET );
-
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
         // Read sector, max 10 retries.
         buffer = cdio_paranoia_read_limited( handle, null, 10 );
 
-        // FIXME: What does a negative value of rc mean?
         if ( buffer ) {
           writer.write( cast( ubyte* )( buffer ), CDIO_CD_FRAMESIZE_RAW );
           continue;
@@ -155,7 +173,13 @@ public:
 
       // Close writer.
       writer.close();
-      logInfo( format( "Read and wrote %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
+      logInfo( 
+        format(
+          "Read and wrote %d %s.",
+          sr.length(),
+          "sector".pluralize( sr.length() )
+        )
+      );
     }
 
     return true;

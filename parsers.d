@@ -195,7 +195,7 @@ private:
       // Extract job descriptions.
       ReadFromDiscJob[] jobs;
 
-      string[] descs = split( input, to!string( Token.SEPARATOR ) );
+      string[] descs = split( input, cast( string )( Token.SEPARATOR ) );
       foreach ( desc; descs ) {
         auto c = match( desc, "^((" ~ Pattern.RANGE ~ ")|(" ~ Pattern.TRACK ~ "))$" ).captures();
 
