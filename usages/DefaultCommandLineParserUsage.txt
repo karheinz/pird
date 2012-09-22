@@ -59,10 +59,10 @@ OPTIONS
        -q, --quiet
            be quiet
 
-       -s --simulate
+       --simulate
            simulate execution of jobs
 
-       --speed SPEED
+       -s, --speed SPEED
            Sets the SPEED to use for reading: 1x, 2x, 4x, ...
 
            NOTE: Single SPEED means a data transfer rate of 150 kB/s.
@@ -70,7 +70,7 @@ OPTIONS
        -t, --trackwise
            split ranges at track bounds
 
-       -v --verbose
+       -v, --verbose
            be verbose, each occurrence increases log level
 
 OUTPUT

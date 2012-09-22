@@ -437,12 +437,12 @@ private:
             std.getopt.config.passThrough,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
-            "simulate|s", &config.simulate,
+            "simulate", &config.simulate,
             "paranoia|p", &config.paranoia,
             "trackwise|t", &config.trackwise,
             "format|f", &audioFormatDescription,
             "jobs|j", &jobDescriptions,
-            "speed", &config.speed
+            "speed|s", &config.speed
           );
 
           // Drop command.

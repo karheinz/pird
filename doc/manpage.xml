@@ -191,7 +191,6 @@
       </varlistentry>
       <varlistentry>
         <term>
-          <option>-s</option>
           <option>--simulate</option>
         </term>
         <listitem>
@@ -202,6 +201,7 @@
       </varlistentry>
       <varlistentry>
         <term>
+          <option>-s</option>,
           <option>--speed</option>
           <replaceable class="parameter">SPEED</replaceable>
         </term>
@@ -227,7 +227,7 @@
       </varlistentry>
       <varlistentry>
         <term>
-          <option>-v</option>
+          <option>-v</option>,
           <option>--verbose</option>
         </term>
         <listitem>
