@@ -79,6 +79,20 @@ public:
       return true;
     }
 
+    // Set speed of device/image?
+    if ( _speed ) {
+      if ( ! _source.hasProgrammableSpeed() ) {
+        logWarning( "Source does not support setting the speed! Trying anyway." );
+      }
+
+      if ( cdio_set_speed( handle, _speed ) == driver_return_code.DRIVER_OP_SUCCESS ) {
+        logInfo( format( "Set drive speed to %d.", _speed ) );
+      } else {
+        logError( format( "Failed to set drive speed to %d", _speed ) );
+        return false;
+      }
+    }
+
     ReadFromDiscJob job;
     while ( _jobs.length ) {
       job = _jobs.front();

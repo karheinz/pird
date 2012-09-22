@@ -79,6 +79,21 @@
     <variablelist remap="TP">
       <varlistentry>
         <term>
+          <option>-f</option>, 
+          <option>--format</option>
+          <replaceable class="parameter">FORMAT</replaceable>
+        </term>
+        <listitem>
+          <para>
+            Sets the audio <replaceable class="parameter">FORMAT</replaceable>
+            to use for output. Available 
+            <replaceable class="parameter">FORMAT</replaceable>s are:
+            WAV (default) and PCM.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
           <option>-j</option>, 
           <option>--job</option>,
           <option>--jobs</option>
@@ -152,28 +167,6 @@
       </varlistentry>
       <varlistentry>
         <term>
-          <option>-f</option>, 
-          <option>--format</option>
-          <replaceable class="parameter">FORMAT</replaceable>
-        </term>
-        <listitem>
-          <para>
-            The audio format used for output.
-            Available formats are: WAV (default) and PCM.
-          </para>
-        </listitem>
-      </varlistentry>
-      <varlistentry>
-        <term>
-          <option>-t</option>, 
-          <option>--trackwise</option>
-        </term>
-        <listitem>
-          <para>split ranges at track bounds</para>
-        </listitem>
-      </varlistentry>
-      <varlistentry>
-        <term>
           <option>-p</option>, 
           <option>--paranoia</option>
         </term>
@@ -182,17 +175,6 @@
             rip in paranoia mode (makes only sense if
             <replaceable class="parameter">FILE</replaceable>
             is an optical drive)
-          </para>
-        </listitem>
-      </varlistentry>
-      <varlistentry>
-        <term>
-          <option>-v</option>
-          <option>--verbose</option>
-        </term>
-        <listitem>
-          <para>
-            be verbose, each occurrence increases log level
           </para>
         </listitem>
       </varlistentry>
@@ -215,6 +197,42 @@
         <listitem>
           <para>
             simulate execution of jobs
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>--speed</option>
+          <replaceable class="parameter">SPEED</replaceable>
+        </term>
+        <listitem>
+          <para>
+            Sets the <replaceable class="parameter">SPEED</replaceable>
+            to use for reading: 1x, 2x, 4x, ...
+          </para>
+          <para>
+            NOTE: Single <replaceable class="parameter">SPEED</replaceable>
+            means a data transfer rate of 150 kB/s.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-t</option>, 
+          <option>--trackwise</option>
+        </term>
+        <listitem>
+          <para>split ranges at track bounds</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-v</option>
+          <option>--verbose</option>
+        </term>
+        <listitem>
+          <para>
+            be verbose, each occurrence increases log level
           </para>
         </listitem>
       </varlistentry>

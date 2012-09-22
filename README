@@ -25,6 +25,10 @@ DESCRIPTION
 OPTIONS
        There are some options to tell pird how to proceed:
 
+       -f, --format FORMAT
+           Sets the audio FORMAT to use for output. Available FORMATs are: WAV
+           (default) and PCM.
+
        -j, --job, --jobs JOB[,...]
            A JOB describes what data should be ripped. If no JOB is specified,
            pird rips the whole disc. Multiple JOBs are delimited by ,
@@ -53,24 +57,25 @@ OPTIONS
 
                ..[.]TRACK_NUM[[MIN:SEC.FRAME]]
 
-       -f, --format FORMAT
-           The audio format used for output. Available formats are: WAV
-           (default) and PCM.
-
-       -t, --trackwise
-           split ranges at track bounds
-
        -p, --paranoia
            rip in paranoia mode (makes only sense if FILE is an optical drive)
-
-       -v --verbose
-           be verbose, each occurrence increases log level
 
        -q, --quiet
            be quiet
 
        -s --simulate
            simulate execution of jobs
+
+       --speed SPEED
+           Sets the SPEED to use for reading: 1x, 2x, 4x, ...
+
+           NOTE: Single SPEED means a data transfer rate of 150 kB/s.
+
+       -t, --trackwise
+           split ranges at track bounds
+
+       -v --verbose
+           be verbose, each occurrence increases log level
 
 OUTPUT
        By default pird writes all audio data read by a job to a single file in
@@ -110,4 +115,4 @@ NOTES
 
 
 
-PIRD                              09/19/2012                           PIRD(1)
+PIRD                              09/23/2012                           PIRD(1)

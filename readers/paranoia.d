@@ -91,6 +91,21 @@ public:
     // Configure paranoia.
     cdio_paranoia_modeset( handle, paranoia_mode_t.PARANOIA_MODE_FULL );
 
+    // Set speed of device/image?
+    if ( _speed ) {
+      if ( ! _source.hasProgrammableSpeed() ) {
+        logWarning( "Source does not support setting the speed! Trying anyway." );
+      }
+
+      cdrom_drive_t* tmp_handle;
+      if ( ( cast( Source!cdrom_drive_t )( _source ) ).open( tmp_handle ) &&
+          cdio_cddap_speed_set( tmp_handle, _speed ) == driver_return_code.DRIVER_OP_SUCCESS ) {
+        logInfo( format( "Set drive speed to %d.", _speed ) );
+      } else {
+        logError( format( "Failed to set drive speed to %d", _speed ) );
+        return false;
+      }
+    }
 
     ReadFromDiscJob job;
     while ( _jobs.length ) {

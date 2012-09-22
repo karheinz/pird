@@ -475,6 +475,7 @@ public:
 
     // Configure reader.
     _reader.setSource( source );
+    _reader.setSpeed( _config.speed );
     _reader.setWriterConfig( _config.writer );
 
     // Look for audio disc (using reader of type T).

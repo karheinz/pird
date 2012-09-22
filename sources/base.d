@@ -47,6 +47,9 @@ interface GenericSource
 
   string[] aliases();
   void addAlias( string path );
+
+  bool readsAudioDiscs();
+  bool hasProgrammableSpeed();
 }
 
 interface Source( T ) : GenericSource, introspection.Interface
@@ -60,12 +63,31 @@ interface Source( T ) : GenericSource, introspection.Interface
 
 abstract class AbstractSource : Source!CdIo_t
 {
+  struct Capabilities {
+    uint read, write, misc;
+    bool fetched;
+  };
+    
 protected:
   string _path;
   string[] _aliases;
   uint _driver = Driver.UNKNOWN;
   CdIo_t* _cdio_t_handle;
-    
+  Capabilities _capabilities;
+
+  Capabilities capabilities() {
+    if ( _capabilities.fetched ) return _capabilities;
+
+    cdio_get_drive_cap_dev(
+      std.string.toStringz( _path ),
+      &_capabilities.read,
+      &_capabilities.write,
+      &_capabilities.misc
+    );
+
+    return _capabilities;
+  }
+
   void addAlias( string path ) {
     _aliases ~= path;
   }
@@ -126,6 +148,14 @@ public:
 
     return true;
   }
+  
+  bool readsAudioDiscs() {
+    return ( capabilities().read & ReadCapability.CD_DA ) > 0;
+  }
+
+  bool hasProgrammableSpeed() {
+    return ( capabilities().misc & MiscellaneousCapability.SELECT_SPEED ) > 0;
+  }
 }
 
 
@@ -144,34 +174,15 @@ class Device : AbstractSource, Source!cdrom_drive_t, Source!cdrom_paranoia_t
   mixin introspection.Initial;
   mixin Comparators;
 
-  struct Capabilities {
-    uint read, write, misc;
-    bool fetched;
-  };
-
   struct Info {
     string vendor, model, revision;
     bool fetched;
   };
 
 protected:
-  Capabilities _capabilities;
   Info _info;
   cdrom_drive_t* _cdrom_drive_t_handle;
   cdrom_paranoia_t* _cdrom_paranoia_t_handle;
-
-  Capabilities capabilities() {
-    if ( _capabilities.fetched ) return _capabilities;
-
-    cdio_get_drive_cap_dev(
-      std.string.toStringz( _path ),
-      &_capabilities.read,
-      &_capabilities.write,
-      &_capabilities.misc
-    );
-
-    return _capabilities;
-  }
 
 public:
   // Need (dummy) overriden methods here, otherwise unittests will fail.
@@ -265,10 +276,6 @@ public:
     }
 
     return _info;
-  }
-  
-  bool readsAudioDiscs() {
-    return ( capabilities().read & ReadCapability.CD_DA ) > 0;
   }
 }
 

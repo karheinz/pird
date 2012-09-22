@@ -154,3 +154,7 @@ extern (C):
   bool cdio_is_device( char* path, uint driver );
   bool cdio_get_hwinfo( const CdIo_t* p_cdio, /*out*/ cdio_hwinfo_t* p_hw_info );
   int cdio_get_media_changed( CdIo_t* p_cdio );
+  driver_return_code_t cdio_set_speed(
+      const CdIo_t *p_cdio,
+      int i_drive_speed
+    );

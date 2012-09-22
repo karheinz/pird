@@ -38,6 +38,7 @@ interface DiscReader : introspection.Interface
   void clear();
   bool read();
   void setWriterConfig( Writer.Config config );
+  void setSpeed( ubyte speed );
   ReadFromDiscJob[] jobs();
   ReadFromDiscJob[] unsatisfiableJobs();
   void connect( void delegate( string, LogLevel, string ) signalHandler );
@@ -54,6 +55,7 @@ abstract class AbstractAudioDiscReader : AudioDiscReader
 protected:
   GenericSource _source;
   Disc _disc;
+  ubyte _speed;
   Writer.Config _writerConfig;
   ReadFromDiscJob[] _jobs;
 
@@ -62,6 +64,11 @@ public:
   {
     _source = source;
     _disc = null;
+  }
+
+  void setSpeed( ubyte speed )
+  {
+    _speed = speed;
   }
 
   void setWriterConfig( Writer.Config config )

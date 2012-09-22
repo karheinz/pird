@@ -43,6 +43,7 @@ struct Config
   ReadFromDiscJob[] jobs;
   bool help, quiet, list, simulate, paranoia, stdout, trackwise;
   int verbose;
+  ubyte speed;
 }
 
 
@@ -440,7 +441,8 @@ private:
             "paranoia|p", &config.paranoia,
             "trackwise|t", &config.trackwise,
             "format|f", &audioFormatDescription,
-            "jobs|j", &jobDescriptions
+            "jobs|j", &jobDescriptions,
+            "speed", &config.speed
           );
 
           // Drop command.
