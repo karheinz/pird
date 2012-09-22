@@ -214,12 +214,13 @@ public:
   void write( ubyte* buffer, uint bytes )
   {
     uint times = bytes / 1024;
+    uint rest = bytes % 1024;
+
     if ( times > 0 ) { 
       fwrite( buffer, 1024, times, stdout.getFP() ); 
     }
-    uint rest = bytes - ( 1024 * times );
     if ( rest > 0 ) {
-      fwrite( buffer, rest, 1, stdout.getFP() ); 
+      fwrite( buffer + ( bytes - rest ), rest, 1, stdout.getFP() ); 
     }
   }
 
