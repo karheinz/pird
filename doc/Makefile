@@ -5,7 +5,7 @@ SRC=manpage.xml
 
 all: usage
 usage: readme
-	awk -f usage.awk ../README > ../usages/DefaultCommandLineParserUsage.txt
+	awk -f usage.awk ../README > ../src/usages/DefaultCommandLineParserUsage.txt
 readme: doc
 	stty cols 80
 	man man/man1/pird.1 | col -bx > ../README

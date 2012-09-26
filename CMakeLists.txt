@@ -2,21 +2,47 @@ cmake_minimum_required(VERSION 2.8)
 
 project(pird)
 
+# Build deb and rpm packages.
+set(CPACK_GENERATOR DEB;RPM)
+
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a simple cd ripper written in D")
+set(CPACK_PACKAGE_DESCRIPTION ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 2)
+set(CPACK_PACKAGE_VERSION_PATCH 4)
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcdio-dev (>= 0.81-4), libcdio-cdda-dev (>= 0.81-4), libcdio-paranoia-dev (>= 0.81-4)" )
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karsten Heinze <karsten@sidenotes.de>")
+
+set(CPACK_RPM_PACKAGE_REQUIRES "libcdio-dev >= 0.81-4, libcdio-cdda-dev >= 0.81-4, libcdio-paranoia-dev >= 0.81-4" )
+set(CPACK_RPM_PACKAGE_VENDOR "Karsten Heinze <karsten@sidenotes.de>" )
+set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
+
+include(CPack)
+
+# Find all source files *.d
 file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
+# Same again but relative to src directory.
 file(GLOB_RECURSE SOURCE_FILES_RELATIVE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
+# Usage information (related to parsers) are in this directory.
 set(USAGE_DIR_RELATIVE "usages")
+# Object files are stored here.
 set(OBJECTS_DIR ${CMAKE_CURRENT_BINARY_DIR}/objects)
 
+# Build string containing object files.
 foreach(SOURCE_FILE ${SOURCE_FILES_RELATIVE})
   get_filename_component(FILE_BASENAME ${SOURCE_FILE} NAME_WE)
   get_filename_component(FILE_PATH ${SOURCE_FILE} PATH)
-  set(OBJECT_FILES ${OBJECT_FILES} "${OBJECTS_DIR}/${FILE_PATH}/${FILE_BASENAME}.o")
+  set(OBJECT_FILE "${OBJECTS_DIR}/${FILE_PATH}/${FILE_BASENAME}.o")
+  string(REPLACE "//" "/" OBJECT_FILE ${OBJECT_FILE})
+  set(OBJECT_FILES "${OBJECT_FILES} ${OBJECT_FILE}")
 endforeach()
 
-message("Sources ${SOURCE_FILES_RELATIVE}")
-message("Objects ${OBJECT_FILES}")
-
+# We want to build pird.
 add_executable(pird ${SOURCE_FILES})
+install(TARGETS pird DESTINATION bin)
+
+# Before linking, build object files.
 add_custom_command(
   TARGET pird PRE_LINK 
   COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/src &&
@@ -24,9 +50,22 @@ add_custom_command(
   -od${CMAKE_CURRENT_BINARY_DIR}/objects -op
   -w -c
 )
+
+# Tell cmake its a C project (no D support yet).
 set_target_properties(pird PROPERTIES LINKER_LANGUAGE C)
-#set_target_properties(pird PROPERTIES LINK_DEPENDS ${OBJECT_FILES})
-set(CMAKE_C_LINK_EXECUTABLE dmd)
+set(CMAKE_C_SOURCE_FILE_EXTENSTIONS .d)
+# Get rid of -rdynamic
+set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+# How to compile.
+set(CMAKE_C_COMPILE_OBJECT "dmd <FLAGS> -of<OBJECT> -c <SOURCE>")
+# How to link.
+# NOTE: <OBJECTS> is empty, how to use?
+#set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
+set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> ${OBJECT_FILES} -of<TARGET> <LINK_LIBRARIES>")
+# Linking is down using -L-l<library>
+set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
+
+# Link pird against this libraries.
 find_library(LIBCDIO cdio)
 find_library(LIBCDIO_CDDA cdio_cdda)
 find_library(LIBCDIO_PARANOIA cdio_paranoia)
