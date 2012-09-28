@@ -42,13 +42,25 @@ endforeach()
 add_executable(pird ${SOURCE_FILES})
 install(TARGETS pird DESTINATION bin)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+message("CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
+set(DMD_COMPILE_FLAGS -w -c)
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  set(DMD_COMPILE_FLAGS ${DMD_COMPILE_FLAGS} -release)
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  set(DMD_COMPILE_FLAGS ${DMD_COMPILE_FLAGS} -g -version=devel -unittest)
+endif()
+
 # Before linking, build object files.
 add_custom_command(
   TARGET pird PRE_LINK 
   COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/src &&
   dmd ${SOURCE_FILES_RELATIVE} -J${USAGE_DIR_RELATIVE}
   -od${CMAKE_CURRENT_BINARY_DIR}/objects -op
-  -w -c
+  ${DMD_COMPILE_FLAGS}
 )
 
 # Tell cmake its a C project (no D support yet).
@@ -61,7 +73,7 @@ set(CMAKE_C_COMPILE_OBJECT "dmd <FLAGS> -of<OBJECT> -c <SOURCE>")
 # How to link.
 # NOTE: <OBJECTS> is empty, how to use?
 #set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
-set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> ${OBJECT_FILES} -of<TARGET> <LINK_LIBRARIES>")
+set(CMAKE_C_LINK_EXECUTABLE "dmd ${OBJECT_FILES} -of<TARGET> <LINK_LIBRARIES>")
 # Linking is down using -L-l<library>
 set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
 
