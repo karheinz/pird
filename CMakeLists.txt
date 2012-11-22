@@ -10,6 +10,7 @@ set(CPACK_PACKAGE_DESCRIPTION ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 2)
 set(CPACK_PACKAGE_VERSION_PATCH 4)
+set(CPACK_PACKAGE_REVISION 1)
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcdio-dev (>= 0.81-4), libcdio-cdda-dev (>= 0.81-4), libcdio-paranoia-dev (>= 0.81-4)" )
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karsten Heinze <karsten@sidenotes.de>")
@@ -17,6 +18,21 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karsten Heinze <karsten@sidenotes.de>")
 set(CPACK_RPM_PACKAGE_REQUIRES "libcdio-dev >= 0.81-4, libcdio-cdda-dev >= 0.81-4, libcdio-paranoia-dev >= 0.81-4" )
 set(CPACK_RPM_PACKAGE_VENDOR "Karsten Heinze <karsten@sidenotes.de>" )
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
+
+# Set package name.
+find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems") 
+if(DPKG_PROGRAM) 
+  execute_process( 
+    COMMAND ${DPKG_PROGRAM} --print-architecture 
+      OUTPUT_VARIABLE CPACK_PACKAGE_ARCHITECTURE 
+      OUTPUT_STRIP_TRAILING_WHITESPACE 
+    ) 
+else(DPKG_PROGRAM)
+  set(CPACK_PACKAGE_ARCHITECTURE "arch")
+endif(DPKG_PROGRAM) 
+
+# Use deb naming style.
+set(CPACK_PACKAGE_FILE_NAME "pird_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${CPACK_PACKAGE_REVISION}_${CPACK_PACKAGE_ARCHITECTURE}")
 
 include(CPack)
 
@@ -41,6 +57,8 @@ endforeach()
 # We want to build pird.
 add_executable(pird ${SOURCE_FILES})
 install(TARGETS pird DESTINATION bin)
+# Also install man page.
+install(DIRECTORY "doc/man" DESTINATION share)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
