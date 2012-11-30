@@ -1,7 +1,13 @@
-# Build instructions.
-$ cd build
-# Add -DCMAKE_BUILD_TYPE=Debug for debug mode.
-$ cmake ..
-$ make
-# To build DEB and RPM packages make target package.
-$ make package
+Follow these steps to install pird:
+
+    $ cd build
+
+    $ cmake ..
+
+        (add -DCMAKE_BUILD_TYPE=Debug for debug mode)
+
+    $ make
+
+To build DEB and RPM packages make the correspondent target:
+
+    $ make packages

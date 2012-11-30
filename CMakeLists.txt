@@ -31,10 +31,26 @@ else(DPKG_PROGRAM)
   set(CPACK_PACKAGE_ARCHITECTURE "arch")
 endif(DPKG_PROGRAM) 
 
-# Use deb naming style.
-set(CPACK_PACKAGE_FILE_NAME "pird_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${CPACK_PACKAGE_REVISION}_${CPACK_PACKAGE_ARCHITECTURE}")
+# Base name of package.
+set(CPACK_PACKAGE_FILE_NAME "pird")
+# Name of the deb package.
+set(CPACK_PACKAGE_FILE_NAME_DEB "pird_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${CPACK_PACKAGE_REVISION}_${CPACK_PACKAGE_ARCHITECTURE}")
+# Name of the rpm package.
+set(CPACK_PACKAGE_FILE_NAME_RPM "pird-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${CPACK_PACKAGE_REVISION}.${CPACK_PACKAGE_ARCHITECTURE}")
 
+set (CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfigPird.cmake")
 include(CPack)
+
+# Use custom command to build packages:
+# http://http://stackoverflow.com/questions/12302836/renaming-cpack-automatic-target
+add_custom_target(packages COMMAND "${CMAKE_CPACK_COMMAND}" 
+   "-C" "$<CONFIGURATION>" "--config" "${CMAKE_BINARY_DIR}/CPackConfigPird.cmake")
+add_custom_command(
+  TARGET packages
+  COMMAND mv pird.deb ${CPACK_PACKAGE_FILE_NAME_DEB}.deb
+  COMMAND mv pird.rpm ${CPACK_PACKAGE_FILE_NAME_RPM}.rpm
+  COMMENT "renaming packages"
+)
 
 # Find all source files *.d
 file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
