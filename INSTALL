@@ -1,4 +1,7 @@
-Follow these steps to build pird:
+Please make sure you have installed the
+D2 compiler dmd by Digital Mars (>= v2.060).
+
+Now follow these steps to build pird:
 
     $ cd build
 
