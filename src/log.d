@@ -45,7 +45,7 @@ enum LogLevel
 
 interface Logger
 {
-  void handleSignal( string emitter, LogLevel logLevel, string message );
+  void handleSignal( string emitter, LogLevel logLevel, string message, bool lineBreak, bool prefix );
   LogLevel logLevel();
   void setLogLevel( LogLevel logLevel );
 }
@@ -53,37 +53,39 @@ interface Logger
 
 mixin template Log()
 {
-  void log( LogLevel logLevel, string message )
+protected:
+  void log( LogLevel logLevel, string message, bool lineBreak = true, bool prefix = true )
   {
-    emit( this.type(), logLevel, message );
+    emit( this.type(), logLevel, message, lineBreak, prefix );
   }
 
-  void logTrace( string message )
+  void logTrace( string message, bool lineBreak = true, bool prefix = true )
   {
-    log( LogLevel.TRACE, message );
+    log( LogLevel.TRACE, message, lineBreak, prefix );
   }
 
-  void logDebug( string message )
+  void logDebug( string message, bool lineBreak = true, bool prefix = true )
   {
-    log( LogLevel.DEBUG, message );
+    log( LogLevel.DEBUG, message, lineBreak, prefix );
   }
 
-  void logInfo( string message )
+  void logInfo( string message, bool lineBreak = true, bool prefix = true )
   {
-    log( LogLevel.INFO, message );
+    log( LogLevel.INFO, message, lineBreak, prefix );
   }
 
-  void logWarning( string message )
+  void logWarning( string message, bool lineBreak = true, bool prefix = true )
   {
-    log( LogLevel.WARNING, message );
+    log( LogLevel.WARNING, message, lineBreak, prefix );
   }
 
-  void logError( string message )
+  void logError( string message, bool lineBreak = true, bool prefix = true )
   {
-    log( LogLevel.ERROR, message );
+    log( LogLevel.ERROR, message, lineBreak, prefix );
   }
 
-  mixin Signal!( string, LogLevel, string );
+public:
+  mixin Signal!( string, LogLevel, string, bool, bool );
 }
 
 
@@ -177,7 +179,7 @@ protected:
   };
 
 public:
-  void handleSignal( string emitter, LogLevel logLevel, string message )
+  void handleSignal( string emitter, LogLevel logLevel, string message, bool lineBreak, bool prefix )
   {
     // Filter messages by CdIo library, which is very verbose by default.
     if ( emitter == "CdIoLib" && ( logLevel + 1 ) > _logLevel ) { return; }
@@ -186,10 +188,22 @@ public:
     if ( logLevel > _logLevel ) { return; } 
 
     // Write log message.
+    // FIXME: Consider prefix!
     version( devel ) {
-      _file.writefln( "%s %s: %s", logLevel, emitter, message );
+      _file.writef(
+        "%s%s%s%s",
+        prefix ? to!string( logLevel ) : "",
+        prefix ? format( " %s: ", emitter ) : "",
+        message,
+        lineBreak ? "\n" : ""
+      );
     } else {
-      _file.writefln( "%s: %s", logLevel, message );
+      _file.writef(
+        "%s%s%s",
+        prefix ? format( "%s: ", to!string( logLevel ) ) : "",
+        message,
+        lineBreak ? "\n" : ""
+      );
     }
   }
 

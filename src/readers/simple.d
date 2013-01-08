@@ -139,7 +139,11 @@ public:
         );
       logInfo( "Data is written to " ~ writer.path() ~ "." );
 
+      uint currentSector;
+      uint overallSectors = sr.length();
+      logRatio( 0, overallSectors );
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
+        logRatio( ++currentSector, overallSectors );
         rc = cdio_read_audio_sector( handle, buffer.ptr, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
           writer.write( buffer );
@@ -161,8 +165,10 @@ public:
     return true;
   }
 
-
   mixin CdIoAudioDiscReader;
   mixin introspection.Override;
   mixin Log;
+
+protected:
+  mixin RatioLogger; 
 }

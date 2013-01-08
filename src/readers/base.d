@@ -41,9 +41,9 @@ interface DiscReader : introspection.Interface
   void setSpeed( ubyte speed );
   ReadFromDiscJob[] jobs();
   ReadFromDiscJob[] unsatisfiableJobs();
-  void connect( void delegate( string, LogLevel, string ) signalHandler );
-  void disconnect( void delegate( string, LogLevel, string ) signalHandler );
-  void emit( string emitter, LogLevel level, string message );
+  void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+  void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+  void emit( string emitter, LogLevel level, string message, bool lineBreak = true, bool prefix = true );
 }
 
 interface AudioDiscReader : DiscReader

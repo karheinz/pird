@@ -74,12 +74,12 @@ interface Command : introspection.Interface
 {
   bool execute();
   void simulate();
-  void connect( void delegate( string, LogLevel, string ) signalHandler );
-  void disconnect( void delegate( string, LogLevel, string ) signalHandler );
-  void emit( string emitter, LogLevel level, string message );
-  final void handleSignal( string emitter, LogLevel level, string message ) 
+  void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+  void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+  void emit( string emitter, LogLevel level, string message, bool lineBreak, bool prefix );
+  final void handleSignal( string emitter, LogLevel level, string message, bool lineBreak, bool prefix ) 
   {
-    emit( emitter, level, message );
+    emit( emitter, level, message, lineBreak, prefix );
   }
   void setKeyValueStore( KeyValueStore store );
   KeyValueStore keyValueStore();

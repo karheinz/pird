@@ -170,7 +170,13 @@ public:
 
       // Rip data.
       logInfo( "Data is written to " ~ writer.path() ~ "." );
+
+      uint currentSector;
+      uint overallSectors = sr.length();
+      logRatio( 0, overallSectors );
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
+        logRatio( ++currentSector, overallSectors );
+
         // Read sector, max 10 retries.
         buffer = cdio_paranoia_read_limited( handle, null, 10 );
 
@@ -204,4 +210,7 @@ public:
   mixin CdIoAudioDiscReader;
   mixin introspection.Override;
   mixin Log;
+
+protected:
+  mixin RatioLogger; 
 }

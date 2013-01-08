@@ -94,3 +94,34 @@ mixin template CdIoAudioDiscReader()
     return _disc;
   }
 }
+
+mixin template RatioLogger()
+{
+  void logRatio( uint current, uint overall, ubyte chars = 74 )
+  {
+    // Begin.
+    if ( current == 0 ) {
+      logInfo( "|", false );
+      for ( ubyte i = 0; i < ( chars - 2 ); i++ ) { logInfo( " ", false, false ); }
+      logInfo( "|\b", false, false );
+      for ( ubyte i = 0; i < ( chars - 2 ); i++ ) { logInfo( "\b", false, false ); }
+      return;
+    // End.
+    } else if ( current == overall ) {
+      logInfo( "=|", true, false );
+      return;
+    }
+
+    // In between.
+    double previousRatio = cast( double )( current - 1 ) / overall;
+    double currentRatio = cast( double )( current ) / overall;
+    ubyte previousChars = cast( ubyte )( previousRatio * ( chars - 2 ) );
+    ubyte currentChars = cast( ubyte )( currentRatio * ( chars - 2 ) );
+
+    if ( currentChars > previousChars ) {
+      for ( ubyte i = 0; i < ( currentChars - previousChars ); i++ ) {
+        logInfo( "=", false, false );
+      }
+    }
+  }
+}
