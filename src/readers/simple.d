@@ -123,7 +123,7 @@ public:
       SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
-      writer.setExpectedSize( sr.length * CDIO_CD_FRAMESIZE_RAW );
+      writer.setExpectedSize( sr.length() * CDIO_CD_FRAMESIZE_RAW );
 
       // Open writer.
       writer.open();
@@ -141,15 +141,32 @@ public:
 
       uint currentSector;
       uint overallSectors = sr.length();
-      logRatio( 0, overallSectors );
+      logRatio( 0, 0, overallSectors );
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
-        logRatio( ++currentSector, overallSectors );
+        // Only update status bar after each read second (75 sectors).
+        currentSector++;
+        if ( currentSector % CDIO_CD_FRAMES_PER_SEC == 0 ) {
+          logRatio(
+            currentSector,
+            currentSector - CDIO_CD_FRAMES_PER_SEC,
+            overallSectors
+          );
+        } else if ( currentSector == overallSectors ) {
+          logRatio(
+            currentSector,
+            currentSector - ( overallSectors % CDIO_CD_FRAMES_PER_SEC ),
+            overallSectors
+          );
+        }
+
+        // Read sector.
         rc = cdio_read_audio_sector( handle, buffer.ptr, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
           writer.write( buffer );
           continue;
         }
 
+        logError( "", true, false );
         logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
 
         // Set sr.to to last successfully read sector.

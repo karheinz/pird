@@ -134,7 +134,7 @@ public:
       SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
-      writer.setExpectedSize( sr.length * CDIO_CD_FRAMESIZE_RAW );
+      writer.setExpectedSize( sr.length() * CDIO_CD_FRAMESIZE_RAW );
 
       // Open writer.
       writer.open();
@@ -173,9 +173,22 @@ public:
 
       uint currentSector;
       uint overallSectors = sr.length();
-      logRatio( 0, overallSectors );
+      logRatio( 0, 0, overallSectors );
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
-        logRatio( ++currentSector, overallSectors );
+        // Only update status bar after each read second (75 sectors).
+        if ( currentSector % CDIO_CD_FRAMES_PER_SEC == 0 ) {
+          logRatio(
+            currentSector,
+            currentSector - CDIO_CD_FRAMES_PER_SEC,
+            overallSectors
+          );
+        } else if ( currentSector == overallSectors ) {
+          logRatio(
+            currentSector,
+            currentSector - ( overallSectors % CDIO_CD_FRAMES_PER_SEC ),
+            overallSectors
+          );
+        }
 
         // Read sector, max 10 retries.
         buffer = cdio_paranoia_read_limited( handle, null, 10 );
@@ -185,6 +198,7 @@ public:
           continue;
         }
 
+        logError( "", true, false );
         logError( format( "Reading sector %d failed, abort!", sector ) );
 
         // Set sr.to to last successfully read sector.

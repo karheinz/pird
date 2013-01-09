@@ -97,31 +97,52 @@ mixin template CdIoAudioDiscReader()
 
 mixin template RatioLogger()
 {
-  void logRatio( uint current, uint overall, ubyte chars = 74 )
+  void logRatio(
+    uint current,
+    uint previous,
+    uint overall,
+    ubyte width = 80,
+    LogLevel logLevel = LogLevel.INFO
+  )
   {
+    version( devel ) {
+      string prefix = format( " %s: ", this.type() );
+    } else {
+      string prefix = ": ";
+    }
+
+    // Available width for status bar (without borders |).
+    ubyte nettoWidth = cast( ubyte )(
+          width -
+          ( to!string( logLevel ).length ) -
+          ( prefix.length ) -
+          2
+        );
+
     // Begin.
     if ( current == 0 ) {
-      logInfo( "|", false );
-      for ( ubyte i = 0; i < ( chars - 2 ); i++ ) { logInfo( " ", false, false ); }
-      logInfo( "|\b", false, false );
-      for ( ubyte i = 0; i < ( chars - 2 ); i++ ) { logInfo( "\b", false, false ); }
-      return;
-    // End.
-    } else if ( current == overall ) {
-      logInfo( "=|", true, false );
+      for ( ubyte i = 1; i < width; i++ ) { logInfo( " ", false, false ); }
+      log( logLevel, "|\r", false, false );
+      log( logLevel, "|", false );
       return;
     }
 
     // In between.
-    double previousRatio = cast( double )( current - 1 ) / overall;
+    double previousRatio = cast( double )( previous ) / overall;
     double currentRatio = cast( double )( current ) / overall;
-    ubyte previousChars = cast( ubyte )( previousRatio * ( chars - 2 ) );
-    ubyte currentChars = cast( ubyte )( currentRatio * ( chars - 2 ) );
+    ubyte previousWidth = cast( ubyte )( previousRatio * nettoWidth );
+    ubyte currentWidth = cast( ubyte )( currentRatio * nettoWidth );
 
-    if ( currentChars > previousChars ) {
-      for ( ubyte i = 0; i < ( currentChars - previousChars ); i++ ) {
-        logInfo( "=", false, false );
+    if ( currentWidth > previousWidth ) {
+      for ( ubyte i = 0; i < ( currentWidth - previousWidth ); i++ ) {
+        log( logLevel, "=", false, false );
       }
+    }
+
+    // End.
+    if ( current == overall ) {
+      log( logLevel, "|", true, false );
+      return;
     }
   }
 }
