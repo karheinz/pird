@@ -287,8 +287,11 @@
     </para>
   </refsect1>
   <refsect1 id="license">
-    <title>License</title>
+    <title>COPYRIGHT</title>
     <para>
+      Copyright &copy; 2011-2013 Karsten Heinze
+      &lt;<email>karsten@sidenotes.de</email>&gt;.
+      License GPLv3+:
       <ulink url="http://gnu.org/licenses/gpl.html">
         GNU General Public License
       </ulink> version 3 or later. 

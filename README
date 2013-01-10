@@ -97,8 +97,9 @@ EXAMPLES
 AUTHOR
        Written by Karsten Heinze <karsten@sidenotes.de>.
 
-LICENSE
-       GNU General Public License[1] version 3 or later.
+COPYRIGHT
+       Copyright © 2011-2013 Karsten Heinze <karsten@sidenotes.de>. License
+       GPLv3+: GNU General Public License[1] version 3 or later.
 
        This is free software: you are free to change and redistribute it.
        There is NO WARRANTY, to the extent permitted by law.
@@ -115,4 +116,4 @@ NOTES
 
 
 
-PIRD                              09/23/2012                           PIRD(1)
+PIRD                              01/10/2013                           PIRD(1)

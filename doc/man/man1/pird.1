@@ -1,0 +1,232 @@
+'\" t
+.\"     Title: PIRD
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 01/10/2013
+.\"    Manual: Users Manual
+.\"    Source: PIRD
+.\"  Language: English
+.\"
+.TH "PIRD" "1" "01/10/2013" "PIRD" "Users Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+pird \- rip audio data from a disc or a disc image
+.SH "SYNOPSIS"
+.PP
+Print out a help message:
+.RS 4
+.HP \w'\fBpird\fR\ 'u
+\fBpird\fR \-h
+.RE
+.PP
+List available devices, disc images in \fIDIR\fR or content of \fIFILE\fR:
+.RS 4
+.HP \w'\fBpird\fR\ 'u
+\fBpird\fR \-l [\fIDIR\fR | \fIFILE\fR]
+.RE
+.PP
+Extract audio data from \fIFILE\fR:
+.RS 4
+.HP \w'\fBpird\fR\ 'u
+\fBpird\fR [\fIOPTION\fR...] \fIFILE\fR [\-]
+.RE
+.SH "DESCRIPTION"
+.PP
+Rips audio data from a disc (CD\-DA
+or
+CD\-ROM Mixed) or a disc image (TOC,
+CUE
+or
+NRG)\&.
+.SH "OPTIONS"
+.PP
+There are some options to tell
+\fBpird\fR
+how to proceed:
+.PP
+\fB\-f\fR, \fB\-\-format\fR \fIFORMAT\fR
+.RS 4
+Sets the audio
+\fIFORMAT\fR
+to use for output\&. Available
+\fIFORMAT\fRs are: WAV (default) and PCM\&.
+.RE
+.PP
+\fB\-j\fR, \fB\-\-job\fR, \fB\-\-jobs\fR \fIJOB\fR[,\&.\&.\&.]
+.RS 4
+A
+\fIJOB\fR
+describes what data should be ripped\&. If no
+\fIJOB\fR
+is specified,
+\fBpird\fR
+rips the whole disc\&. Multiple
+\fIJOB\fRs are delimited by
+,
+.sp
+There are different types of
+\fIJOB\fRs:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+Rip a single track\&.
+.HP \w'\ 'u
+\fITRACK_NUM\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+Rip a range of tracks\&. A range is specified by either two dots (include right bound) or three dots (exclude right bound)\&.
+.HP \w'\ 'u
+\fITRACK_NUM\fR\&.\&.[\&.]\fITRACK_NUM\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+Track numbers can be followed by a timestamp, which indicates where to start or stop reading\&. NOTE: A second consists of 75
+\fIFRAME\fRs\&.
+.HP \w'\ 'u
+\fITRACK_NUM\fR[[\fIMIN:SEC\&.FRAME\fR]]\&.\&.[\&.]\fITRACK_NUM\fR[[\fIMIN:SEC\&.FRAME\fR]]
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+If one side of a range has no bound,
+\fBpird\fR
+reads from the beginning of or to the end of the disc\&.
+.HP \w'\ 'u
+\fITRACK_NUM\fR[[\fIMIN:SEC\&.FRAME\fR]]\&.\&.
+.HP \w'\ 'u
+\&.\&.[\&.]\fITRACK_NUM\fR[[\fIMIN:SEC\&.FRAME\fR]]
+.RE
+.RE
+.PP
+\fB\-p\fR, \fB\-\-paranoia\fR
+.RS 4
+rip in paranoia mode (makes only sense if
+\fIFILE\fR
+is an optical drive)
+.RE
+.PP
+\fB\-q\fR, \fB\-\-quiet\fR
+.RS 4
+be quiet
+.RE
+.PP
+\fB\-\-simulate\fR
+.RS 4
+simulate execution of jobs
+.RE
+.PP
+\fB\-s\fR, \fB\-\-speed\fR \fISPEED\fR
+.RS 4
+Sets the
+\fISPEED\fR
+to use for reading: 1x, 2x, 4x, \&.\&.\&.
+.sp
+NOTE: Single
+\fISPEED\fR
+means a data transfer rate of 150 kB/s\&.
+.RE
+.PP
+\fB\-t\fR, \fB\-\-trackwise\fR
+.RS 4
+split ranges at track bounds
+.RE
+.PP
+\fB\-v\fR, \fB\-\-verbose\fR
+.RS 4
+be verbose, each occurrence increases log level
+.RE
+.SH "OUTPUT"
+.PP
+By default
+\fBpird\fR
+writes all audio data read by a job to a single file in the current working directory\&. Option
+\fB\-\-trackwise\fR
+can be used to split audio data at track bounds\&.
+.PP
+If the last parameter is a dash
+\fI\-\fR, the audio data of all jobs is written to
+stdout\&.
+.SH "EXAMPLES"
+.PP
+Rip audio disc in \fI/dev/cdrom\fR to a single WAV\-file:
+.RS 4
+.HP \w'\fBpird\fR\ 'u
+\fBpird\fR /dev/cdrom
+.RE
+.PP
+Rip audio disc in \fI/dev/cdrom\fR writing each track to a separate WAV\-file:
+.RS 4
+.HP \w'\fBpird\fR\ 'u
+\fBpird\fR \-t /dev/cdrom
+.RE
+.SH "AUTHOR"
+.PP
+Written by Karsten Heinze <karsten@sidenotes\&.de>\&.
+.SH "COPYRIGHT"
+.PP
+Copyright \(co 2011\-2013 Karsten Heinze <karsten@sidenotes\&.de>\&. License GPLv3+:
+\m[blue]\fBGNU General Public License\fR\m[]\&\s-2\u[1]\d\s+2
+version 3 or later\&.
+.PP
+This is free software: you are free to change and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&.
+.SH "SEE ALSO"
+.PP
+
+\m[blue]\fBGNU Compact Disc Input and Control Library\fR\m[]\&\s-2\u[2]\d\s+2
+(libcdio)
+.SH "NOTES"
+.IP " 1." 4
+GNU General Public License
+.RS 4
+\%http://gnu.org/licenses/gpl.html
+.RE
+.IP " 2." 4
+GNU Compact Disc Input and Control Library
+.RS 4
+\%http://gnu.org/software/libcdio
+.RE
