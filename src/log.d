@@ -188,7 +188,6 @@ public:
     if ( logLevel > _logLevel ) { return; } 
 
     // Write log message.
-    // FIXME: Consider prefix!
     version( devel ) {
       _file.writef(
         "%s%s%s%s",

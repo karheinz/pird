@@ -113,15 +113,15 @@ mixin template RatioLogger()
 
     // Available width for status bar (without borders |).
     ubyte nettoWidth = cast( ubyte )(
-          width -
-          ( to!string( logLevel ).length ) -
-          ( prefix.length ) -
-          2
-        );
+        width -
+        ( to!string( logLevel ).length ) -
+        ( prefix.length ) -
+        2
+      );
 
     // Begin.
     if ( current == 0 ) {
-      for ( ubyte i = 1; i < width; i++ ) { logInfo( " ", false, false ); }
+      for ( ubyte i = 1; i < width; i++ ) { log( logLevel, " ", false, false ); }
       log( logLevel, "|\r", false, false );
       log( logLevel, "|", false );
       return;
