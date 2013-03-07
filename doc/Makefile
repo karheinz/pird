@@ -1,4 +1,4 @@
-STYLESHEET=manpage.xsl
+STYLESHEET=docbook.xsl
 STYLESHEET_PATH=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages
 XSLTPROC=xsltproc
 SRC=manpage.xml
@@ -10,6 +10,7 @@ readme: doc
 	stty cols 80
 	man man/man1/pird.1 | col -bx > ../README
 doc: manpage.xml
-	$(XSLTPROC) --path $(STYLESHEET_PATH) $(STYLESHEET) $(SRC)
+	mkdir -p man/man1
+	$(XSLTPROC) --path $(STYLESHEET_PATH) -o man/man1/ $(STYLESHEET) $(SRC)
 clean:
 	rm -rf man 
