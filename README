@@ -60,37 +60,37 @@ OPTIONS
        -p, --paranoia
            rip in paranoia mode (makes only sense if FILE is an optical drive)
 
+       -s, --speed SPEED
+           Sets the SPEED to use for reading: 1x, 2x, 4x, ...
+
+           NOTE: Single SPEED means a data transfer rate of 150 kB/s.
+
+       -t, --together
+           do not split ranges at track bounds
+
+       -v, --verbose
+           be verbose, each occurrence increases log level
+
        -q, --quiet
            be quiet
 
        --simulate
            simulate execution of jobs
 
-       -s, --speed SPEED
-           Sets the SPEED to use for reading: 1x, 2x, 4x, ...
-
-           NOTE: Single SPEED means a data transfer rate of 150 kB/s.
-
-       -t, --trackwise
-           split ranges at track bounds
-
-       -v, --verbose
-           be verbose, each occurrence increases log level
-
 OUTPUT
-       By default pird writes all audio data read by a job to a single file in
-       the current working directory. Option --trackwise can be used to split
-       audio data at track bounds.
+       By default pird writes all audio data read by a job trackwise to the
+       current working directory. Option --together can be used to suppress
+       splitting audio data at track bounds.
 
        If the last parameter is a dash -, the audio data of all jobs is
        written to stdout.
 
 EXAMPLES
-       Rip audio disc in /dev/cdrom to a single WAV-file:
+       Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
 
            pird /dev/cdrom
 
-       Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
+       Rip audio disc in /dev/cdrom to a single WAV-file:
 
            pird -t /dev/cdrom
 
@@ -116,4 +116,4 @@ NOTES
 
 
 
-PIRD                              01/10/2013                           PIRD(1)
+PIRD                              05/11/2013                           PIRD(1)

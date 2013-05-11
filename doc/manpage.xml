@@ -180,6 +180,43 @@
       </varlistentry>
       <varlistentry>
         <term>
+          <option>-s</option>,
+          <option>--speed</option>
+          <replaceable class="parameter">SPEED</replaceable>
+        </term>
+        <listitem>
+          <para>
+            Sets the <replaceable class="parameter">SPEED</replaceable>
+            to use for reading: 1x, 2x, 4x, ...
+          </para>
+          <para>
+            NOTE: Single <replaceable class="parameter">SPEED</replaceable>
+            means a data transfer rate of 150 kB/s.
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-t</option>, 
+          <option>--together</option>
+        </term>
+        <listitem>
+          <para>do not split ranges at track bounds</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-v</option>,
+          <option>--verbose</option>
+        </term>
+        <listitem>
+          <para>
+            be verbose, each occurrence increases log level
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
           <option>-q</option>, 
           <option>--quiet</option>
         </term>
@@ -199,52 +236,15 @@
           </para>
         </listitem>
       </varlistentry>
-      <varlistentry>
-        <term>
-          <option>-s</option>,
-          <option>--speed</option>
-          <replaceable class="parameter">SPEED</replaceable>
-        </term>
-        <listitem>
-          <para>
-            Sets the <replaceable class="parameter">SPEED</replaceable>
-            to use for reading: 1x, 2x, 4x, ...
-          </para>
-          <para>
-            NOTE: Single <replaceable class="parameter">SPEED</replaceable>
-            means a data transfer rate of 150 kB/s.
-          </para>
-        </listitem>
-      </varlistentry>
-      <varlistentry>
-        <term>
-          <option>-t</option>, 
-          <option>--trackwise</option>
-        </term>
-        <listitem>
-          <para>split ranges at track bounds</para>
-        </listitem>
-      </varlistentry>
-      <varlistentry>
-        <term>
-          <option>-v</option>,
-          <option>--verbose</option>
-        </term>
-        <listitem>
-          <para>
-            be verbose, each occurrence increases log level
-          </para>
-        </listitem>
-      </varlistentry>
     </variablelist>
   </refsect1>
   <refsect1 id="output">
     <title>OUTPUT</title>
     <para>
       By default <command>pird</command> writes all audio data
-      read by a job to a single file in the current working directory.
-      Option <option>--trackwise</option> can be used to split
-      audio data at track bounds.
+      read by a job trackwise to the current working directory.
+      Option <option>--together</option> can be used to suppress
+      splitting audio data at track bounds.
     </para>
     <para>
       If the last parameter is a dash <parameter>-</parameter>,
@@ -256,7 +256,8 @@
     <variablelist remap="TP">
       <varlistentry>
         <term>
-          Rip audio disc in <parameter>/dev/cdrom</parameter> to a single WAV-file:
+          Rip audio disc in <parameter>/dev/cdrom</parameter> writing
+          each track to a separate WAV-file:
         </term>
         <listitem>
           <cmdsynopsis>
@@ -267,8 +268,7 @@
       </varlistentry>
       <varlistentry>
         <term>
-          Rip audio disc in <parameter>/dev/cdrom</parameter> writing
-          each track to a separate WAV-file:
+          Rip audio disc in <parameter>/dev/cdrom</parameter> to a single WAV-file:
         </term>
         <listitem>
           <cmdsynopsis>
