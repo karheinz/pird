@@ -2,12 +2,12 @@
 .\"     Title: PIRD
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 01/10/2013
+.\"      Date: 05/11/2013
 .\"    Manual: Users Manual
 .\"    Source: PIRD
 .\"  Language: English
 .\"
-.TH "PIRD" "1" "01/10/2013" "PIRD" "Users Manual"
+.TH "PIRD" "1" "05/11/2013" "PIRD" "Users Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -150,16 +150,6 @@ rip in paranoia mode (makes only sense if
 is an optical drive)
 .RE
 .PP
-\fB\-q\fR, \fB\-\-quiet\fR
-.RS 4
-be quiet
-.RE
-.PP
-\fB\-\-simulate\fR
-.RS 4
-simulate execution of jobs
-.RE
-.PP
 \fB\-s\fR, \fB\-\-speed\fR \fISPEED\fR
 .RS 4
 Sets the
@@ -171,35 +161,45 @@ NOTE: Single
 means a data transfer rate of 150 kB/s\&.
 .RE
 .PP
-\fB\-t\fR, \fB\-\-trackwise\fR
+\fB\-t\fR, \fB\-\-together\fR
 .RS 4
-split ranges at track bounds
+do not split ranges at track bounds
 .RE
 .PP
 \fB\-v\fR, \fB\-\-verbose\fR
 .RS 4
 be verbose, each occurrence increases log level
 .RE
+.PP
+\fB\-q\fR, \fB\-\-quiet\fR
+.RS 4
+be quiet
+.RE
+.PP
+\fB\-\-simulate\fR
+.RS 4
+simulate execution of jobs
+.RE
 .SH "OUTPUT"
 .PP
 By default
 \fBpird\fR
-writes all audio data read by a job to a single file in the current working directory\&. Option
-\fB\-\-trackwise\fR
-can be used to split audio data at track bounds\&.
+writes all audio data read by a job trackwise to the current working directory\&. Option
+\fB\-\-together\fR
+can be used to suppress splitting audio data at track bounds\&.
 .PP
 If the last parameter is a dash
 \fI\-\fR, the audio data of all jobs is written to
 stdout\&.
 .SH "EXAMPLES"
 .PP
-Rip audio disc in \fI/dev/cdrom\fR to a single WAV\-file:
+Rip audio disc in \fI/dev/cdrom\fR writing each track to a separate WAV\-file:
 .RS 4
 .HP \w'\fBpird\fR\ 'u
 \fBpird\fR /dev/cdrom
 .RE
 .PP
-Rip audio disc in \fI/dev/cdrom\fR writing each track to a separate WAV\-file:
+Rip audio disc in \fI/dev/cdrom\fR to a single WAV\-file:
 .RS 4
 .HP \w'\fBpird\fR\ 'u
 \fBpird\fR \-t /dev/cdrom

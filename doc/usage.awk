@@ -10,7 +10,7 @@ BEGIN {
   # Blankline?
   if ( output && $0 ~ /^([ \t])*$/ ) {
     blanklines++;
-    # Break after two blanklines.
+    # Exit after second blankline.
     if ( blanklines > 1 ) { exit; }
     print;
   }
