@@ -116,11 +116,12 @@ interface CommandFactory
 
 class DefaultCommandFactory : CommandFactory
 {
-  Command build( Config config ) {
+  Command build( Config config )
+  {
     // Help requested?
     if ( config.help ) {
       PrintCommand command = new PrintCommand();
-      command.enqueue( config.parser.usage ); 
+      command.enqueue( config.parser.usage );
       return command;
     }
     
@@ -173,7 +174,8 @@ protected:
   Command[] _commands;
 
 public:
-  void add( Command c ) {
+  void add( Command c )
+  {
     _commands ~= c;
     // Compound command registers for signals by added command.
     c.connect( &handleSignal );
@@ -190,7 +192,8 @@ public:
     }
   }
 
-  void clear() {
+  void clear()
+  {
     // Compound command is not responsible for handling signals by commands.
     foreach( command; _commands )
     {
@@ -199,7 +202,8 @@ public:
     _commands.clear();
   }
 
-  bool execute() {
+  bool execute()
+  {
     bool result;
 
     foreach( i, command; _commands ) {
@@ -217,7 +221,8 @@ public:
     return result;
   }
 
-  void simulate() {
+  void simulate()
+  {
     if ( _commands.empty() ) {
       writeln( "Be idle ;)" );
       return;
@@ -245,23 +250,15 @@ class PrintCommand : AbstractCommand
     _target = target;
   }
 
-  void enqueue( string message, ... )
+  ref PrintCommand enqueue( string[] messages... )
   {
-    _messages ~= message;
-
-    // Add other messages.
-    for ( int i = 0; i < _arguments.length; i++ )
-    {
-      _messages ~= *cast(string *)_argptr;
-      _argptr += string.sizeof;
-    }
-  }
-
-  void enqueue( string[] messages ) {
     _messages ~= messages;
+
+    return this;
   }
 
-  bool execute() {
+  bool execute()
+  {
     string[] lines = split( _messages.join( "\n" ), "\n" );
 
     logDebug( format( "Print %d %s.", lines.length, "line".pluralize( lines.length ) ) );
