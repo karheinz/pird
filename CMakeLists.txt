@@ -57,7 +57,7 @@ file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
 # Same again but relative to src directory.
 file(GLOB_RECURSE SOURCE_FILES_RELATIVE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
 # Usage information (related to parsers) are in this directory.
-set(USAGE_DIR_RELATIVE "usages")
+set(USAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/usages")
 # Object files are stored here.
 set(OBJECTS_DIR ${CMAKE_CURRENT_BINARY_DIR}/objects)
 
@@ -81,35 +81,76 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 message("CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
-set(DMD_COMPILE_FLAGS -w -c)
-if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-  set(DMD_COMPILE_FLAGS ${DMD_COMPILE_FLAGS} -release)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  set(DMD_COMPILE_FLAGS ${DMD_COMPILE_FLAGS} -g -version=devel -unittest)
+
+# Look for available compilers.
+find_program(DMD dmd DOC "dmd D2 compiler, see digitalmars.com")
+find_program(GDC gdc DOC "gcc D2 compiler, see gdcproject.org")
+if(NOT DMD AND NOT GDC)
+  message(FATAL_ERROR "no D2 compiler found")
 endif()
 
-# Before linking, build object files.
-add_custom_command(
-  TARGET pird PRE_LINK 
-  COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/src &&
-  dmd ${SOURCE_FILES_RELATIVE} -J${USAGE_DIR_RELATIVE}
-  -od${CMAKE_CURRENT_BINARY_DIR}/objects -op
-  ${DMD_COMPILE_FLAGS}
-)
+# Init build type dependent compile flags.
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  set(DMD_COMPILE_FLAGS -release)
+  set(GDC_COMPILE_FLAGS -frelease)
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  set(DMD_COMPILE_FLAGS -g -version=devel -unittest)
+  set(GDC_COMPILE_FLAGS -g -fversion=devel -funittest)
+endif()
 
 # Tell cmake its a C project (no D support yet).
 set_target_properties(pird PROPERTIES LINKER_LANGUAGE C)
 set(CMAKE_C_SOURCE_FILE_EXTENSTIONS .d)
 # Get rid of -rdynamic
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-# How to compile.
-set(CMAKE_C_COMPILE_OBJECT "dmd <FLAGS> -of<OBJECT> -c <SOURCE>")
-# How to link.
-# NOTE: <OBJECTS> is empty, how to use?
-#set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
-set(CMAKE_C_LINK_EXECUTABLE "dmd ${OBJECT_FILES} -of<TARGET> <LINK_LIBRARIES>")
-# Linking is down using -L-l<library>
-set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
+
+# Setup compiler, prefere dmd over gdc.
+if(NOT CMAKE_D_COMPILER)
+  if(DMD)
+    set(CMAKE_D_COMPILER ${DMD})
+  elseif(GDC)
+    set(CMAKE_D_COMPILER ${GDC})
+  endif()
+endif()
+message("CMAKE_D_COMPILER is ${CMAKE_D_COMPILER}")
+
+
+string(REGEX MATCH "dmd" DMD_SELECTED ${CMAKE_D_COMPILER})
+string(REGEX MATCH "gdc" GDC_SELECTED ${CMAKE_D_COMPILER})
+
+if(DMD_SELECTED)
+  # Before linking, build object files.
+  add_custom_command(
+    TARGET pird PRE_LINK 
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dmd.sh
+    ${DMD} "${DMD_COMPILE_FLAGS} -wi -J${USAGE_DIR} -I${CMAKE_CURRENT_SOURCE_DIR}/src" ${SOURCE_FILES} 
+  )
+
+  # How to compile (done by pre-link job).
+  set(CMAKE_C_COMPILE_OBJECT "${DMD} <FLAGS> -of<OBJECT> -c <SOURCE>")
+  # How to link.
+  # NOTE: <OBJECTS> is empty, how to use?
+  #set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
+  set(CMAKE_C_LINK_EXECUTABLE "${DMD} ${OBJECT_FILES} -of<TARGET> <LINK_LIBRARIES>")
+  # Linking is down using -L-l<library>
+  set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
+elseif(GDC_SELECTED)
+  # Before linking, build object files.
+  add_custom_command(
+    TARGET pird PRE_LINK 
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gdc.sh
+    ${GDC} "${GDC_COMPILE_FLAGS} -J${USAGE_DIR} -I${CMAKE_CURRENT_SOURCE_DIR}/src" ${SOURCE_FILES} 
+  )
+
+  # How to compile (done by pre-link job).
+  set(CMAKE_C_COMPILE_OBJECT "${GDC} <FLAGS> -o<OBJECT> -c <SOURCE>")
+  # How to link.
+  # NOTE: <OBJECTS> is empty, how to use?
+  #set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
+  set(CMAKE_C_LINK_EXECUTABLE "${GDC} ${OBJECT_FILES} -o<TARGET> <LINK_LIBRARIES>")
+  # Linking is down using -L-l<library>
+  set(CMAKE_LINK_LIBRARY_FLAG "-l")
+endif()
 
 # Link pird against this libraries.
 find_library(LIBCDIO cdio)
