@@ -1,16 +1,20 @@
-Please make sure you have installed the
-D2 compiler dmd by Digital Mars (>= v2.060).
+Please make sure you have installed a D2 compiler:
+
+    * dmd-2.060 or above, see http://digitalmars.com
+    * gdc, requires gcc-4.7 or above, see http://gdcproject.org
 
 Now follow these steps to build pird:
 
     $ cd build
-
     $ cmake ..
-
         (add -DCMAKE_BUILD_TYPE=Debug for debug mode)
-
+        (add -DCMAKE_D_COMPILER=/path/to/compiler for specific compiler)
     $ make
 
 To build DEB and RPM packages make the correspondent target:
 
     $ make packages
+
+To build pird executable only:
+
+    $ make pird
