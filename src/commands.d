@@ -493,7 +493,7 @@ public:
     }
 
     // Split jobs?
-    if ( _config.trackwise ) {
+    if ( ! _config.together ) {
       foreach( job; _reader.jobs().dup ) {
         ReadFromDiscJob[] subJobs = job.split( _reader.disc() );
         if ( subJobs.length > 1 ) {

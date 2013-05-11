@@ -41,7 +41,7 @@ struct Config
   string sourceFile, sourceDirectory;
   Writer.Config writer;
   ReadFromDiscJob[] jobs;
-  bool help, quiet, list, simulate, paranoia, stdout, trackwise;
+  bool help, quiet, list, simulate, paranoia, stdout, together;
   int verbose;
   ubyte speed;
 }
@@ -439,7 +439,7 @@ private:
             "quiet|q", &config.quiet,
             "simulate", &config.simulate,
             "paranoia|p", &config.paranoia,
-            "trackwise|t", &config.trackwise,
+            "together|t", &config.together,
             "format|f", &audioFormatDescription,
             "jobs|j", &jobDescriptions,
             "speed|s", &config.speed
@@ -470,8 +470,8 @@ private:
             throw new Exception( "Switches -v and -q are mutual exclusiv" );
           }
 
-          // Unset trackwise if target is stdout!
-          if ( config.stdout ) { config.trackwise = false; }
+          // Set together if target is stdout!
+          if ( config.stdout ) { config.together = true; }
 
           // Check passed audio format.
           AudioFormat audioFormat = extractAudioFormat( audioFormatDescription );
