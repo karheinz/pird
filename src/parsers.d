@@ -437,7 +437,7 @@ private:
             std.getopt.config.passThrough,
             "verbose+|v+", &config.verbose,
             "quiet|q", &config.quiet,
-            "simulate", &config.simulate,
+            "dry-run|d", &config.simulate,
             "paranoia|p", &config.paranoia,
             "together|t", &config.together,
             "format|f", &audioFormatDescription,

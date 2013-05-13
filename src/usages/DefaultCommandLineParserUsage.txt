@@ -70,7 +70,7 @@ OPTIONS
        -q, --quiet
            be quiet
 
-       --simulate
+       -d, --dry-run
            simulate execution of jobs
 
 OUTPUT

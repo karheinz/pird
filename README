@@ -74,7 +74,7 @@ OPTIONS
        -q, --quiet
            be quiet
 
-       --simulate
+       -d, --dry-run
            simulate execution of jobs
 
 OUTPUT
@@ -116,4 +116,4 @@ NOTES
 
 
 
-PIRD                              05/11/2013                           PIRD(1)
+PIRD                              05/13/2013                           PIRD(1)

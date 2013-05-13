@@ -228,7 +228,8 @@
       </varlistentry>
       <varlistentry>
         <term>
-          <option>--simulate</option>
+          <option>-d</option>, 
+          <option>--dry-run</option>
         </term>
         <listitem>
           <para>
