@@ -53,11 +53,12 @@ add_custom_command(
 )
 
 # Find all source files *.d
-file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
+set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+file(GLOB_RECURSE SOURCE_FILES ${SOURCES_DIR} *.d)
 # Same again but relative to src directory.
-file(GLOB_RECURSE SOURCE_FILES_RELATIVE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src *.d)
+file(GLOB_RECURSE SOURCE_FILES_RELATIVE RELATIVE ${SOURCES_DIR} *.d)
 # Usage information (related to parsers) are in this directory.
-set(USAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/usages")
+set(USAGE_DIR "${SOURCES_DIR}/usages")
 # Object files are stored here.
 set(OBJECTS_DIR ${CMAKE_CURRENT_BINARY_DIR}/objects)
 
@@ -122,8 +123,14 @@ if(DMD_SELECTED)
   # Before linking, build object files.
   add_custom_command(
     TARGET pird PRE_LINK 
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dmd.sh
-    ${DMD} "${DMD_COMPILE_FLAGS} -wi -J${USAGE_DIR} -I${CMAKE_CURRENT_SOURCE_DIR}/src" ${SOURCE_FILES} 
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/compile.sh
+    ${DMD}
+    ${SOURCES_DIR}
+    ${OBJECTS_DIR}
+    "-c "
+    "-of"
+    "${DMD_COMPILE_FLAGS} -wi -J${USAGE_DIR} -I${SOURCES_DIR}"
+    ${SOURCE_FILES} 
   )
 
   # How to compile (done by pre-link job).
@@ -138,8 +145,14 @@ elseif(GDC_SELECTED)
   # Before linking, build object files.
   add_custom_command(
     TARGET pird PRE_LINK 
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gdc.sh
-    ${GDC} "${GDC_COMPILE_FLAGS} -J${USAGE_DIR} -I${CMAKE_CURRENT_SOURCE_DIR}/src" ${SOURCE_FILES} 
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/compile.sh
+    ${GDC}
+    ${SOURCES_DIR}
+    ${OBJECTS_DIR}
+    "-c "
+    "-o "
+    "${GDC_COMPILE_FLAGS} -J${USAGE_DIR} -I${SOURCES_DIR}"
+    ${SOURCE_FILES} 
   )
 
   # How to compile (done by pre-link job).
