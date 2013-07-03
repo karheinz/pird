@@ -64,6 +64,9 @@ OPTIONS
        -t, --together
            do not split ranges at track bounds
 
+       -x, --swap-bytes
+           swap bytes (should be used if the byte order of read data is wrong)
+
        -v, --verbose
            be verbose, each occurrence increases log level
 
@@ -81,6 +84,11 @@ OUTPUT
        If the last parameter is a dash -, the audio data of all jobs is
        written to stdout.
 
+RIPPING DISC IMAGES
+       Support of TOC format is limited in libcdio versions prior to 0.90, use
+       CUE format instead. Conversion can be done with toc2cue, which is part
+       of CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs[1].
+
 EXAMPLES
        Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
 
@@ -95,18 +103,21 @@ AUTHOR
 
 COPYRIGHT
        Copyright © 2011-2013 Karsten Heinze <karsten@sidenotes.de>. License
-       GPLv3+: GNU General Public License[1] version 3 or later.
+       GPLv3+: GNU General Public License[2] version 3 or later.
 
        This is free software: you are free to change and redistribute it.
        There is NO WARRANTY, to the extent permitted by law.
 
 SEE ALSO
-       GNU Compact Disc Input and Control Library[2] (libcdio)
+       GNU Compact Disc Input and Control Library[3] (libcdio)
 
 NOTES
-        1. GNU General Public License
+        1. CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs
+           http://cdrdao.sourceforge.net
+
+        2. GNU General Public License
            http://gnu.org/licenses/gpl.html
 
-        2. GNU Compact Disc Input and Control Library
+        3. GNU Compact Disc Input and Control Library
            http://gnu.org/software/libcdio
 

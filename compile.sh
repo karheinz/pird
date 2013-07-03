@@ -42,10 +42,19 @@ gen_path_to_obj_file()
 }
 
 for SRC_FILE in $@; do
+  echo "$SRC_FILE"
+
   OBJ_FILE=$(gen_path_to_obj_file "$SRC_FILE" "$SRC_PATH" "$OBJ_PATH")
 
-  echo mkdir -p $(dirname "$OBJ_FILE")
   mkdir -p $(dirname "$OBJ_FILE")
-  echo "$COMPILER" $OTHER_OPTIONS $O_OPTION"$OBJ_FILE" $C_OPTION"$SRC_FILE" 
+
+  # Go on if object file is new than src file.
+  if [ -f "$OBJ_FILE" -a "$OBJ_FILE" -nt "${SRC_FILE}" ]; then
+    continue
+  fi
+
   "$COMPILER" $OTHER_OPTIONS $O_OPTION"$OBJ_FILE" $C_OPTION"$SRC_FILE" 
+  if [ $? != 0 ]; then
+    exit 1
+  fi
 done

@@ -41,7 +41,7 @@ struct Config
   string sourceFile, sourceDirectory;
   Writer.Config writer;
   ReadFromDiscJob[] jobs;
-  bool help, quiet, list, simulate, paranoia, stdout, together;
+  bool help, quiet, list, simulate, paranoia, stdout, together, swap;
   int verbose;
   ubyte speed;
 }
@@ -442,7 +442,8 @@ private:
             "together|t", &config.together,
             "format|f", &audioFormatDescription,
             "jobs|j", &jobDescriptions,
-            "speed|s", &config.speed
+            "speed|s", &config.speed,
+            "swap-bytes|x", &config.swap
           );
 
           // Drop command.
@@ -485,6 +486,7 @@ private:
           // Build target.
           config.writer = Writer.Config();
           config.writer.eponym = _eponym;
+          config.writer.swap = config.swap;
           // Stdout is target?
           if ( config.stdout ) {
             config.writer.klass = format( "writers.%s.StdoutWriter", to!string( audioFormat ).toLower() );

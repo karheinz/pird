@@ -206,6 +206,15 @@
       </varlistentry>
       <varlistentry>
         <term>
+          <option>-x</option>, 
+          <option>--swap-bytes</option>
+        </term>
+        <listitem>
+          <para>swap bytes (should be used if the byte order of read data is wrong)</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
           <option>-v</option>,
           <option>--verbose</option>
         </term>
@@ -250,6 +259,17 @@
     <para>
       If the last parameter is a dash <parameter>-</parameter>,
       the audio data of all jobs is written to <literal>stdout</literal>.
+    </para>
+  </refsect1>
+  <refsect1 id="images">
+    <title>RIPPING DISC IMAGES</title>
+    <para>
+      Support of <literal>TOC</literal> format is limited 
+      in libcdio versions prior to 0.90, use <literal>CUE</literal>
+      format instead. Conversion can be done with
+      <command>toc2cue</command>, which is part of
+      <ulink url="http://cdrdao.sourceforge.net">CDRDAO,
+      Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs</ulink>.
     </para>
   </refsect1>
   <refsect1 id="examples">

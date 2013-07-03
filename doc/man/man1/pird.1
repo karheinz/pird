@@ -2,12 +2,12 @@
 .\"     Title: PIRD
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 05/13/2013
+.\"      Date: 07/03/2013
 .\"    Manual: Users Manual
 .\"    Source: PIRD
 .\"  Language: English
 .\"
-.TH "PIRD" "1" "05/13/2013" "PIRD" "Users Manual"
+.TH "PIRD" "1" "07/03/2013" "PIRD" "Users Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -166,6 +166,11 @@ means a data transfer rate of 150 kB/s\&.
 do not split ranges at track bounds
 .RE
 .PP
+\fB\-x\fR, \fB\-\-swap\-bytes\fR
+.RS 4
+swap bytes (should be used if the byte order of read data is wrong)
+.RE
+.PP
 \fB\-v\fR, \fB\-\-verbose\fR
 .RS 4
 be verbose, each occurrence increases log level
@@ -191,6 +196,15 @@ can be used to suppress splitting audio data at track bounds\&.
 If the last parameter is a dash
 \fI\-\fR, the audio data of all jobs is written to
 stdout\&.
+.SH "RIPPING DISC IMAGES"
+.PP
+Support of
+TOC
+format is limited in libcdio versions prior to 0\&.90, use
+CUE
+format instead\&. Conversion can be done with
+\fBtoc2cue\fR, which is part of
+\m[blue]\fBCDRDAO, Disk\-At\-Once Recording of Audio and Data CD\-Rs/CD\-RWs\fR\m[]\&\s-2\u[1]\d\s+2\&.
 .SH "EXAMPLES"
 .PP
 Rip audio disc in \fI/dev/cdrom\fR writing each track to a separate WAV\-file:
@@ -210,22 +224,27 @@ Written by Karsten Heinze <karsten@sidenotes\&.de>\&.
 .SH "COPYRIGHT"
 .PP
 Copyright \(co 2011\-2013 Karsten Heinze <karsten@sidenotes\&.de>\&. License GPLv3+:
-\m[blue]\fBGNU General Public License\fR\m[]\&\s-2\u[1]\d\s+2
+\m[blue]\fBGNU General Public License\fR\m[]\&\s-2\u[2]\d\s+2
 version 3 or later\&.
 .PP
 This is free software: you are free to change and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&.
 .SH "SEE ALSO"
 .PP
 
-\m[blue]\fBGNU Compact Disc Input and Control Library\fR\m[]\&\s-2\u[2]\d\s+2
+\m[blue]\fBGNU Compact Disc Input and Control Library\fR\m[]\&\s-2\u[3]\d\s+2
 (libcdio)
 .SH "NOTES"
 .IP " 1." 4
+CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs
+.RS 4
+\%http://cdrdao.sourceforge.net
+.RE
+.IP " 2." 4
 GNU General Public License
 .RS 4
 \%http://gnu.org/licenses/gpl.html
 .RE
-.IP " 2." 4
+.IP " 3." 4
 GNU Compact Disc Input and Control Library
 .RS 4
 \%http://gnu.org/software/libcdio

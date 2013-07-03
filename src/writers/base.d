@@ -38,6 +38,8 @@ interface Writer
     Eponym eponym;
     // How to open file.
     FileMode mode = FileMode.In | FileMode.OutNew;
+    // Swap bytes?
+    bool swap = false;
 
     // Build and configure writer for job and disc.
     Writer build( ReadFromDiscJob job, Disc disc )
@@ -48,6 +50,7 @@ interface Writer
 
       w.setPath( eponym.generate( job, disc ) );
       w.setMode( mode );
+      w.setSwap( swap );
       return w;
     }
   }
@@ -56,6 +59,8 @@ interface Writer
   string path();
   void setMode( FileMode mode );
   FileMode mode();
+  void setSwap( bool swap );
+  bool swap();
   // Expected number of bytes to write (excluding header).
   void setExpectedSize( ulong bytes );
   /*
@@ -74,6 +79,27 @@ interface Writer
   void write( ubyte[] buffer, uint bytes );
   void write( ubyte* buffer, uint bytes );
   ulong seek( long offset, SeekPos whence );
+
+  final void swapBytes( ubyte* buffer, ulong bytes )
+  {
+    ubyte tmp;
+
+    for ( uint i = 0; i < bytes; i += 2 ) {
+      // Odd number of bytes, shouldn't happen for CD-DA data.
+      if ( ( i + 1 ) == bytes ) { break; }
+
+      tmp = buffer[ i ];
+      buffer[ i ] = buffer[ i + 1 ];
+      buffer[ i + 1 ] = tmp;
+    }
+  }
+
+  final void swapBytes( ubyte[] buffer )
+  {
+    if ( buffer.length ) {
+      swapBytes( &( buffer[ 0 ] ), buffer.length );
+    }
+  }
 }
 
 abstract class FileWriter : Writer, introspection.Interface
@@ -82,6 +108,7 @@ protected:
   string _path;
   std.stream.File _file;
   FileMode _mode;
+  bool _swap;
   ulong _expectedSize;
 
 public:
@@ -103,6 +130,16 @@ public:
   FileMode mode()
   {
     return _mode;
+  }
+
+  void setSwap( bool swap )
+  {
+    _swap = swap;
+  }
+
+  bool swap()
+  {
+    return _swap; 
   }
 
   void setExpectedSize( ulong bytes )
@@ -136,6 +173,8 @@ public:
   {
     open();
 
+    if ( _swap ) { swapBytes( buffer, bytes ); }
+
     _file.writeExact( buffer, bytes );
   }
 
@@ -148,6 +187,8 @@ public:
   void write( ubyte[] buffer )
   {
     open();
+
+    if ( _swap ) { swapBytes( buffer ); }
 
     _file.writeExact( buffer.ptr, buffer.length );
   }
@@ -168,6 +209,7 @@ abstract class StdoutWriter : Writer, introspection.Interface
 protected:
   string _path;
   FileMode _mode;
+  bool _swap;
   ulong _expectedSize;
 
 public:
@@ -189,6 +231,16 @@ public:
   FileMode mode()
   {
     return _mode;
+  }
+
+  void setSwap( bool swap )
+  {
+    _swap = swap;
+  }
+
+  bool swap()
+  {
+    return _swap; 
   }
 
   void setExpectedSize( ulong bytes )
@@ -213,6 +265,8 @@ public:
 
   void write( ubyte* buffer, uint bytes )
   {
+    if ( _swap ) { swapBytes( buffer, bytes ); }
+
     uint times = bytes / 1024;
     uint rest = bytes % 1024;
 
@@ -232,6 +286,8 @@ public:
   
   void write( ubyte[] buffer )
   {
+    if ( _swap ) { swapBytes( buffer ); }
+
     stdout.rawWrite!ubyte( buffer );
   }
 
