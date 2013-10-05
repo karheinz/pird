@@ -29,6 +29,7 @@ import std.variant;
 import c.cdio.logging;
 import c.cdio.types;
 
+import checkers.accurate;
 static import introspection;
 import log;
 import media;
@@ -453,6 +454,9 @@ public:
     foreach( job; config.jobs ) {
       _reader.add( job );
     }
+
+    // Add checker.
+    _reader.setChecker( new AccurateChecker() );
   }
 
   bool execute()

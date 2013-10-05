@@ -34,6 +34,9 @@ extern (C):
   // logical sector number
   alias int lsn_t;
 
+  const int CDIO_INVALID_LBA = -45301;
+  const int CDIO_INVALID_LSN = -45301;
+
   alias ubyte track_t;
   alias ubyte session_t;
 

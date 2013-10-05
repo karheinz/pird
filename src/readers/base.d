@@ -21,6 +21,7 @@ import std.array;
 
 import c.cdio.types;
 
+import checkers.base;
 import introspection;
 import log;
 import media;
@@ -34,6 +35,7 @@ interface DiscReader : introspection.Interface
   void setSource( GenericSource source );
   Disc disc();
   void add( ReadFromDiscJob job );
+  void setChecker( Checker checker );
   void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
   void clear();
   bool read();
@@ -44,6 +46,23 @@ interface DiscReader : introspection.Interface
   void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
   void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
   void emit( string emitter, LogLevel level, string message, bool lineBreak = true, bool prefix = true );
+  final void handleSignal( string emitter, LogLevel level, string message, bool lineBreak, bool prefix ) 
+  {
+    emit( emitter, level, message, lineBreak, prefix );
+  }
+  final void swapBytes( ubyte[] buffer )
+  {
+    ubyte tmp;
+
+    for ( uint i = 0; i < buffer.length; i += 2 ) {
+      // Odd number of bytes, shouldn't happen for CD-DA data.
+      if ( ( i + 1 ) == buffer.length ) { break; }
+
+      tmp = buffer[ i ];
+      buffer[ i ] = buffer[ i + 1 ];
+      buffer[ i + 1 ] = tmp;
+    }
+  }
 }
 
 interface AudioDiscReader : DiscReader
@@ -55,6 +74,7 @@ abstract class AbstractAudioDiscReader : AudioDiscReader
 protected:
   GenericSource _source;
   Disc _disc;
+  Checker _checker;
   ubyte _speed;
   Writer.Config _writerConfig;
   ReadFromDiscJob[] _jobs;
@@ -79,6 +99,12 @@ public:
   void add( ReadFromDiscJob job )
   {
     _jobs ~= job;
+  }
+
+  void setChecker( Checker checker )
+  {
+    _checker = checker;
+    _checker.connect( &handleSignal );
   }
 
   void replace( ReadFromDiscJob from, ReadFromDiscJob[] to )
@@ -114,3 +140,4 @@ public:
 
   mixin introspection.Initial;
 }
+

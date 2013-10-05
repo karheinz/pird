@@ -32,6 +32,7 @@ import c.cdio.sector;
 import c.cdio.track;
 import c.cdio.types;
 
+import checkers.base;
 import introspection;
 import log;
 import media;
@@ -139,9 +140,17 @@ public:
         );
       logInfo( "Data is written to " ~ writer.path() ~ "." );
 
+      ulong checkId = 0;
+      // Init check if checker was set and job is to read a single track.
+      if ( _checker !is null && job.track() > 0 ) {
+        checkId = _checker.init( disc(), job.track() );
+        logInfo( "checker init" );
+      }
+
       uint currentSector;
       uint overallSectors = sr.length();
       logRatio( 0, 0, overallSectors );
+
       for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
         // Only update status bar after each read second (75 sectors).
         currentSector++;
@@ -162,7 +171,11 @@ public:
         // Read sector.
         rc = cdio_read_audio_sector( handle, buffer.ptr, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
-          writer.write( buffer );
+          DiscReader.swapBytes( buffer );
+
+          //writer.write( buffer );
+          // Feed check with data.
+          if ( checkId > 0 ) { _checker.feed( checkId, sector, buffer ); }
           continue;
         }
 
@@ -177,6 +190,16 @@ public:
       // Close writer.
       writer.close();
       logInfo( format( "Read and wrote %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
+
+      // Finish check.
+      if ( checkId > 0 ) {
+        string result;
+        if ( _checker.finish( checkId, result ) ) {
+          logInfo( format( "Check was successfull: %s", result ) );
+        } else {
+          logError( format( "Check failed: %s", result ) );
+        }
+      }
     }
 
     return true;

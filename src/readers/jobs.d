@@ -47,6 +47,7 @@ interface ReadFromDiscJob
   bool fits( Disc disc );
   string description( Disc disc = null );
   ReadFromDiscJob[] split( Disc disc );
+  ubyte track();
 }
 
 class ReadFromAudioDiscJob : ReadFromDiscJob
@@ -320,6 +321,11 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     return jobs;
+  }
+
+  ubyte track()
+  {
+    return cast( ubyte )_track;
   }
 
   string description( Disc disc = null )

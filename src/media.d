@@ -20,6 +20,7 @@ module media;
 import std.algorithm;
 import std.conv;
 import std.math;
+import std.stdio;
 import std.string;
 
 import c.cdio.sector;
@@ -73,6 +74,20 @@ public:
     return _tracks;
   }
 
+  Track[] audioTracks() {
+    Track[] t = tracks(); 
+
+    for( uint i = cast( uint )t.length; i > 0; --i )
+    {
+      if ( t[ i - 1 ].isAudio() ) {
+        return t[ 0 .. i ];
+      }
+    }
+
+    Track[] empty;
+    return empty;
+  }
+
   void addTrack( Track track ) {
     _tracks ~= track;
     _sorted = false;
@@ -104,9 +119,21 @@ public:
     return sum;
   }
 
+  lsn_t audioSectors()
+  {
+    uint sum;
+    foreach( track; tracks() ) {
+      if ( track.isAudio() ) {
+        sum += track.sectors();
+      }
+    }
+
+    return sum;
+  }
+
   uint seconds()
   {
-    return sectors() / CDIO_CD_FRAMES_PER_SEC;
+    return audioSectors() / CDIO_CD_FRAMES_PER_SEC;
   }
 
   string length()
@@ -234,6 +261,8 @@ string discToString( Disc disc ) {
   string[] lines;
 
   lines ~= format( "%6s: %s", "MCN", disc.mcn().length ? disc.mcn() : "none" );
+  lines ~= format( "%6s: %08x", "CDDB", cddbDiscId( disc ) );
+  lines ~= "";
   lines ~= format( "%6s: %s", "Tracks", disc.tracks().length );
   if ( disc.isAudio() ) {
     lines ~= format( "%6s: %s", "Length", disc.length() );
@@ -251,4 +280,49 @@ string discToString( Disc disc ) {
   }
 
   return lines.join( "\n" );
+}
+
+/**
+ * CDDB disc id has this format: xxyyyyzz
+ *
+ * xx   ... sum of track offsets in seconds (mod 255)
+ * yyyy ... disc length in seconds
+ * zz   ... num of tracks
+ */
+uint cddbDiscId( Disc disc )
+{
+  const PREGAP_SECTORS = 150;
+
+  uint cddbSum( uint n )
+  {
+    uint r;
+
+    while ( n > 0 )
+    {
+      r += ( n % 10 );
+      n /= 10;
+    }
+
+    return r;
+  }
+
+
+  Track[] tracks = disc.tracks();
+
+  uint xxyyyyzz, xx, yyyy, zz;
+  msf_t tmp;
+
+  // Tracks.
+  foreach( track; tracks )
+  {
+    tmp = sectorsToMsf( track.sectorRange.from + PREGAP_SECTORS );
+    xx += cddbSum( tmp.m * CDIO_CD_SECS_PER_MIN + tmp.s );
+  }
+
+  yyyy = disc.seconds();
+  zz = cast( uint )disc.tracks().length;
+
+  xxyyyyzz = ( ( ( xx % 0xff ) << 24 ) | ( yyyy << 8 ) | zz );
+
+  return xxyyyyzz;
 }
