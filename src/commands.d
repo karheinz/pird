@@ -454,9 +454,6 @@ public:
     foreach( job; config.jobs ) {
       _reader.add( job );
     }
-
-    // Add checker.
-    _reader.setChecker( new AccurateChecker() );
   }
 
   bool execute()
@@ -478,6 +475,8 @@ public:
     _reader.setSource( source );
     _reader.setSpeed( _config.speed );
     _reader.setWriterConfig( _config.writer );
+    _reader.setChecker( new AccurateChecker() );
+    _reader.setSwap( _config.swap );
 
     // Look for audio disc (using reader of type T).
     logDebug( format( "Looking for audio disc in %s.", source.path() ) );

@@ -35,6 +35,7 @@ interface DiscReader : introspection.Interface
   void setSource( GenericSource source );
   Disc disc();
   void add( ReadFromDiscJob job );
+  void setSwap( bool swap );
   void setChecker( Checker checker );
   void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
   void clear();
@@ -76,6 +77,7 @@ protected:
   Disc _disc;
   Checker _checker;
   ubyte _speed;
+  bool _swap;
   Writer.Config _writerConfig;
   ReadFromDiscJob[] _jobs;
 
@@ -89,6 +91,11 @@ public:
   void setSpeed( ubyte speed )
   {
     _speed = speed;
+  }
+
+  void setSwap( bool swap )
+  {
+    _swap = swap;
   }
 
   void setWriterConfig( Writer.Config config )

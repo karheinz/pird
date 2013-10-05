@@ -120,7 +120,8 @@ public:
 
       // Init some vars.
       driver_return_code_t rc;
-      ubyte[ CDIO_CD_FRAMESIZE_RAW ] buffer;
+      ubyte[] rawBuffer = new ubyte[ CDIO_CD_FRAMESIZE_RAW ];
+      ubyte[] buffer = new ubyte[ CDIO_CD_FRAMESIZE_RAW ];
       SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
@@ -129,13 +130,16 @@ public:
       // Open writer.
       writer.open();
       
+      // FIXME
+      sr.offset = 6;
       // Rip!
       logInfo(
           format(
-            "Try to read %d %s starting at sector %d.",
+            "Try to read %d %s starting at sector %d (offset %d samples).",
             sr.length(),
             "sector".pluralize( sr.length() ),
-            sr.from
+            sr.from,
+            sr.offset
           )
         );
       logInfo( "Data is written to " ~ writer.path() ~ "." );
@@ -147,11 +151,12 @@ public:
         logInfo( "checker init" );
       }
 
+      uint bytesWritten;
       uint currentSector;
       uint overallSectors = sr.length();
       logRatio( 0, 0, overallSectors );
 
-      for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
+      for ( lsn_t sector = sr.fromWithOffset(); sector <= fmin( sr.toWithOffset(), disc().audioSectors() - 1 ); sector++ ) {
         // Only update status bar after each read second (75 sectors).
         currentSector++;
         if ( currentSector % CDIO_CD_FRAMES_PER_SEC == 0 ) {
@@ -169,13 +174,47 @@ public:
         }
 
         // Read sector.
-        rc = cdio_read_audio_sector( handle, buffer.ptr, sector );        
+        rc = cdio_read_audio_sector( handle, rawBuffer.ptr, sector );        
         if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
-          DiscReader.swapBytes( buffer );
+          if ( _swap ) {
+            DiscReader.swapBytes( rawBuffer );
+          }
 
-          //writer.write( buffer );
-          // Feed check with data.
-          if ( checkId > 0 ) { _checker.feed( checkId, sector, buffer ); }
+          // Fill non-empty buffer.
+          if ( bytesWritten > 0 )
+          {
+            for ( uint i = 0; i < ( sr.offset * 4 ); ++i ) {
+              buffer[ bytesWritten++ ] = rawBuffer[ i ]; 
+            }
+          }
+
+          // Full buffer? Write and check!
+          if ( bytesWritten == buffer.length ) {
+            //writer.write( buffer );
+
+            // Feed check with data.
+            if ( checkId > 0 ) { _checker.feed( checkId, sector, buffer ); }
+
+            // Reset!
+            bytesWritten = 0;
+          }
+
+          // Write to empty buffer.
+          for ( uint i = ( sr.offset * 4 ); i < rawBuffer.length; ++i ) {
+            buffer[ bytesWritten++ ] = rawBuffer[ i ]; 
+          }
+
+          // Full buffer? Write and check!
+          if ( bytesWritten == buffer.length ) {
+            //writer.write( buffer );
+
+            // Feed check with data.
+            if ( checkId > 0 ) { _checker.feed( checkId, sector, buffer ); }
+
+            // Reset!
+            bytesWritten = 0;
+          }
+
           continue;
         }
 

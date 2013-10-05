@@ -23,6 +23,7 @@ import std.math;
 import std.stdio;
 import std.string;
 
+import c.cdio.cdda;
 import c.cdio.sector;
 import c.cdio.types;
 
@@ -31,11 +32,14 @@ struct SectorRange
 {
   lsn_t from = -1;
   lsn_t to = -1;
+  /** offset in samples (1 sample is 4 byte) */
+  int offset = 0;
 
-  this( lsn_t f, lsn_t t )
+  this( lsn_t f, lsn_t t, int o = 0 )
   {
     from = cast( lsn_t )fmin( f, t );
     to = cast( lsn_t )fmax( f, t );
+    offset = o;
   }
 
   bool valid()
@@ -52,8 +56,29 @@ struct SectorRange
   {
     return sectors();
   }
-}
 
+  lsn_t fromWithOffset()
+  {
+    if ( from == 0 ) {
+      return from;
+    } else {
+      if ( offset == 0 ) {
+        return from;
+      } else {
+        return from + cast( int )floor( cast( double )offset / ( CDIO_CD_FRAMESIZE_RAW / 4 ) );
+      }
+    }
+  }
+
+  lsn_t toWithOffset()
+  {
+    if ( offset == 0 ) {
+      return to;
+    } else {
+      return to + cast( int )ceil( cast( double )offset / ( CDIO_CD_FRAMESIZE_RAW / 4 ) );
+    }
+  }
+}
 
 class Disc
 {
