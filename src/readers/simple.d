@@ -120,8 +120,21 @@ public:
 
       // Init some vars.
       driver_return_code_t rc;
-      ubyte[] rawBuffer = new ubyte[ CDIO_CD_FRAMESIZE_RAW ];
-      ubyte[] buffer = new ubyte[ CDIO_CD_FRAMESIZE_RAW ];
+      ubyte[] buffer = new ubyte[ 9 * CDIO_CD_FRAMESIZE_RAW ];
+      ubyte[] bufferWithZeros = new ubyte[ CDIO_CD_FRAMESIZE_RAW ];
+      ubyte[][ 9 ] bufferViews = [
+          buffer[ ( 0 * CDIO_CD_FRAMESIZE_RAW ) .. ( 1 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 1 * CDIO_CD_FRAMESIZE_RAW ) .. ( 2 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 2 * CDIO_CD_FRAMESIZE_RAW ) .. ( 3 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 3 * CDIO_CD_FRAMESIZE_RAW ) .. ( 4 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 4 * CDIO_CD_FRAMESIZE_RAW ) .. ( 5 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 5 * CDIO_CD_FRAMESIZE_RAW ) .. ( 6 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 6 * CDIO_CD_FRAMESIZE_RAW ) .. ( 7 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 7 * CDIO_CD_FRAMESIZE_RAW ) .. ( 8 * CDIO_CD_FRAMESIZE_RAW ) ],
+          buffer[ ( 8 * CDIO_CD_FRAMESIZE_RAW ) .. ( 9 * CDIO_CD_FRAMESIZE_RAW ) ]
+        ];
+
+
       SectorRange sr = job.sectorRange( disc() );
 
       // Tell writer how much bytes (expected) to be written.
@@ -130,16 +143,13 @@ public:
       // Open writer.
       writer.open();
       
-      // FIXME
-      sr.offset = 6;
       // Rip!
       logInfo(
           format(
-            "Try to read %d %s starting at sector %d (offset %d samples).",
+            "Try to read %d %s starting at sector %d.",
             sr.length(),
             "sector".pluralize( sr.length() ),
-            sr.from,
-            sr.offset
+            sr.from
           )
         );
       logInfo( "Data is written to " ~ writer.path() ~ "." );
@@ -151,14 +161,16 @@ public:
         logInfo( "checker init" );
       }
 
-      uint bytesWritten;
       uint currentSector;
-      uint overallSectors = sr.length();
+      uint overallSectors = sr.length() + 8;
       logRatio( 0, 0, overallSectors );
 
-      for ( lsn_t sector = sr.fromWithOffset(); sector <= fmin( sr.toWithOffset(), disc().audioSectors() - 1 ); sector++ ) {
+      // Read +/- 4 sectors.
+      for ( lsn_t sector = ( sr.from - 4 ); sector <= ( sr.to + 4 ); sector++ )
+      {
+        ++currentSector;
+
         // Only update status bar after each read second (75 sectors).
-        currentSector++;
         if ( currentSector % CDIO_CD_FRAMES_PER_SEC == 0 ) {
           logRatio(
             currentSector,
@@ -173,57 +185,46 @@ public:
           );
         }
 
-        // Read sector.
-        rc = cdio_read_audio_sector( handle, rawBuffer.ptr, sector );        
-        if ( rc == driver_return_code.DRIVER_OP_SUCCESS ) {
-          if ( _swap ) {
-            DiscReader.swapBytes( rawBuffer );
+        // Handle pseudo sectors at the beginning.
+        if ( sector < 0 ) { continue; }
+
+        // Shift bufferViews!
+        ubyte[] tmp = bufferViews[ 0 ];
+        for ( uint i = 1; i < 9; ++i ) {
+          bufferViews[ i - 1 ] = bufferViews[ i ];
+        }
+        bufferViews[ 8 ] = tmp;
+
+        // Read next sector!
+        if ( sector >= disc.audioSectors() )
+        {
+          bufferViews[ 8 ] = bufferWithZeros;
+        }
+        else
+        {
+          rc = cdio_read_audio_sector( handle, bufferViews[ 8 ].ptr, sector );        
+          if ( rc != driver_return_code.DRIVER_OP_SUCCESS ) {
+            logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
+
+            // Set sr.to to last successfully read sector.
+            sr.to = cast( lsn_t )( sector - 1 );
+            break;
           }
-
-          // Fill non-empty buffer.
-          if ( bytesWritten > 0 )
-          {
-            for ( uint i = 0; i < ( sr.offset * 4 ); ++i ) {
-              buffer[ bytesWritten++ ] = rawBuffer[ i ]; 
-            }
-          }
-
-          // Full buffer? Write and check!
-          if ( bytesWritten == buffer.length ) {
-            //writer.write( buffer );
-
-            // Feed check with data.
-            if ( checkId > 0 ) { _checker.feed( checkId, sector, buffer ); }
-
-            // Reset!
-            bytesWritten = 0;
-          }
-
-          // Write to empty buffer.
-          for ( uint i = ( sr.offset * 4 ); i < rawBuffer.length; ++i ) {
-            buffer[ bytesWritten++ ] = rawBuffer[ i ]; 
-          }
-
-          // Full buffer? Write and check!
-          if ( bytesWritten == buffer.length ) {
-            //writer.write( buffer );
-
-            // Feed check with data.
-            if ( checkId > 0 ) { _checker.feed( checkId, sector, buffer ); }
-
-            // Reset!
-            bytesWritten = 0;
-          }
-
-          continue;
         }
 
-        logError( "", true, false );
-        logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
+        logDebug( format( "Read sector %d", sector ) );
+        if ( _swap ) {
+          DiscReader.swapBytes( bufferViews[ 8 ] );
+        }
 
-        // Set sr.to to last successfully read sector.
-        sr.to = cast( lsn_t )( sector - 1 );
-        break;
+        // Feed check with data.
+        if ( currentSector >= 9 ) {
+          if ( checkId > 0 ) { _checker.feed( checkId, sector - 4, bufferViews ); }
+        }
+
+        // Write to file!
+        // FIXME: What to write?
+        //writer.write( bufferViews[ 9 ] );
       }
 
       // Close writer.

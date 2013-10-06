@@ -20,6 +20,7 @@ module checkers.accurate;
 import core.exception;
 import std.c.string;
 import std.exception;
+import std.math;
 import std.random;
 import std.signals;
 import std.stdio;
@@ -73,8 +74,12 @@ struct TrackData
     memcpy( &crc, &( data[ 1 ] ), crc.sizeof );
     memcpy( &offset, &( data[ 5 ] ), offset.sizeof );
   }
+}
 
-
+struct CrcData
+{
+  uint factor = 1;
+  uint crc;
 }
 
 struct AccurateCheckData
@@ -82,8 +87,7 @@ struct AccurateCheckData
   Disc disc;
   ubyte track;  // starts with 1
   bool isLastTrack = false;
-  uint factor = 1;
-  uint crc;
+  CrcData[ int ] crcByOffset;
   string url;
   DiscIdent discIdent;
  
@@ -144,17 +148,34 @@ struct AccurateCheckData
 
 class AccurateChecker : Checker
 {
+private:
+  static int[] offsets = [ 0, 6 ];
+/+      0, 6, 12, 48, 91, 97, 102, 108,
+      120, 564, 594, 667, 685, 691, 704,
+      738, 1194, 1292, 1336, 1776, -582
+    ];
+    +/
+
 public:
   ulong init( Disc disc, in ubyte track )
   {
     // Generate random id as lookup key.
     ulong id = uniform!( ulong )();
 
-    _data[ id ] = AccurateCheckData( disc, track );
+    AccurateCheckData data = AccurateCheckData( disc, track );
+    foreach ( offset; offsets )
+    {
+      data.crcByOffset[ offset ] = CrcData();
+    }
+    _data[ id ] = data;
     return id;
   }
 
-  void feed( in ulong id, in lsn_t sector, in ubyte[] buffer )
+  void feed(
+    in ulong id,
+    in lsn_t sector,
+    in ubyte[][ 9 ] data
+  )
   {
     try
     {
@@ -167,20 +188,57 @@ public:
           ( d.isLastTrack && sector > ( d.disc.tracks[ d.track - 1 ].sectorRange().to - 5 ) )
         );
 
-      ulong limit = buffer.length;
-      uint tmp;
-      for ( ulong i = 0; i < limit; i += 4 ) {
-        if ( ! ignore )
+      //logInfo( format( "sector %d ignore %b", sector, ignore ) );
+      foreach ( offset; offsets )
+      {
+        CrcData crcData = d.crcByOffset[ offset ];
+
+        // Prepare buffers covering sector.
+        ulong byteOffset = 4 * offset;
+        ubyte[][] buffers;
+        while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
         {
-          // To avoid misalignment.
-          for ( ubyte k = 0; k < 4; ++k ) {
-            // FIXME: Which endianess?
-            *( cast( ubyte* )( &tmp ) + k ) = buffer[ i + k ];
+          if ( ! buffers.length )
+          {
+            buffers ~= cast( ubyte[] )data
+              [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
+              [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
           }
-          d.crc += ( d.factor * tmp );
+          else
+          {
+            buffers ~= cast( ubyte[] )data
+              [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
+              [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset + length( buffers ) ) % CDIO_CD_FRAMESIZE_RAW ..
+                cast(ulong)fmin( $, CDIO_CD_FRAMESIZE_RAW - length( buffers ) ) ];
+          }
         }
 
-        ++( d.factor );
+        uint tmp;
+        ubyte read;
+        foreach ( buffer; buffers )
+        {
+          foreach ( elem; buffer )
+          {
+            ++read;
+
+            if ( ! ignore )
+            {
+              *( cast( ubyte* )( &tmp ) + read - 1 ) = elem;
+
+              if ( read == 4 ) {
+                crcData.crc += ( crcData.factor * tmp );
+              }
+            }
+            
+            if ( read == 4 ) {
+              ++( crcData.factor );
+              read = 0;
+            }
+          }
+        }
+
+        // Store crcData, because structs are copied by value!
+        d.crcByOffset[ offset ] = crcData;
       }
 
       // Store d, because structs are copied by value!
@@ -201,31 +259,38 @@ public:
     {
       // TODO: lookup in accurate rip db and cleanup
       AccurateCheckData d = _data[ id ];
-      result = format( "accurate rip calculated crc of 0x%08x for disc 0x%08x", d.crc, d.discIdent.cddbDiscId );
-      result ~= format( "\n%s", d.url );
-
-      ubyte dbuffer[ 13 ];  // don't use DiscIdent.sizeof because of alignment
-      ubyte tbuffer[ 9 ];   // don't use TrackData.sizeof because of alignment
-
-      std.stream.File file = new std.stream.File( "dBAR-019-0037354d-03051d36-1612b213.bin" );
-
-      bool match;
-      while ( ! file.eof )
+      result = "";
+      foreach ( offset; offsets )
       {
-        file.readExact( &dbuffer, dbuffer.sizeof );
+        result ~= format( "accurate rip calculated crc of 0x%08x for disc 0x%08x (offset %d)",
+        d.crcByOffset[ offset ].crc, d.discIdent.cddbDiscId, offset );
+        result ~= format( "\n%s", d.url );
 
-        DiscIdent discIdent = DiscIdent( dbuffer );
-        match = ( discIdent == d.discIdent );
-        for ( uint i = 0; i < discIdent.tracks; ++i )
+        ubyte dbuffer[ 13 ];  // don't use DiscIdent.sizeof because of alignment
+        ubyte tbuffer[ 9 ];   // don't use TrackData.sizeof because of alignment
+
+        //std.stream.File file = new std.stream.File( "dBAR-019-0037354d-03051d36-1612b213.bin" );
+        std.stream.File file = new std.stream.File( "dBAR-010-0010aad4-0085d1ed-7d0acb0a.bin" );
+
+        bool match;
+        while ( ! file.eof )
         {
-          file.readExact( &tbuffer, tbuffer.sizeof );
+          file.readExact( &dbuffer, dbuffer.sizeof );
 
-          if ( match && ( i + 1 ) == d.track )
+          DiscIdent discIdent = DiscIdent( dbuffer );
+          match = ( discIdent == d.discIdent );
+          for ( uint i = 0; i < discIdent.tracks; ++i )
           {
-            TrackData trackData = TrackData( tbuffer );
+            file.readExact( &tbuffer, tbuffer.sizeof );
 
-            result ~= format( "\n%s track %d, confidence %d, crc 0x%08x vs 0x%08x, offset 0x%08x",
-              ( d.crc == trackData.crc ? "MATCH" : "NO MATCH" ), i + 1, trackData.confidence, trackData.crc, d.crc, trackData.offset );
+            if ( match && ( i + 1 ) == d.track )
+            {
+              TrackData trackData = TrackData( tbuffer );
+
+              result ~= format( "\n%s track %d, confidence %d, crc 0x%08x vs 0x%08x, offset 0x%08x",
+                ( d.crcByOffset[ offset ].crc == trackData.crc ? "MATCH" : "NO MATCH" ), i + 1,
+                trackData.confidence, trackData.crc, d.crcByOffset[ offset ].crc, trackData.offset );
+            }
           }
         }
       }
@@ -249,6 +314,18 @@ public:
     }
   }
 
+private:
+  ulong length( in ubyte[][] buffers )
+  {
+    ulong length;
+    foreach ( buffer; buffers )
+    {
+      length += buffer.length;
+    }
+    return length;
+  }
+
+public:
   mixin introspection.Initial;
   mixin Log;
 

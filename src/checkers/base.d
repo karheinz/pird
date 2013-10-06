@@ -41,9 +41,13 @@ interface Checker : introspection.Interface
    * Params:
    *   id     = the id of the check (see init())
    *   sector = the read sector
-   *   buffer = the read data
+   *   data   = the read data (9 sectors, current in the middle)
    */
-  void feed( in ulong id, in lsn_t sector, in ubyte[] buffer );
+  void feed(
+    in ulong id,
+    in lsn_t sector,
+    in ubyte[][ 9 ] data
+  );
 
   /**
    * Finishs a check, returns <tt>true</tt> for success,
