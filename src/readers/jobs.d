@@ -129,14 +129,12 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     if ( _track > 0 ) {
-      try {
-        Track track = tracks[ _track - 1 ];
-        if ( track.isAudio() ) {
-          return track.sectorRange(); 
-        } else {
-          return failure;
-        }
-      } catch ( core.exception.RangeError e ) {
+      // Out of bounds?
+      if ( _track > tracks.length ) { return failure; }
+      // Is audio track?
+      if ( tracks[ _track - 1 ].isAudio() ) {
+        return tracks[ _track - 1 ].sectorRange(); 
+      } else {
         return failure;
       }
     }
@@ -158,121 +156,116 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
 
     if ( _fromTrack > 0 && _toTrack > 0 ) {
-      try {
-        // Is audio track?
-        if ( ! tracks[ _fromTrack - 1 ].isAudio() ) { return failure; }
-        // Is audio track?
-        if ( ! tracks[ _toTrack - 1 ].isAudio() ) { return failure; }
+      // Out of bounds?
+      if ( _fromTrack > tracks.length || _toTrack > tracks.length ) { return failure; }
 
-        SectorRange sr = SectorRange();
-        sr.from = tracks[ _fromTrack - 1 ].sectorRange().from + _fromSector;
-        sr.to = tracks[ _toTrack - 1 ].sectorRange().from;
-        // Offset?
-        if ( _toSector >= 0 ) {
-          sr.to += _toSector;
-        } else {
-          sr.to = tracks[ _toTrack - 1 ].sectorRange().to;
-        }
+      // Is audio track?
+      if ( ! tracks[ _fromTrack - 1 ].isAudio() ) { return failure; }
+      // Is audio track?
+      if ( ! tracks[ _toTrack - 1 ].isAudio() ) { return failure; }
 
-        if ( sr.valid() ) {
-          // OK, lets check if sectors belong to right tracks.
-          if ( disc.track( sr.from ).number() != _fromTrack ) {
-            return failure;
-          }
-          if ( disc.track( sr.to ).number() != _toTrack ) {
-            return failure;
-          }
+      SectorRange sr = SectorRange();
+      sr.from = tracks[ _fromTrack - 1 ].sectorRange().from + _fromSector;
+      sr.to = tracks[ _toTrack - 1 ].sectorRange().from;
+      // Offset?
+      if ( _toSector >= 0 ) {
+        sr.to += _toSector;
+      } else {
+        sr.to = tracks[ _toTrack - 1 ].sectorRange().to;
+      }
 
-          // Everything is fine.
-          return sr;
-        } else {
+      if ( sr.valid() ) {
+        // OK, lets check if sectors belong to right tracks.
+        if ( disc.track( sr.from ).number() != _fromTrack ) {
           return failure;
         }
-      } catch ( core.exception.RangeError e ) {
+        if ( disc.track( sr.to ).number() != _toTrack ) {
+          return failure;
+        }
+
+        // Everything is fine.
+        return sr;
+      } else {
         return failure;
       }
     }
 
     if ( _fromTrack > 0 ) {
-      try {
-        // Is audio track?
-        if ( ! tracks[ _fromTrack - 1 ].isAudio() ) { return failure; }
+      // Out of bounds?
+      if ( _fromTrack > tracks.length ) { return failure; }
+      // Is audio track?
+      if ( ! tracks[ _fromTrack - 1 ].isAudio() ) { return failure; }
 
-        // Build sector range.
-        SectorRange sr = SectorRange();
-        sr.from = tracks[ _fromTrack - 1 ].sectorRange().from + _fromSector;
-        // OK, lets check if sector belongs to right track.
-        if ( disc.track( sr.from ).number() != _fromTrack ) {
-          return failure;
-        }
+      // Build sector range.
+      SectorRange sr = SectorRange();
+      sr.from = tracks[ _fromTrack - 1 ].sectorRange().from + _fromSector;
+      // OK, lets check if sector belongs to right track.
+      if ( disc.track( sr.from ).number() != _fromTrack ) {
+        return failure;
+      }
 
-        // Only label END makes sense here.
-        if ( _toLabel == Label.DISC_END ) {
-          // Find last audio track.
-          foreach_reverse ( track; tracks ) {
-            if ( track.isAudio() ) {
-              sr.to = track.sectorRange().to;
-              if ( sr.valid() ) {
-                return sr;
-              } else {
-                break;
-              }
+      // Only label END makes sense here.
+      if ( _toLabel == Label.DISC_END ) {
+        // Find last audio track.
+        foreach_reverse ( track; tracks ) {
+          if ( track.isAudio() ) {
+            sr.to = track.sectorRange().to;
+            if ( sr.valid() ) {
+              return sr;
+            } else {
+              break;
             }
           }
         }
-        if (  _toLabel == Label.TRACK_END ) {
-          sr.to = tracks[ _fromTrack - 1 ].sectorRange().to;
-          return sr;
-        }
-
-        return failure;
-      } catch ( core.exception.RangeError e ) {
-        return failure;
       }
+      if (  _toLabel == Label.TRACK_END ) {
+        sr.to = tracks[ _fromTrack - 1 ].sectorRange().to;
+        return sr;
+      }
+
+      return failure;
     }
 
     if ( _toTrack > 0 ) {
-      try {
-        // Is audio track?
-        if ( ! tracks[ _toTrack - 1 ].isAudio() ) { return failure; }
+      // Out of bounds?
+      if ( _toTrack > tracks.length ) { return failure; }
+      // Is audio track?
+      if ( ! tracks[ _toTrack - 1 ].isAudio() ) { return failure; }
 
-        // Build sector range.
-        SectorRange sr = SectorRange();
-        sr.to = tracks[ _toTrack - 1 ].sectorRange().from; 
-        // Offset?
-        if ( _toSector >= 0 ) {
-          sr.to += _toSector;
-        } else {
-          sr.to = tracks[ _toTrack - 1 ].sectorRange().to;  
-        }
-        // OK, lets check if sector belongs to right track.
-        if ( disc.track( sr.to ).number() != _toTrack ) {
-          return failure;
-        }
+      // Build sector range.
+      SectorRange sr = SectorRange();
+      sr.to = tracks[ _toTrack - 1 ].sectorRange().from; 
+      // Offset?
+      if ( _toSector >= 0 ) {
+        sr.to += _toSector;
+      } else {
+        sr.to = tracks[ _toTrack - 1 ].sectorRange().to;  
+      }
+      // OK, lets check if sector belongs to right track.
+      if ( disc.track( sr.to ).number() != _toTrack ) {
+        return failure;
+      }
 
-        // Only label BEGIN makes sense here.
-        if ( _fromLabel == Label.DISC_BEGIN ) {
-          // Find last audio track.
-          foreach ( track; tracks ) {
-            if ( track.isAudio() ) {
-              sr.from = track.sectorRange().from;
-              if ( sr.valid() ) {
-                return sr;
-              } else {
-                break;
-              }
+      // Only label BEGIN makes sense here.
+      if ( _fromLabel == Label.DISC_BEGIN ) {
+        // Find last audio track.
+        foreach ( track; tracks ) {
+          if ( track.isAudio() ) {
+            sr.from = track.sectorRange().from;
+            if ( sr.valid() ) {
+              return sr;
+            } else {
+              break;
             }
           }
         }
-        if ( _fromLabel == Label.TRACK_BEGIN ) {
-          sr.from = tracks[ _toTrack - 1 ].sectorRange().from; 
-          return sr;
-        }
-
-        return failure;
-      } catch ( core.exception.RangeError e ) {
-        return failure;
       }
+      if ( _fromLabel == Label.TRACK_BEGIN ) {
+        sr.from = tracks[ _toTrack - 1 ].sectorRange().from; 
+        return sr;
+      }
+
+      return failure;
     }
 
     // Nothing matched.
