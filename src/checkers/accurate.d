@@ -149,12 +149,11 @@ struct AccurateCheckData
 class AccurateChecker : Checker
 {
 private:
-  static int[] offsets = [ 0, 6 ];
-/+      0, 6, 12, 48, 91, 97, 102, 108,
+  static int[] offsets = [
+      0, 6, 12, 48, 91, 97, 102, 108,
       120, 564, 594, 667, 685, 691, 704,
       738, 1194, 1292, 1336, 1776, -582
     ];
-    +/
 
 public:
   ulong init( Disc disc, in ubyte track )
@@ -181,19 +180,20 @@ public:
     {
       AccurateCheckData d = _data[ id ];
 
-      // Ignore first 5 sectors of disc and last 5 sectors
-      // of disc (consider only audio tracks).
+      // Ignore first 5 sectors of disc (except last byte of 5th sector) and
+      // last 5 sectors of disc (consider only audio tracks).
       bool ignore = (
           ( d.track == 1 && sector < 5 ) ||
           ( d.isLastTrack && sector > ( d.disc.tracks[ d.track - 1 ].sectorRange().to - 5 ) )
         );
 
-      //logInfo( format( "sector %d ignore %b", sector, ignore ) );
+
       foreach ( offset; offsets )
       {
         CrcData crcData = d.crcByOffset[ offset ];
 
         // Prepare buffers covering sector.
+        // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
         ulong byteOffset = 4 * offset;
         ubyte[][] buffers;
         while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
@@ -213,14 +213,16 @@ public:
           }
         }
 
+        // Now calc the checksum.
         uint tmp;
         ubyte read;
-        foreach ( buffer; buffers )
+        foreach ( i, buffer; buffers )
         {
-          foreach ( elem; buffer )
+          foreach ( k, elem; buffer )
           {
             ++read;
 
+            // Handle sector.
             if ( ! ignore )
             {
               *( cast( ubyte* )( &tmp ) + read - 1 ) = elem;
@@ -229,7 +231,18 @@ public:
                 crcData.crc += ( crcData.factor * tmp );
               }
             }
-            
+            // Also handle last sample of 5th sector,
+            // which is found at the end of second buffer.
+            else if ( sector == 4 && i == 1 && k >= buffer.length - 4 )
+            {
+              // FIXME: Byte order save!
+              *( cast( ubyte* )( &tmp ) + read - 1 ) = elem;
+
+              if ( read == 4 ) {
+                crcData.crc += ( crcData.factor * tmp );
+              }
+            }
+           
             if ( read == 4 ) {
               ++( crcData.factor );
               read = 0;
