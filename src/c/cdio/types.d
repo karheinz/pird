@@ -18,46 +18,49 @@
 module c.cdio.types;
 
 
-extern (C):
-  // opaque structure for device handle
-  struct _CdIo;
-  alias _CdIo CdIo_t;
+extern ( C ) :
+// opaque structure for device handle
+struct _CdIo;
+alias _CdIo CdIo_t;
 
-  // minutes, seconds, frame structure
-  struct msf_s {
+// minutes, seconds, frame structure
+struct msf_s
+{
     ubyte m, s, f;
-  };
-  alias msf_s msf_t;
+};
+alias msf_s msf_t;
 
-  // logical block address
-  alias int lba_t;
-  // logical sector number
-  alias int lsn_t;
+// logical block address
+alias int lba_t;
+// logical sector number
+alias int lsn_t;
 
-  const int CDIO_INVALID_LBA = -45301;
-  const int CDIO_INVALID_LSN = -45301;
+const int CDIO_INVALID_LBA = -45301;
+const int CDIO_INVALID_LSN = -45301;
 
-  alias ubyte track_t;
-  alias ubyte session_t;
+alias ubyte track_t;
+alias ubyte session_t;
 
-  // basic types for cd text
-  enum {
-    MIN_CDTEXT_FIELD = 0,
+// basic types for cd text
+enum
+{
+    MIN_CDTEXT_FIELD  = 0,
     MAX_CDTEXT_FIELDS = 13
-  }
+}
 
-  struct cdtext {
+struct cdtext
+{
     char* field[ MAX_CDTEXT_FIELDS ];
-  };
-  alias cdtext cdtext_t;
+};
+alias cdtext cdtext_t;
 
-  /*
-   * Original declarations can be found in:
-   *    /usr/include/types.h
-   *    /usr/include/bits/types.h
-   *    /usr/include/bits/typesizes.h
-   */
-  alias uint uint32_t;
-  alias ushort uint16_t;
-  alias long off_t;
-  alias int ssize_t;
+/*
+ * Original declarations can be found in:
+ *    /usr/include/types.h
+ *    /usr/include/bits/types.h
+ *    /usr/include/bits/typesizes.h
+ */
+alias uint   uint32_t;
+alias ushort uint16_t;
+alias long   off_t;
+alias int    ssize_t;

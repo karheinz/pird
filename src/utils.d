@@ -31,49 +31,58 @@ import c.cdio.types;
  * Use this function to convert strings
  * inside fixed size buffers!
  */
-T bufferTo( T )( char[] buffer )
+T bufferTo( T ) ( char[] buffer )
 {
-   char[] tmp;
-   size_t length;
-   
-   length = strlen( cast( char* )buffer );
-   tmp.length = length;
+    char[] tmp;
+    size_t length;
 
-   // Do not copy trailing '\0' into tmp array!
-   strncpy( cast( char* )tmp, cast( char* )buffer, length );
-   return to!( T )( tmp );
+    length     = strlen( cast( char* )buffer );
+    tmp.length = length;
+
+    // Do not copy trailing '\0' into tmp array!
+    strncpy( cast( char* )tmp, cast( char* )buffer, length );
+    return to!( T )( tmp );
 }
 
-T[] convert( T : T[], F )( F[] from )
+T[] convert( T : T[], F ) ( F[] from )
 {
-  T[] to;
-  T to_elem;
+    T[] to;
+    T   to_elem;
 
-  foreach( F from_elem; from ) {
-    to_elem = cast( T )from_elem; 
-    static if ( isIntegral!F ) {
-      to ~= to_elem;
-    } else {
-      if ( to_elem !is null ) { to ~= to_elem; }
+    foreach ( F from_elem; from )
+    {
+        to_elem = cast( T )from_elem;
+        static if ( isIntegral!F )
+        {
+            to ~= to_elem;
+        }
+        else
+        {
+            if ( to_elem !is null )
+            {
+                to ~= to_elem;
+            }
+        }
     }
-  }
 
-  return to;
+    return to;
 }
-unittest {
-  int[] a = [ 0, 1, 2, 3 ];
-  uint[] b = convert!( uint[] )( a );
-  assert( 2 == b[ 2 ] );
-  assert( cast( uint )a[ 0 ] == b[ 0 ] );
-  assert( cast( uint[] )a == b );
+unittest
+{
+    int[]  a = [ 0, 1, 2, 3 ];
+    uint[] b = convert!( uint[] )( a );
+    assert( 2 == b[ 2 ] );
+    assert( cast( uint )a[ 0 ] == b[ 0 ] );
+    assert( cast( uint[] )a == b );
 }
 
-string pluralize( string s, long count = 0 ) {
-  return ( abs( count ) == 1 ) ? s : s ~ "s";
+string pluralize( string s, long count = 0 )
+{
+    return ( abs( count ) == 1 ) ? s : s ~ "s";
 }
 
 string msfToString( msf_t v )
 {
-  return format( "[%02d:%02d.%02d]", v.m, v.s, v.f );
+    return format( "[%02d:%02d.%02d]", v.m, v.s, v.f );
 
 }

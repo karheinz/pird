@@ -20,19 +20,21 @@ module introspection;
 
 interface Interface
 {
-  string type();
+    string type();
 }
 
-mixin template Initial()
+mixin template Initial( )
 {
-  string type() { 
-    return typeof( this ).stringof;
-  }
+    string type()
+    {
+        return typeof( this ).stringof;
+    }
 }
 
-mixin template Override()
+mixin template Override( )
 {
-  override string type() { 
-    return typeof( this ).stringof;
-  }
+    override string type()
+    {
+        return typeof( this ).stringof;
+    }
 }

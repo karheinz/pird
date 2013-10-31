@@ -34,58 +34,58 @@ import utils;
 
 enum LogLevel
 {
-  NONE,
-  ERROR,
-  WARNING,
-  INFO,
-  DEBUG,
-  TRACE
+    NONE,
+    ERROR,
+    WARNING,
+    INFO,
+    DEBUG,
+    TRACE
 }
 
 
 interface Logger
 {
-  void handleSignal( string emitter, LogLevel logLevel, string message, bool lineBreak, bool prefix );
-  LogLevel logLevel();
-  void setLogLevel( LogLevel logLevel );
+    void handleSignal( string emitter, LogLevel logLevel, string message, bool lineBreak, bool prefix );
+    LogLevel logLevel();
+    void setLogLevel( LogLevel logLevel );
 }
 
 
-mixin template Log()
+mixin template Log( )
 {
 protected:
-  void log( LogLevel logLevel, string message, bool lineBreak = true, bool prefix = true )
-  {
-    emit( this.type(), logLevel, message, lineBreak, prefix );
-  }
+    void log( LogLevel logLevel, string message, bool lineBreak = true, bool prefix = true )
+    {
+        emit( this.type(), logLevel, message, lineBreak, prefix );
+    }
 
-  void logTrace( string message, bool lineBreak = true, bool prefix = true )
-  {
-    log( LogLevel.TRACE, message, lineBreak, prefix );
-  }
+    void logTrace( string message, bool lineBreak = true, bool prefix = true )
+    {
+        log( LogLevel.TRACE, message, lineBreak, prefix );
+    }
 
-  void logDebug( string message, bool lineBreak = true, bool prefix = true )
-  {
-    log( LogLevel.DEBUG, message, lineBreak, prefix );
-  }
+    void logDebug( string message, bool lineBreak = true, bool prefix = true )
+    {
+        log( LogLevel.DEBUG, message, lineBreak, prefix );
+    }
 
-  void logInfo( string message, bool lineBreak = true, bool prefix = true )
-  {
-    log( LogLevel.INFO, message, lineBreak, prefix );
-  }
+    void logInfo( string message, bool lineBreak = true, bool prefix = true )
+    {
+        log( LogLevel.INFO, message, lineBreak, prefix );
+    }
 
-  void logWarning( string message, bool lineBreak = true, bool prefix = true )
-  {
-    log( LogLevel.WARNING, message, lineBreak, prefix );
-  }
+    void logWarning( string message, bool lineBreak = true, bool prefix = true )
+    {
+        log( LogLevel.WARNING, message, lineBreak, prefix );
+    }
 
-  void logError( string message, bool lineBreak = true, bool prefix = true )
-  {
-    log( LogLevel.ERROR, message, lineBreak, prefix );
-  }
+    void logError( string message, bool lineBreak = true, bool prefix = true )
+    {
+        log( LogLevel.ERROR, message, lineBreak, prefix );
+    }
 
 public:
-  mixin Signal!( string, LogLevel, string, bool, bool );
+    mixin Signal!( string, LogLevel, string, bool, bool );
 }
 
 
@@ -93,147 +93,161 @@ public:
 class CdIoLogGateway : introspection.Interface
 {
 private:
-  this()
-  {
-    cdio_log_set_handler( &logCdIoMessage );
-    _logLevel = defaultLogLevel;
-  }
-  // Emit all libcdio messages by default.
-  static cdio_log_level_t defaultLogLevel = cdio_log_level_t.CDIO_LOG_DEBUG;
-  static CdIoLogGateway _instance;
+    this( )
+    {
+        cdio_log_set_handler( &logCdIoMessage );
+        _logLevel = defaultLogLevel;
+    }
+    // Emit all libcdio messages by default.
+    static cdio_log_level_t defaultLogLevel = cdio_log_level_t.CDIO_LOG_DEBUG;
+    static CdIoLogGateway   _instance;
 
-  cdio_log_level_t _logLevel;
+    cdio_log_level_t _logLevel;
 
 public:
-  // Used as callback of a C function.
-  extern (C) static void logCdIoMessage( cdio_log_level_t level, const char* message )
-  {
-      // Throw away log messages with level smaller than default.
-      if ( level < defaultLogLevel ) return;
+    // Used as callback of a C function.
+    extern ( C ) static void logCdIoMessage( cdio_log_level_t level, const char* message )
+    {
+        // Throw away log messages with level smaller than default.
+        if ( level < defaultLogLevel )
+            return;
 
-      LogLevel l;
+        LogLevel l;
 
-      final switch ( level ) {
-        case cdio_log_level_t.CDIO_LOG_DEBUG:
-          l =  LogLevel.DEBUG;
-          break;
-        case cdio_log_level_t.CDIO_LOG_INFO:
-          l =  LogLevel.INFO;
-          break;
-        case cdio_log_level_t.CDIO_LOG_WARN:
-          l =  LogLevel.WARNING;
-          break;
-        case cdio_log_level_t.CDIO_LOG_ERROR:
-          l =  LogLevel.ERROR;
-          break;
-        case cdio_log_level_t.CDIO_LOG_ASSERT:
-          l =  LogLevel.ERROR;
-          break;
-      }
+        final switch ( level )
+        {
+            case cdio_log_level_t.CDIO_LOG_DEBUG:
+                l = LogLevel.DEBUG;
+                break;
+            case cdio_log_level_t.CDIO_LOG_INFO:
+                l = LogLevel.INFO;
+                break;
+            case cdio_log_level_t.CDIO_LOG_WARN:
+                l = LogLevel.WARNING;
+                break;
+            case cdio_log_level_t.CDIO_LOG_ERROR:
+                l = LogLevel.ERROR;
+                break;
+            case cdio_log_level_t.CDIO_LOG_ASSERT:
+                l = LogLevel.ERROR;
+                break;
+        }
 
-      instance().log( l, to!string( message ) );
-  }
-
-  static CdIoLogGateway instance()
-  {
-    if ( _instance is null ) {
-      _instance = new CdIoLogGateway();
+        instance().log( l, to!string( message ) );
     }
 
-    return _instance;
-  }
+    static CdIoLogGateway instance()
+    {
+        if ( _instance is null )
+        {
+            _instance = new CdIoLogGateway();
+        }
 
-  string type()
-  {
-    return "CdIoLib";
-  }
+        return _instance;
+    }
 
-  cdio_log_level_t logLevel()
-  {
-    return _logLevel;
-  }
+    string type()
+    {
+        return "CdIoLib";
+    }
 
-  void setLogLevel( cdio_log_level_t logLevel )
-  {
-    _logLevel = logLevel;
-  }
+    cdio_log_level_t logLevel()
+    {
+        return _logLevel;
+    }
 
-  mixin Log;
+    void setLogLevel( cdio_log_level_t logLevel )
+    {
+        _logLevel = logLevel;
+    }
+
+    mixin Log;
 }
 
 class DefaultLogger : Logger
 {
 private:
-  LogLevel _logLevel;
-  File _file;
+    LogLevel _logLevel;
+    File     _file;
 
 protected:
-  static LogLevel defaultLogLevel = LogLevel.INFO;
+    static LogLevel defaultLogLevel = LogLevel.INFO;
 
-  this( File file = stderr ) {
-    _file = file;
-    _logLevel = defaultLogLevel;
+    this( File file = stderr ) {
+        _file     = file;
+        _logLevel = defaultLogLevel;
 
-    // Subscribe for signals emitted by libcdio.
-    CdIoLogGateway.instance().connect( &handleSignal );
-  };
+        // Subscribe for signals emitted by libcdio.
+        CdIoLogGateway.instance().connect( &handleSignal );
+    };
 
 public:
-  void handleSignal( string emitter, LogLevel logLevel, string message, bool lineBreak, bool prefix )
-  {
-    // Filter messages by CdIo library, which is very verbose by default.
-    if ( emitter == "CdIoLib" && ( logLevel + 1 ) > _logLevel ) { return; }
-      
-    // Filter other messages by log level.
-    if ( logLevel > _logLevel ) { return; } 
+    void handleSignal( string emitter, LogLevel logLevel, string message, bool lineBreak, bool prefix )
+    {
+        // Filter messages by CdIo library, which is very verbose by default.
+        if ( emitter == "CdIoLib" && ( logLevel + 1 ) > _logLevel )
+        {
+            return;
+        }
 
-    // Write log message.
-    version( devel ) {
-      _file.writef(
-        "%s%s%s%s",
-        prefix ? to!string( logLevel ) : "",
-        prefix ? format( " %s: ", emitter ) : "",
-        message,
-        lineBreak ? "\n" : ""
-      );
-    } else {
-      _file.writef(
-        "%s%s%s",
-        prefix ? format( "%s: ", to!string( logLevel ) ) : "",
-        message,
-        lineBreak ? "\n" : ""
-      );
+        // Filter other messages by log level.
+        if ( logLevel > _logLevel )
+        {
+            return;
+        }
+
+        // Write log message.
+        version ( devel )
+        {
+            _file.writef(
+                "%s%s%s%s",
+                prefix ? to!string( logLevel ) : "",
+                prefix ? format( " %s: ", emitter ) : "",
+                message,
+                lineBreak ? "\n" : ""
+                );
+        }
+        else
+        {
+            _file.writef(
+                "%s%s%s",
+                prefix ? format( "%s: ", to!string( logLevel ) ) : "",
+                message,
+                lineBreak ? "\n" : ""
+                );
+        }
     }
-  }
 
-  LogLevel logLevel()
-  {
-    return _logLevel;
-  }
+    LogLevel logLevel()
+    {
+        return _logLevel;
+    }
 
-  void setLogLevel( LogLevel logLevel )
-  {
-    _logLevel = logLevel;
-  }
+    void setLogLevel( LogLevel logLevel )
+    {
+        _logLevel = logLevel;
+    }
 }
 
 interface LoggerFactory
 {
-  Logger build( Config config );
+    Logger build( Config config );
 }
 
 class DefaultLoggerFactory : LoggerFactory
 {
-  Logger build( Config config )
-  {
-    DefaultLogger logger = new DefaultLogger();
-    if ( config.verbose ) {
-      logger.setLogLevel( cast( LogLevel )( fmin( logger.logLevel() + config.verbose, LogLevel.max ) ) );
-    }
-    if ( config.quiet ) {
-      logger.setLogLevel( LogLevel.NONE );
-    }
+    Logger build( Config config )
+    {
+        DefaultLogger logger = new DefaultLogger();
+        if ( config.verbose )
+        {
+            logger.setLogLevel( cast( LogLevel )( fmin( logger.logLevel() + config.verbose, LogLevel.max ) ) );
+        }
+        if ( config.quiet )
+        {
+            logger.setLogLevel( LogLevel.NONE );
+        }
 
-    return logger;
-  }
+        return logger;
+    }
 }

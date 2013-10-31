@@ -39,22 +39,23 @@ import utils;
 
 int main( string[] args )
 {
-  Config config;
-  Parser parser = new DefaultCommandLineParser();
+    Config config;
+    Parser parser = new DefaultCommandLineParser();
 
-  if ( ! parser.parse( args, config ) ) {
-    // Error message is available here: config.parser.error
-    stderr.writeln( "ERROR: " ~ config.parser.error ~ "\n\n" );
-    stderr.writeln( config.parser.usage );
-    return 1;
-  }
+    if ( !parser.parse( args, config ) )
+    {
+        // Error message is available here: config.parser.error
+        stderr.writeln( "ERROR: " ~ config.parser.error ~ "\n\n" );
+        stderr.writeln( config.parser.usage );
+        return 1;
+    }
 
-  CommandFactory commandFactory = new DefaultCommandFactory();
-  Command command = commandFactory.build( config ); 
+    CommandFactory commandFactory = new DefaultCommandFactory();
+    Command        command        = commandFactory.build( config );
 
-  LoggerFactory loggerFactory = new DefaultLoggerFactory();
-  Logger logger = loggerFactory.build( config );
-  command.connect( &logger.handleSignal );
+    LoggerFactory loggerFactory = new DefaultLoggerFactory();
+    Logger        logger        = loggerFactory.build( config );
+    command.connect( &logger.handleSignal );
 
-  return ( command.execute() ? 0 : 1 );
+    return ( command.execute() ? 0 : 1 );
 }

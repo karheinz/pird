@@ -28,55 +28,65 @@ import utils;
 
 
 // Some utils for handling sources.
-Source[] generalize( S )( S[] sources )
+Source[] generalize( S ) ( S[] sources )
 {
-  return convert!( Source[] )( sources );
+    return convert!( Source[] )( sources );
 }
 
-void print( S )( S[] sources )
+void print( S ) ( S[] sources )
 {
-  writeln( sources.toString() );
+    writeln( sources.toString() );
 }
 
-string sourcesToString( S )( S[] sources, bool fullPath = true )
+string sourcesToString( S ) ( S[] sources, bool fullPath = true )
 {
-  string aliases;
-  string[] lines;
-  string[] shortAliases;
+    string   aliases;
+    string[] lines;
+    string[] shortAliases;
 
 
-  foreach( int count, S source; sources ) {
-    // Build aliases string.
-    aliases.clear();
-    if ( source.aliases().length ) {
-      if ( fullPath || source.isDevice ) {
-        aliases = format( " (%s)", source.aliases().join( ", " ) );
-      } else {
-        shortAliases = source.aliases();  
-        foreach ( ref shortAlias; shortAliases ) {
-          shortAlias = baseName( shortAlias );
+    foreach ( int count, S source; sources )
+    {
+        // Build aliases string.
+        aliases.clear();
+        if ( source.aliases().length )
+        {
+            if ( fullPath || source.isDevice )
+            {
+                aliases = format( " (%s)", source.aliases().join( ", " ) );
+            }
+            else
+            {
+                shortAliases = source.aliases();
+                foreach ( ref shortAlias; shortAliases )
+                {
+                    shortAlias = baseName( shortAlias );
+                }
+                aliases = format( " (%s)", shortAliases.join( ", " ) );
+            }
         }
-        aliases = format( " (%s)", shortAliases.join( ", " ) );
-      }
+
+        // Build line.
+        if ( fullPath || source.isDevice() )
+        {
+            lines ~= format( "%s %s%s", source.type(), source.path(), aliases );
+        }
+        else
+        {
+            lines ~= format( "%s %s%s", source.type(), baseName( source.path() ), aliases );
+        }
+
+        // Add device info if source is a device.
+        if ( source.isDevice() )
+        {
+            Device      d = cast( Device )source;
+            Device.Info i = d.info();
+            lines[ $ - 1 ] ~= format( ", %s %s %s", i.vendor, i.model, i.revision );
+        }
+
+        // End sentence.
+        //lines[ $ - 1 ] ~= ".";
     }
 
-    // Build line.
-    if ( fullPath || source.isDevice() ) {
-      lines ~= format( "%s %s%s", source.type(), source.path(), aliases );
-    } else {
-      lines ~= format( "%s %s%s", source.type(), baseName( source.path() ), aliases );
-    }
-
-    // Add device info if source is a device.
-    if ( source.isDevice() ) {
-      Device d = cast( Device )source;
-      Device.Info i = d.info();
-      lines[ $ - 1 ] ~= format( ", %s %s %s", i.vendor, i.model, i.revision );
-    }
-    
-    // End sentence.
-    //lines[ $ - 1 ] ~= ".";
-  }
-
-  return lines.join( "\n" );
+    return lines.join( "\n" );
 }

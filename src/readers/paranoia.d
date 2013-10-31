@@ -46,185 +46,203 @@ import writers.base;
 class ParanoiaAudioDiscReader : AbstractAudioDiscReader
 {
 public:
-  override void setSource( GenericSource source )
-  {
-    // We need access to a cdrom_paranoia_t pointer! Cast is required.
-    if ( cast( Source!cdrom_paranoia_t )( source ) is null ) {
-      throw new Exception( format( "%s is no %", source.path(), typeid( Source!cdrom_paranoia_t ) ) ); 
-    }
-    _source = source;
-    _disc = null;
-  }
-
-  this() {};
-  this( GenericSource source )
-  {
-    setSource( source );
-  }
-
-  bool read()
-  {
-    // Abort if source is no device.
-    if ( ! _source.isDevice() ) {
-      throw new Exception( format( "%s is no device", _source.path() ) );
+    override void setSource( GenericSource source )
+    {
+        // We need access to a cdrom_paranoia_t pointer! Cast is required.
+        if ( cast( Source!cdrom_paranoia_t )( source ) is null )
+        {
+            throw new Exception( format( "%s is no %", source.path(), typeid( Source!cdrom_paranoia_t ) ) );
+        }
+        _source = source;
+        _disc   = null;
     }
 
-    // Handle.
-    cdrom_paranoia_t* handle;
-
-    // Open source.
-    if ( ! ( cast( Source!cdrom_paranoia_t )( _source ) ).open( handle ) ) {
-      throw new Exception( format( "Failed to open %s", _source.path() ) ); 
+    this( ) {};
+    this( GenericSource source )
+    {
+        setSource( source );
     }
 
-    // Something to do?
-    if ( _jobs.length == 0 ) {
-      logInfo( "Nothing to do." );
-      return true;
-    }
-
-    // Init some vars.
-    long rc;
-    short* buffer;
-    lsn_t position;
-
-    // Configure paranoia.
-    cdio_paranoia_modeset( handle, paranoia_mode_t.PARANOIA_MODE_FULL );
-
-    // Set speed of device/image?
-    if ( _speed ) {
-      if ( ! _source.hasProgrammableSpeed() ) {
-        logWarning( "Source does not support setting the speed! Trying anyway." );
-      }
-
-      cdrom_drive_t* tmp_handle;
-      if ( ( cast( Source!cdrom_drive_t )( _source ) ).open( tmp_handle ) &&
-          cdio_cddap_speed_set( tmp_handle, _speed ) == driver_return_code.DRIVER_OP_SUCCESS ) {
-        logInfo( format( "Set drive speed to %d.", _speed ) );
-      } else {
-        logError( format( "Failed to set drive speed to %d", _speed ) );
-        return false;
-      }
-    }
-
-    ReadFromDiscJob job;
-    while ( _jobs.length ) {
-      job = _jobs.front();
-      _jobs.popFront();
-
-      // Check if job fits disc.
-      if ( ! job.fits( disc() ) ) {
-        logWarning( "Job is unapplicable to disc: " ~ job.description() );
-        logWarning( "Skip job: " ~ job.description() );
-        continue;
-      }
-
-      // Check if writer is available.
-      logTrace( "Writer class is " ~ _writerConfig.klass );
-      Writer writer = _writerConfig.build( job, disc() );
-
-      if ( writer is null ) {
-        logWarning( "Failed to create writer instance!" );
-        return false;
-      }
-
-      // Heyho, lets go!
-      logInfo( "Start job: " ~ job.description() );
-
-      SectorRange sr = job.sectorRange( disc() );
-
-      // Tell writer how much bytes (expected) to be written.
-      writer.setExpectedSize( sr.length() * CDIO_CD_FRAMESIZE_RAW );
-
-      // Open writer.
-      writer.open();
-      
-      // Rip!
-      logInfo(
-          format(
-            "Try to read %d %s starting at sector %d.",
-            sr.length(),
-            "sector".pluralize( sr.length() ),
-            sr.from
-          )
-        );
-
-      // SEEK_SET, SEEK_CUR, SEEK_END are defined in std.c.stdio
-      // Note: SEEK_SET seems not to work.
-      // Current position?
-      position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
-      // Go to first sector of range (use relative offset).
-      cdio_paranoia_seek( handle, cast( short )( sr.from - position ), SEEK_CUR );
-      position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
-      // Check result of seeking.
-      if ( position != sr.from ) {
-        logError(
-          format(
-            "Failed to seek to sector %d! Stuck at sector %d",
-            sr.from,
-            position
-          )
-        );
-        continue;
-      }
-
-      // Rip data.
-      logInfo( "Data is written to " ~ writer.path() ~ "." );
-
-      uint currentSector;
-      uint overallSectors = sr.length();
-      logRatio( 0, 0, overallSectors );
-      for ( lsn_t sector = sr.from; sector <= sr.to; sector++ ) {
-        // Only update status bar after each read second (75 sectors).
-        if ( currentSector % CDIO_CD_FRAMES_PER_SEC == 0 ) {
-          logRatio(
-            currentSector,
-            currentSector - CDIO_CD_FRAMES_PER_SEC,
-            overallSectors
-          );
-        } else if ( currentSector == overallSectors ) {
-          logRatio(
-            currentSector,
-            currentSector - ( overallSectors % CDIO_CD_FRAMES_PER_SEC ),
-            overallSectors
-          );
+    bool read()
+    {
+        // Abort if source is no device.
+        if ( !_source.isDevice() )
+        {
+            throw new Exception( format( "%s is no device", _source.path() ) );
         }
 
-        // Read sector, max 10 retries.
-        buffer = cdio_paranoia_read_limited( handle, null, 10 );
+        // Handle.
+        cdrom_paranoia_t* handle;
 
-        if ( buffer ) {
-          writer.write( cast( ubyte* )( buffer ), CDIO_CD_FRAMESIZE_RAW );
-          continue;
+        // Open source.
+        if ( !( cast( Source!cdrom_paranoia_t )( _source ) ).open( handle ) )
+        {
+            throw new Exception( format( "Failed to open %s", _source.path() ) );
         }
 
-        logError( "", true, false );
-        logError( format( "Reading sector %d failed, abort!", sector ) );
+        // Something to do?
+        if ( _jobs.length == 0 )
+        {
+            logInfo( "Nothing to do." );
+            return true;
+        }
 
-        // Set sr.to to last successfully read sector.
-        sr.to = cast( lsn_t )( sector - 1 );
-        break;
-      }
+        // Init some vars.
+        long   rc;
+        short* buffer;
+        lsn_t  position;
 
-      // Close writer.
-      writer.close();
-      logInfo( 
-        format(
-          "Read and wrote %d %s.",
-          sr.length(),
-          "sector".pluralize( sr.length() )
-        )
-      );
+        // Configure paranoia.
+        cdio_paranoia_modeset( handle, paranoia_mode_t.PARANOIA_MODE_FULL );
+
+        // Set speed of device/image?
+        if ( _speed )
+        {
+            if ( !_source.hasProgrammableSpeed() )
+            {
+                logWarning( "Source does not support setting the speed! Trying anyway." );
+            }
+
+            cdrom_drive_t* tmp_handle;
+            if ( ( cast( Source!cdrom_drive_t )( _source ) ).open( tmp_handle ) &&
+                 cdio_cddap_speed_set( tmp_handle, _speed ) == driver_return_code.DRIVER_OP_SUCCESS )
+            {
+                logInfo( format( "Set drive speed to %d.", _speed ) );
+            }
+            else
+            {
+                logError( format( "Failed to set drive speed to %d", _speed ) );
+                return false;
+            }
+        }
+
+        ReadFromDiscJob job;
+        while ( _jobs.length )
+        {
+            job = _jobs.front();
+            _jobs.popFront();
+
+            // Check if job fits disc.
+            if ( !job.fits( disc() ) )
+            {
+                logWarning( "Job is unapplicable to disc: " ~ job.description() );
+                logWarning( "Skip job: " ~ job.description() );
+                continue;
+            }
+
+            // Check if writer is available.
+            logTrace( "Writer class is " ~ _writerConfig.klass );
+            Writer writer = _writerConfig.build( job, disc() );
+
+            if ( writer is null )
+            {
+                logWarning( "Failed to create writer instance!" );
+                return false;
+            }
+
+            // Heyho, lets go!
+            logInfo( "Start job: " ~ job.description() );
+
+            SectorRange sr = job.sectorRange( disc() );
+
+            // Tell writer how much bytes (expected) to be written.
+            writer.setExpectedSize( sr.length() * CDIO_CD_FRAMESIZE_RAW );
+
+            // Open writer.
+            writer.open();
+
+            // Rip!
+            logInfo(
+                format(
+                    "Try to read %d %s starting at sector %d.",
+                    sr.length(),
+                    "sector".pluralize( sr.length() ),
+                    sr.from
+                    )
+                );
+
+            // SEEK_SET, SEEK_CUR, SEEK_END are defined in std.c.stdio
+            // Note: SEEK_SET seems not to work.
+            // Current position?
+            position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
+            // Go to first sector of range (use relative offset).
+            cdio_paranoia_seek( handle, cast( short )( sr.from - position ), SEEK_CUR );
+            position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
+            // Check result of seeking.
+            if ( position != sr.from )
+            {
+                logError(
+                    format(
+                        "Failed to seek to sector %d! Stuck at sector %d",
+                        sr.from,
+                        position
+                        )
+                    );
+                continue;
+            }
+
+            // Rip data.
+            logInfo( "Data is written to " ~ writer.path() ~ "." );
+
+            uint currentSector;
+            uint overallSectors = sr.length();
+            logRatio( 0, 0, overallSectors );
+            for ( lsn_t sector = sr.from; sector <= sr.to; sector++ )
+            {
+                // Only update status bar after each read second (75 sectors).
+                if ( currentSector % CDIO_CD_FRAMES_PER_SEC == 0 )
+                {
+                    logRatio(
+                        currentSector,
+                        currentSector - CDIO_CD_FRAMES_PER_SEC,
+                        overallSectors
+                        );
+                }
+                else if ( currentSector == overallSectors )
+                {
+                    logRatio(
+                        currentSector,
+                        currentSector - ( overallSectors % CDIO_CD_FRAMES_PER_SEC ),
+                        overallSectors
+                        );
+                }
+
+                // Read sector, max 10 retries.
+                buffer = cdio_paranoia_read_limited( handle, null, 10 );
+
+                if ( buffer )
+                {
+                    writer.write( cast( ubyte* )( buffer ), CDIO_CD_FRAMESIZE_RAW );
+                    continue;
+                }
+
+                logError( "", true, false );
+                logError( format( "Reading sector %d failed, abort!", sector ) );
+
+                // Set sr.to to last successfully read sector.
+                sr.to = cast( lsn_t )( sector - 1 );
+                break;
+            }
+
+            // Close writer.
+            writer.close();
+            logInfo(
+                format(
+                    "Read and wrote %d %s.",
+                    sr.length(),
+                    "sector".pluralize( sr.length() )
+                    )
+                );
+        }
+
+        return true;
     }
 
-    return true;
-  }
 
-
-  mixin CdIoAudioDiscReader;
-  mixin introspection.Override;
-  mixin Log;
+    mixin CdIoAudioDiscReader;
+    mixin introspection.Override;
+    mixin Log;
 
 protected:
-  mixin RatioLogger; 
+    mixin RatioLogger;
 }

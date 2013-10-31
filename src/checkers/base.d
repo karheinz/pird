@@ -24,45 +24,45 @@ import media;
 
 interface Checker : introspection.Interface
 {
-  /**
-   * Inits check of a track.
-   *
-   * Params:
-   *   disc  = the disc
-   *   track = the track of interrest
-   * Returns:
-   *   an id to use for subsequent calls regarding this check
-   */ 
-  ulong init( Disc disc, in ubyte track );
+    /**
+     * Inits check of a track.
+     *
+     * Params:
+     *   disc  = the disc
+     *   track = the track of interrest
+     * Returns:
+     *   an id to use for subsequent calls regarding this check
+     */
+    ulong init( Disc disc, in ubyte track );
 
-  /**
-   * Feeds a check with data.
-   *
-   * Params:
-   *   id     = the id of the check (see init())
-   *   sector = the read sector
-   *   data   = the read data (9 sectors, current in the middle)
-   */
-  void feed(
-    in ulong id,
-    in lsn_t sector,
-    in ubyte[][ 9 ] data
-  );
+    /**
+     * Feeds a check with data.
+     *
+     * Params:
+     *   id     = the id of the check (see init())
+     *   sector = the read sector
+     *   data   = the read data (9 sectors, current in the middle)
+     */
+    void feed(
+        in ulong id,
+        in lsn_t sector,
+        in ubyte[][ 9 ] data
+        );
 
-  /**
-   * Finishs a check, returns <tt>true</tt> for success,
-   * otherwise <tt>false</tt>. Writes the check result
-   * as string to param <tt>result</tt>.
-   *
-   * Params:
-   *   id = the id of the check (see init())
-   * Returns:
-   *   returns <tt>true</tt> for success, otherwise <tt>false</tt>,
-   *   writes the check result as string to param <tt>result</tt>
-   */
-  bool finish( in ulong id, out string result );
+    /**
+     * Finishs a check, returns <tt>true</tt> for success,
+     * otherwise <tt>false</tt>. Writes the check result
+     * as string to param <tt>result</tt>.
+     *
+     * Params:
+     *   id = the id of the check (see init())
+     * Returns:
+     *   returns <tt>true</tt> for success, otherwise <tt>false</tt>,
+     *   writes the check result as string to param <tt>result</tt>
+     */
+    bool finish( in ulong id, out string result );
 
-  void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
-  void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
-  void emit( string emitter, LogLevel level, string message, bool lineBreak = true, bool prefix = true );
+    void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+    void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+    void emit( string emitter, LogLevel level, string message, bool lineBreak = true, bool prefix = true );
 }

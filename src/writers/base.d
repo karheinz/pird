@@ -30,216 +30,226 @@ import readers.jobs;
 
 interface Writer
 {
-  struct Config
-  {
-    // Type of writer to use. 
-    string klass;
-    // Used to generate a filename.
-    Eponym eponym;
-    // How to open file.
-    FileMode mode = FileMode.In | FileMode.OutNew;
-
-    // Build and configure writer for job and disc.
-    Writer build( ReadFromDiscJob job, Disc disc )
+    struct Config
     {
-      Writer w = cast( Writer )Object.factory( klass );
-      // Check that writer object was created.
-      if ( w is null ) { return null; }
+        // Type of writer to use.
+        string klass;
+        // Used to generate a filename.
+        Eponym eponym;
+        // How to open file.
+        FileMode mode = FileMode.In | FileMode.OutNew;
 
-      w.setPath( eponym.generate( job, disc ) );
-      w.setMode( mode );
-      return w;
+        // Build and configure writer for job and disc.
+        Writer build( ReadFromDiscJob job, Disc disc )
+        {
+            Writer w = cast( Writer )Object.factory( klass );
+            // Check that writer object was created.
+            if ( w is null )
+            {
+                return null;
+            }
+
+            w.setPath( eponym.generate( job, disc ) );
+            w.setMode( mode );
+            return w;
+        }
     }
-  }
 
-  void setPath( string path );
-  string path();
-  void setMode( FileMode mode );
-  FileMode mode();
-  // Expected number of bytes to write (excluding header).
-  void setExpectedSize( ulong bytes );
-  /*
-   * // access modes; may be or'ed
-   * enum FileMode {
-   *   In = 1,
-   *   Out = 2,
-   *   OutNew = 6, // includes FileMode.Out
-   *   Append = 10 // includes FileMode.Out
-   * }
-   */
-  void open();
-  void open( FileMode mode );
-  void close();
-  void write( ubyte[] buffer );
-  void write( ubyte[] buffer, uint bytes );
-  void write( ubyte* buffer, uint bytes );
-  ulong seek( long offset, SeekPos whence );
+    void setPath( string path );
+    string path();
+    void setMode( FileMode mode );
+    FileMode mode();
+    // Expected number of bytes to write (excluding header).
+    void setExpectedSize( ulong bytes );
+    /*
+     * // access modes; may be or'ed
+     * enum FileMode {
+     *   In = 1,
+     *   Out = 2,
+     *   OutNew = 6, // includes FileMode.Out
+     *   Append = 10 // includes FileMode.Out
+     * }
+     */
+    void open();
+    void open( FileMode mode );
+    void close();
+    void write( ubyte[] buffer );
+    void write( ubyte[] buffer, uint bytes );
+    void write( ubyte* buffer, uint bytes );
+    ulong seek( long offset, SeekPos whence );
 }
 
 abstract class FileWriter : Writer, introspection.Interface
 {
 protected:
-  string _path;
-  std.stream.File _file;
-  FileMode _mode;
-  ulong _expectedSize;
+    string          _path;
+    std.stream.File _file;
+    FileMode        _mode;
+    ulong           _expectedSize;
 
 public:
-  void setPath( string path )
-  {
-    _path = path;
-  }
-
-  string path()
-  {
-    return _path;
-  }
-
-  void setMode( FileMode mode )
-  {
-    _mode = mode;
-  }
-
-  FileMode mode()
-  {
-    return _mode;
-  }
-
-  void setExpectedSize( ulong bytes )
-  {
-    _expectedSize = bytes;
-  }
-
-  void open()
-  {
-    open( _mode );
-  }
-
-  void open( FileMode mode )
-  {
-    if ( _file is null ) {
-      _file = new std.stream.File( _path, mode );
-      return;
+    void setPath( string path )
+    {
+        _path = path;
     }
-    
-    if ( ! _file.isOpen ) {
-      _file.open( _path, mode );
+
+    string path()
+    {
+        return _path;
     }
-  }
 
-  void close()
-  {
-    if ( _file !is null ) { _file.close(); }
-  }
+    void setMode( FileMode mode )
+    {
+        _mode = mode;
+    }
 
-  void write( ubyte* buffer, uint bytes )
-  {
-    open();
+    FileMode mode()
+    {
+        return _mode;
+    }
 
-    _file.writeExact( buffer, bytes );
-  }
+    void setExpectedSize( ulong bytes )
+    {
+        _expectedSize = bytes;
+    }
 
-  void write( ubyte[] buffer, uint bytes )
-  {
-    uint bound = cast( uint )fmin( buffer.length, bytes );
-    write( buffer[ 0 .. bound ] );
-  }
-  
-  void write( ubyte[] buffer )
-  {
-    open();
+    void open()
+    {
+        open( _mode );
+    }
 
-    _file.writeExact( buffer.ptr, buffer.length );
-  }
+    void open( FileMode mode )
+    {
+        if ( _file is null )
+        {
+            _file = new std.stream.File( _path, mode );
+            return;
+        }
 
-  ulong seek( long offset, SeekPos whence )
-  {
-    open();
+        if ( !_file.isOpen )
+        {
+            _file.open( _path, mode );
+        }
+    }
 
-    return _file.seek( offset, whence );
-  }
+    void close()
+    {
+        if ( _file !is null )
+        {
+            _file.close();
+        }
+    }
+
+    void write( ubyte* buffer, uint bytes )
+    {
+        open();
+
+        _file.writeExact( buffer, bytes );
+    }
+
+    void write( ubyte[] buffer, uint bytes )
+    {
+        uint bound = cast( uint ) fmin( buffer.length, bytes );
+        write( buffer[ 0 .. bound ] );
+    }
+
+    void write( ubyte[] buffer )
+    {
+        open();
+
+        _file.writeExact( buffer.ptr, buffer.length );
+    }
+
+    ulong seek( long offset, SeekPos whence )
+    {
+        open();
+
+        return _file.seek( offset, whence );
+    }
 
 
-  mixin introspection.Initial;
+    mixin introspection.Initial;
 }
 
 abstract class StdoutWriter : Writer, introspection.Interface
 {
 protected:
-  string _path;
-  FileMode _mode;
-  ulong _expectedSize;
+    string   _path;
+    FileMode _mode;
+    ulong    _expectedSize;
 
 public:
-  void setPath( string path )
-  {
-    _path = path;
-  }
-
-  string path()
-  {
-    return _path;
-  }
-
-  void setMode( FileMode mode )
-  {
-    _mode = mode;
-  }
-
-  FileMode mode()
-  {
-    return _mode;
-  }
-
-  void setExpectedSize( ulong bytes )
-  {
-    _expectedSize = bytes;
-  }
-
-  void open()
-  {
-    open( _mode );
-  }
-
-  void open( FileMode mode )
-  {
-    // Nothing to do, already open.
-  }
-
-  void close()
-  {
-    // Nothing to do, never close.
-  }
-
-  void write( ubyte* buffer, uint bytes )
-  {
-    uint times = bytes / 1024;
-    uint rest = bytes % 1024;
-
-    if ( times > 0 ) { 
-      fwrite( buffer, 1024, times, stdout.getFP() ); 
+    void setPath( string path )
+    {
+        _path = path;
     }
-    if ( rest > 0 ) {
-      fwrite( buffer + ( bytes - rest ), rest, 1, stdout.getFP() ); 
+
+    string path()
+    {
+        return _path;
     }
-  }
 
-  void write( ubyte[] buffer, uint bytes )
-  {
-    uint bound = cast( uint )fmin( buffer.length, bytes );
-    write( buffer[ 0 .. bound ] );
-  }
-  
-  void write( ubyte[] buffer )
-  {
-    stdout.rawWrite!ubyte( buffer );
-  }
+    void setMode( FileMode mode )
+    {
+        _mode = mode;
+    }
 
-  ulong seek( long offset, SeekPos whence )
-  {
-    // Seeking makes no sence here.
-    return 0;
-  }
+    FileMode mode()
+    {
+        return _mode;
+    }
 
-  mixin introspection.Initial;
+    void setExpectedSize( ulong bytes )
+    {
+        _expectedSize = bytes;
+    }
+
+    void open()
+    {
+        open( _mode );
+    }
+
+    void open( FileMode mode )
+    {
+        // Nothing to do, already open.
+    }
+
+    void close()
+    {
+        // Nothing to do, never close.
+    }
+
+    void write( ubyte* buffer, uint bytes )
+    {
+        uint times = bytes / 1024;
+        uint rest  = bytes % 1024;
+
+        if ( times > 0 )
+        {
+            fwrite( buffer, 1024, times, stdout.getFP() );
+        }
+        if ( rest > 0 )
+        {
+            fwrite( buffer + ( bytes - rest ), rest, 1, stdout.getFP() );
+        }
+    }
+
+    void write( ubyte[] buffer, uint bytes )
+    {
+        uint bound = cast( uint ) fmin( buffer.length, bytes );
+        write( buffer[ 0 .. bound ] );
+    }
+
+    void write( ubyte[] buffer )
+    {
+        stdout.rawWrite!ubyte ( buffer );
+    }
+
+    ulong seek( long offset, SeekPos whence )
+    {
+        // Seeking makes no sence here.
+        return 0;
+    }
+
+    mixin introspection.Initial;
 }

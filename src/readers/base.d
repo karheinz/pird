@@ -32,38 +32,42 @@ import writers.base;
 
 interface DiscReader : introspection.Interface
 {
-  void setSource( GenericSource source );
-  Disc disc();
-  void add( ReadFromDiscJob job );
-  void setSwap( bool swap );
-  void setChecker( Checker checker );
-  void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
-  void clear();
-  bool read();
-  void setWriterConfig( Writer.Config config );
-  void setSpeed( ubyte speed );
-  ReadFromDiscJob[] jobs();
-  ReadFromDiscJob[] unsatisfiableJobs();
-  void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
-  void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
-  void emit( string emitter, LogLevel level, string message, bool lineBreak = true, bool prefix = true );
-  final void handleSignal( string emitter, LogLevel level, string message, bool lineBreak, bool prefix ) 
-  {
-    emit( emitter, level, message, lineBreak, prefix );
-  }
-  final void swapBytes( ubyte[] buffer )
-  {
-    ubyte tmp;
-
-    for ( uint i = 0; i < buffer.length; i += 2 ) {
-      // Odd number of bytes, shouldn't happen for CD-DA data.
-      if ( ( i + 1 ) == buffer.length ) { break; }
-
-      tmp = buffer[ i ];
-      buffer[ i ] = buffer[ i + 1 ];
-      buffer[ i + 1 ] = tmp;
+    void setSource( GenericSource source );
+    Disc disc();
+    void add( ReadFromDiscJob job );
+    void setSwap( bool swap );
+    void setChecker( Checker checker );
+    void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
+    void clear();
+    bool read();
+    void setWriterConfig( Writer.Config config );
+    void setSpeed( ubyte speed );
+    ReadFromDiscJob[] jobs();
+    ReadFromDiscJob[] unsatisfiableJobs();
+    void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+    void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
+    void emit( string emitter, LogLevel level, string message, bool lineBreak = true, bool prefix = true );
+    final void handleSignal( string emitter, LogLevel level, string message, bool lineBreak, bool prefix )
+    {
+        emit( emitter, level, message, lineBreak, prefix );
     }
-  }
+    final void swapBytes( ubyte[] buffer )
+    {
+        ubyte tmp;
+
+        for ( uint i = 0; i < buffer.length; i += 2 )
+        {
+            // Odd number of bytes, shouldn't happen for CD-DA data.
+            if ( ( i + 1 ) == buffer.length )
+            {
+                break;
+            }
+
+            tmp             = buffer[ i ];
+            buffer[ i ]     = buffer[ i + 1 ];
+            buffer[ i + 1 ] = tmp;
+        }
+    }
 }
 
 interface AudioDiscReader : DiscReader
@@ -73,78 +77,84 @@ interface AudioDiscReader : DiscReader
 abstract class AbstractAudioDiscReader : AudioDiscReader
 {
 protected:
-  GenericSource _source;
-  Disc _disc;
-  Checker _checker;
-  ubyte _speed;
-  bool _swap;
-  Writer.Config _writerConfig;
-  ReadFromDiscJob[] _jobs;
+    GenericSource     _source;
+    Disc              _disc;
+    Checker           _checker;
+    ubyte             _speed;
+    bool              _swap;
+    Writer.Config     _writerConfig;
+    ReadFromDiscJob[] _jobs;
 
 public:
-  void setSource( GenericSource source )
-  {
-    _source = source;
-    _disc = null;
-  }
-
-  void setSpeed( ubyte speed )
-  {
-    _speed = speed;
-  }
-
-  void setSwap( bool swap )
-  {
-    _swap = swap;
-  }
-
-  void setWriterConfig( Writer.Config config )
-  {
-    _writerConfig = config;
-  }
-
-  void add( ReadFromDiscJob job )
-  {
-    _jobs ~= job;
-  }
-
-  void setChecker( Checker checker )
-  {
-    _checker = checker;
-    _checker.connect( &handleSignal );
-  }
-
-  void replace( ReadFromDiscJob from, ReadFromDiscJob[] to )
-  {
-    foreach( i, job; _jobs ) {
-      if ( job is from ) {
-        _jobs.replaceInPlace( i, i + 1, to );
-        return;
-      }
-    }
-  }
-
-  void clear()
-  {
-    _jobs.clear();
-  }
-
-  ReadFromDiscJob[] jobs() {
-    return _jobs;
-  }
-
-  ReadFromDiscJob[] unsatisfiableJobs() {
-    ReadFromDiscJob[] result;
-    foreach ( job; _jobs ) {
-      if ( ! job.fits( disc() ) ) {
-        result ~= job;
-      }
+    void setSource( GenericSource source )
+    {
+        _source = source;
+        _disc   = null;
     }
 
-    return result;
-  };
+    void setSpeed( ubyte speed )
+    {
+        _speed = speed;
+    }
+
+    void setSwap( bool swap )
+    {
+        _swap = swap;
+    }
+
+    void setWriterConfig( Writer.Config config )
+    {
+        _writerConfig = config;
+    }
+
+    void add( ReadFromDiscJob job )
+    {
+        _jobs ~= job;
+    }
+
+    void setChecker( Checker checker )
+    {
+        _checker = checker;
+        _checker.connect( &handleSignal );
+    }
+
+    void replace( ReadFromDiscJob from, ReadFromDiscJob[] to )
+    {
+        foreach ( i, job; _jobs )
+        {
+            if ( job is from )
+            {
+                _jobs.replaceInPlace( i, i + 1, to );
+                return;
+            }
+        }
+    }
+
+    void clear()
+    {
+        _jobs.clear();
+    }
+
+    ReadFromDiscJob[] jobs()
+    {
+        return _jobs;
+    }
+
+    ReadFromDiscJob[] unsatisfiableJobs()
+    {
+        ReadFromDiscJob[] result;
+        foreach ( job; _jobs )
+        {
+            if ( !job.fits( disc() ) )
+            {
+                result ~= job;
+            }
+        }
+
+        return result;
+    };
 
 
-  mixin introspection.Initial;
+    mixin introspection.Initial;
 }
 

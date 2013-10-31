@@ -23,10 +23,10 @@ static import writers.base;
 
 class FileWriter : writers.base.FileWriter
 {
-  mixin introspection.Override;
+    mixin introspection.Override;
 }
 
 class StdoutWriter : writers.base.StdoutWriter
 {
-  mixin introspection.Override;
+    mixin introspection.Override;
 }
