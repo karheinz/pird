@@ -86,3 +86,21 @@ string msfToString( msf_t v )
     return format( "[%02d:%02d.%02d]", v.m, v.s, v.f );
 
 }
+
+/**
+ * Returns the number of bytes covered by buffers.
+ *
+ * Params:
+ *   buffers = the buffers to check
+ * Return:
+ *   the number of bytes covered by buffers
+ */
+ulong length( in ubyte[][] buffers )
+{
+    ulong length;
+    foreach ( buffer; buffers )
+    {
+        length += buffer.length;
+    }
+    return length;
+}

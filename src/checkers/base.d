@@ -22,8 +22,22 @@ import introspection;
 import log;
 import media;
 
+/**
+ * Implementations of this class are used
+ * to check wether tracks were ripped accurately.
+ */
 interface Checker : introspection.Interface
 {
+    /** sample size (2 short values, 4 byte) */
+    static const ubyte SAMPLE_SIZE = 4;
+
+    /** max offset in sectors (-/+) */
+    static const ubyte MAX_SECTORS_OFFSET = 5;
+
+    /** sectors to read */
+    static const ubyte SECTORS_TO_READ = ( 2 * MAX_SECTORS_OFFSET ) + 1;
+
+
     /**
      * Inits check of a track.
      *
@@ -41,12 +55,12 @@ interface Checker : introspection.Interface
      * Params:
      *   id     = the id of the check (see init())
      *   sector = the read sector
-     *   data   = the read data (9 sectors, current in the middle)
+     *   data   = the read data (-/+ MAX_SECTORS_OFFSET sectors)
      */
     void feed(
         in ulong id,
         in lsn_t sector,
-        in ubyte[][ 9 ] data
+        in ubyte[][ SECTORS_TO_READ ] data
         );
 
     /**
@@ -61,6 +75,23 @@ interface Checker : introspection.Interface
      *   writes the check result as string to param <tt>result</tt>
      */
     bool finish( in ulong id, out string result );
+
+    /**
+     * Returns <tt>true</tt> if the offset of the underlying source is known.
+     *
+     * Returns:
+     *   <tt>true</tt> if the offset of the underlying source is known
+     */
+    bool isCalibrated();
+
+    /**
+     * Returns the offset in samples of the underlying source.
+     *
+     * Returns:
+     *   the offset in samples of the underlying source
+     */
+    int getOffset();
+
 
     void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
     void disconnect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );

@@ -32,8 +32,12 @@ import checkers.base;
 import introspection;
 import log;
 import media;
+import utils;
 
 
+/**
+ * The disc identifier used by accurate rip.
+ */
 struct DiscIdent
 {
     ubyte tracks;
@@ -60,11 +64,14 @@ struct DiscIdent
     }
 }
 
+/**
+ * The track data used by accurate rip.
+ */
 struct TrackData
 {
     ubyte confidence;
     uint  crc;
-    uint  offset;
+    int   offset;
 
     this( in ubyte[] data )
     {
@@ -76,12 +83,18 @@ struct TrackData
     }
 }
 
+/**
+ * The track CRC data.
+ */
 struct CrcData
 {
     uint factor = 1;
     uint crc;
 }
 
+/**
+ * The accurate check data of a track.
+ */
 struct AccurateCheckData
 {
     Disc  disc;
@@ -153,14 +166,48 @@ struct AccurateCheckData
     }
 }
 
+/**
+ * An instance of this class is used to check
+ * wether tracks were ripped accurately.
+ *
+ * http://accuraterip.com
+ */
 class AccurateChecker : Checker
 {
 private:
-    static int[] offsets = [
-        0, 6, 12, 48, 91, 97, 102, 108,
-        120, 564, 594, 667, 685, 691, 704,
-        738, 1194, 1292, 1336, 1776, -582
-    ];
+    /** known sample offsets */
+    static int[] OFFSETS = [
+            -582,
+            0,
+            6,
+            12,
+            48,
+            91,
+            97,
+            102,
+            108,
+            120,
+            564,
+            594,
+            667,
+            685,
+            691,
+            704,
+            738,
+            1194,
+            1292,
+            1336,
+            1776
+        ];
+
+    /** accurate check data by id */
+    AccurateCheckData[ ulong ] _data;
+
+    /** offset of the underlying source */
+    int _offset;
+
+    /** is underlying source calibrated */
+    bool _calibrated;
 
 public:
     ulong init( Disc disc, in ubyte track )
@@ -169,7 +216,7 @@ public:
         ulong id = uniform!( ulong )();
 
         AccurateCheckData data = AccurateCheckData( disc, track );
-        foreach ( offset; offsets )
+        foreach ( offset; OFFSETS )
         {
             data.crcByOffset[ offset ] = CrcData();
         }
@@ -180,7 +227,7 @@ public:
     void feed(
         in ulong id,
         in lsn_t sector,
-        in ubyte[][ 9 ] data
+        in ubyte[][ SECTORS_TO_READ ] data
         )
     {
         try
@@ -195,28 +242,30 @@ public:
                 );
 
 
-            foreach ( offset; offsets )
+            foreach ( offset; OFFSETS )
             {
                 CrcData crcData = d.crcByOffset[ offset ];
 
                 // Prepare buffers covering sector.
                 // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
-                ulong     byteOffset = 4 * offset;
+                ulong     byteOffset = SAMPLE_SIZE * offset;
                 ubyte[][] buffers;
                 while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
                 {
                     if ( !buffers.length )
                     {
                         buffers ~= cast( ubyte[] )data
-                        [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
-                        [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
+                        [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                            byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
+                        [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                            byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
                     }
                     else
                     {
                         buffers ~= cast( ubyte[] )data
-                        [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
-                        [ ( 4 * CDIO_CD_FRAMESIZE_RAW + byteOffset + length( buffers ) ) % CDIO_CD_FRAMESIZE_RAW ..
-                          cast( ulong )fmin( $, CDIO_CD_FRAMESIZE_RAW - length( buffers ) ) ];
+                        [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                            byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
+                        [ 0 .. CDIO_CD_FRAMESIZE_RAW - length( buffers ) ];
                     }
                 }
 
@@ -241,7 +290,7 @@ public:
                         }
                         // Also handle last sample of 5th sector,
                         // which is found at the end of second buffer.
-                        else if ( sector == 4 && i == 1 && k >= buffer.length - 4 )
+                        else if ( sector == 4 && i == ( buffers.length - 1 ) && k >= ( buffer.length - 4 ) )
                         {
                             // FIXME: Byte order save!
                             *( cast( ubyte* )( &tmp ) + read - 1 ) = elem;
@@ -283,17 +332,18 @@ public:
             // TODO: lookup in accurate rip db and cleanup
             AccurateCheckData d = _data[ id ];
             result = "";
-            foreach ( offset; offsets )
+            TrackData[] matches;
+            foreach ( offset; OFFSETS )
             {
-                result ~= format( "accurate rip calculated crc of 0x%08x for disc 0x%08x (offset %d)",
-                    d.crcByOffset[ offset ].crc, d.discIdent.cddbDiscId, offset );
-                result ~= format( "\n%s", d.url );
+                //result ~= format( "\naccurate rip calculated crc of 0x%08x for disc 0x%08x (offset %d)",
+                //    d.crcByOffset[ offset ].crc, d.discIdent.cddbDiscId, offset );
+                //result ~= format( "\n%s", d.url );
 
-                ubyte dbuffer[ 13 ]; // don't use DiscIdent.sizeof because of alignment
-                ubyte tbuffer[ 9 ]; // don't use TrackData.sizeof because of alignment
+                ubyte dbuffer[ 13 ];  // don't use DiscIdent.sizeof because of alignment
+                ubyte tbuffer[ 9 ];   // don't use TrackData.sizeof because of alignment
 
-                //std.stream.File file = new std.stream.File( "dBAR-019-0037354d-03051d36-1612b213.bin" );
-                std.stream.File file = new std.stream.File( "dBAR-010-0010aad4-0085d1ed-7d0acb0a.bin" );
+                std.stream.File file = new std.stream.File( "dBAR-019-0037354d-03051d36-1612b213.bin" );
+                //std.stream.File file = new std.stream.File( "dBAR-010-0010aad4-0085d1ed-7d0acb0a.bin" );
 
                 bool match;
                 while ( !file.eof )
@@ -309,16 +359,35 @@ public:
                         if ( match && ( i + 1 ) == d.track )
                         {
                             TrackData trackData = TrackData( tbuffer );
-
-                            result ~= format( "\n%s track %d, confidence %d, crc 0x%08x vs 0x%08x, offset 0x%08x",
-                                ( d.crcByOffset[ offset ].crc == trackData.crc ? "MATCH" : "NO MATCH" ), i + 1,
-                                trackData.confidence, trackData.crc, d.crcByOffset[ offset ].crc, trackData.offset );
+                            if ( d.crcByOffset[ offset ].crc == trackData.crc )
+                            {
+                                // FIXME: Offset in files seems to be wrong, so overwrite!
+                                trackData.offset = offset;
+                                matches ~= trackData;
+                            }
                         }
                     }
                 }
             }
 
-            return true;
+            if ( matches.length == 1 )
+            {
+                result ~= format( "track %d was ripped accurately with offset %d and confidence %d",
+                    d.track, matches[ 0 ].offset, matches[ 0 ].confidence );
+
+                _offset = matches[ 0 ].offset;
+                _calibrated = true;
+            }
+            else if ( matches.length == 0 )
+            {
+                result ~= format( "track %d wasn't ripped accurately", d.track );
+            }
+            else
+            {
+                result ~= format( "track %d was ripped accurately, but offset is not clear", d.track );
+            }
+
+            return ( matches.length == 1 );
         }
         catch ( RangeError e )
         {
@@ -337,23 +406,17 @@ public:
         }
     }
 
-private:
-    ulong length( in ubyte[][] buffers )
+    bool isCalibrated()
     {
-        ulong length;
-        foreach ( buffer; buffers )
-        {
-            length += buffer.length;
-        }
-        return length;
+        return _calibrated;
     }
 
-public:
+    int getOffset()
+    {
+        return _offset;
+    }
+
     mixin introspection.Initial;
     mixin Log;
-
-private:
-    AccurateCheckData[ ulong ] _data;
-
 }
 

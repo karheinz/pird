@@ -59,7 +59,7 @@ public:
         _disc   = null;
     }
 
-    this( ) {};
+    this() {};
     this( GenericSource source )
     {
         setSource( source );
@@ -102,6 +102,12 @@ public:
             }
         }
 
+        // Add calibration job (read first track).
+        if ( _checker !is null )
+        {
+            _jobs.insertInPlace( 0, new ReadFromAudioDiscJob( 1 ) );
+        }
+
         ReadFromDiscJob job;
         while ( _jobs.length )
         {
@@ -117,7 +123,10 @@ public:
             }
 
             // Check if writer is available.
-            logTrace( "Writer class is " ~ _writerConfig.klass );
+            if ( _checker is null || _checker.isCalibrated() )
+            {
+                logTrace( "Writer class is " ~ _writerConfig.klass );
+            }
             Writer writer = _writerConfig.build( job, disc() );
 
             if ( writer is null )
@@ -131,18 +140,20 @@ public:
 
             // Init some vars.
             driver_return_code_t rc;
-            ubyte[] buffer          = new ubyte[ 9 * CDIO_CD_FRAMESIZE_RAW ];
+            ubyte[] buffer          = new ubyte[ Checker.SECTORS_TO_READ * CDIO_CD_FRAMESIZE_RAW ];
             ubyte[] bufferWithZeros = new ubyte[ CDIO_CD_FRAMESIZE_RAW ];
-            ubyte[][ 9 ] bufferViews = [
-                buffer[ ( 0 * CDIO_CD_FRAMESIZE_RAW ) .. ( 1 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 1 * CDIO_CD_FRAMESIZE_RAW ) .. ( 2 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 2 * CDIO_CD_FRAMESIZE_RAW ) .. ( 3 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 3 * CDIO_CD_FRAMESIZE_RAW ) .. ( 4 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 4 * CDIO_CD_FRAMESIZE_RAW ) .. ( 5 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 5 * CDIO_CD_FRAMESIZE_RAW ) .. ( 6 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 6 * CDIO_CD_FRAMESIZE_RAW ) .. ( 7 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 7 * CDIO_CD_FRAMESIZE_RAW ) .. ( 8 * CDIO_CD_FRAMESIZE_RAW ) ],
-                buffer[ ( 8 * CDIO_CD_FRAMESIZE_RAW ) .. ( 9 * CDIO_CD_FRAMESIZE_RAW ) ]
+            ubyte[][ Checker.SECTORS_TO_READ ] bufferViews = [
+                buffer[ (  0 * CDIO_CD_FRAMESIZE_RAW ) .. (  1 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  1 * CDIO_CD_FRAMESIZE_RAW ) .. (  2 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  2 * CDIO_CD_FRAMESIZE_RAW ) .. (  3 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  3 * CDIO_CD_FRAMESIZE_RAW ) .. (  4 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  4 * CDIO_CD_FRAMESIZE_RAW ) .. (  5 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  5 * CDIO_CD_FRAMESIZE_RAW ) .. (  6 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  6 * CDIO_CD_FRAMESIZE_RAW ) .. (  7 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  7 * CDIO_CD_FRAMESIZE_RAW ) .. (  8 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  8 * CDIO_CD_FRAMESIZE_RAW ) .. (  9 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ (  9 * CDIO_CD_FRAMESIZE_RAW ) .. ( 10 * CDIO_CD_FRAMESIZE_RAW ) ],
+                buffer[ ( 10 * CDIO_CD_FRAMESIZE_RAW ) .. ( 11 * CDIO_CD_FRAMESIZE_RAW ) ]
             ];
 
 
@@ -152,7 +163,11 @@ public:
             writer.setExpectedSize( sr.length() * CDIO_CD_FRAMESIZE_RAW );
 
             // Open writer.
-            writer.open();
+            if ( _checker is null || _checker.isCalibrated() )
+            {
+                writer.open();
+                logInfo( "Writer was opened." ); 
+            }
 
             // Rip!
             logInfo(
@@ -163,22 +178,34 @@ public:
                     sr.from
                     )
                 );
-            logInfo( "Data is written to " ~ writer.path() ~ "." );
 
-            ulong checkId = 0;
+            if ( _checker !is null && _checker.isCalibrated() )
+            {
+                logInfo( format( "Source is calibrated with offset of %d samples.", _checker.getOffset() ) );
+            }
+
+            if ( _checker is null || _checker.isCalibrated() )
+            {
+                logInfo( "Data is written to " ~ writer.path() ~ "." );
+            }
+
             // Init check if checker was set and job is to read a single track.
-            if ( _checker !is null&& job.track() > 0 )
+            ulong checkId = 0;
+            if ( _checker !is null && job.track() > 0 )
             {
                 checkId = _checker.init( disc(), job.track() );
                 logInfo( "checker init" );
             }
 
             uint currentSector;
-            uint overallSectors = sr.length() + 8;
+            uint overallSectors = sr.length() + ( 2 * Checker.MAX_SECTORS_OFFSET );
             logRatio( 0, 0, overallSectors );
 
-            // Read +/- 4 sectors.
-            for ( lsn_t sector = ( sr.from - 4 ); sector <= ( sr.to + 4 ); sector++ )
+            // Read +/- Checker.MAX_SECTORS_OFFSET sectors.
+            for ( lsn_t sector = ( sr.from - Checker.MAX_SECTORS_OFFSET );
+                  sector <= ( sr.to + Checker.MAX_SECTORS_OFFSET );
+                  sector++
+                )
             {
                 ++currentSector;
 
@@ -208,20 +235,20 @@ public:
 
                 // Shift bufferViews!
                 ubyte[] tmp = bufferViews[ 0 ];
-                for ( uint i = 1; i < 9; ++i )
+                for ( uint i = 1; i < Checker.SECTORS_TO_READ; ++i )
                 {
                     bufferViews[ i - 1 ] = bufferViews[ i ];
                 }
-                bufferViews[ 8 ] = tmp;
+                bufferViews[ Checker.SECTORS_TO_READ - 1 ] = tmp;
 
                 // Read next sector!
                 if ( sector >= disc.audioSectors() )
                 {
-                    bufferViews[ 8 ] = bufferWithZeros;
+                    bufferViews[ Checker.SECTORS_TO_READ - 1 ] = bufferWithZeros;
                 }
                 else
                 {
-                    rc = cdio_read_audio_sector( handle, bufferViews[ 8 ].ptr, sector );
+                    rc = cdio_read_audio_sector( handle, bufferViews[ Checker.SECTORS_TO_READ - 1 ].ptr, sector );
                     if ( rc != driver_return_code.DRIVER_OP_SUCCESS )
                     {
                         logError( format( "Reading sector %d failed: %s, abort!", sector, to!string( rc ) ) );
@@ -235,30 +262,66 @@ public:
                 logDebug( format( "Read sector %d", sector ) );
                 if ( _swap )
                 {
-                    DiscReader.swapBytes( bufferViews[ 8 ] );
+                    DiscReader.swapBytes( bufferViews[ Checker.SECTORS_TO_READ - 1 ] );
                 }
 
                 // Feed check with data.
-                if ( currentSector >= 9 )
+                if ( currentSector >= Checker.SECTORS_TO_READ )
                 {
                     if ( checkId > 0 )
                     {
-                        _checker.feed( checkId, sector - 4, bufferViews );
+                        _checker.feed( checkId, sector - Checker.MAX_SECTORS_OFFSET, bufferViews );
                     }
                 }
 
                 // Write to file!
-                // FIXME: What to write?
-                //writer.write( bufferViews[ 9 ] );
+                if ( _checker is null || _checker.isCalibrated() )
+                {
+                    // Prepare buffers covering sector.
+                    // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
+                    ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? 0 :_checker.getOffset() );
+                    ubyte[][] buffers;
+                    while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
+                    {
+                        if ( !buffers.length )
+                        {
+                            buffers ~= cast( ubyte[] )bufferViews
+                            [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
+                            [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
+                        }
+                        else
+                        {
+                            buffers ~= cast( ubyte[] )bufferViews
+                                [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                    byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
+                                [ 0 .. ( CDIO_CD_FRAMESIZE_RAW - length( buffers ) ) ];
+                        }
+                    }
+
+                    foreach( buf; buffers )
+                    {
+                        writer.write( buf );
+                    }
+                }
             }
 
             // Close writer.
-            writer.close();
-            logInfo( format( "Read and wrote %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
+            if ( _checker is null || _checker.isCalibrated() )
+            {
+                writer.close();
+                logInfo( format( "Read and wrote %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
+            }
+            else
+            {
+                logInfo( format( "Read %d %s.", sr.length(), "sector".pluralize( sr.length() ) ) );
+            }
 
             // Finish check.
             if ( checkId > 0 )
             {
+                // After finish was called the first time the checker should be calibrated.
                 string result;
                 if ( _checker.finish( checkId, result ) )
                 {
@@ -267,6 +330,13 @@ public:
                 else
                 {
                     logError( format( "Check failed: %s", result ) );
+                }
+
+                // Abort if calibration failed (first job).
+                if ( ! _checker.isCalibrated() )
+                {
+                    logError( "Calibration failed, please specify the drive offset in samples or try another disc!" );
+                    return false;
                 }
             }
         }
