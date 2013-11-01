@@ -218,7 +218,7 @@ private:
                     if ( !c.empty() )
                     {
                         string st = to!string( c[ "t" ] );
-                        int    t  = std.conv.parse!int ( st );
+                        ubyte   t  = std.conv.parse!ubyte( st );
 
                         jobs ~= new ReadFromAudioDiscJob( t );
                         continue;
@@ -237,7 +237,7 @@ private:
                             ).captures();
 
                         string st = to!string( c2[ "t" ] );
-                        int    t  = std.conv.parse!int ( st );
+                        ubyte  t  = std.conv.parse!ubyte ( st );
                         lsn_t  o  = -1;
 
                         // Offset?
@@ -278,7 +278,7 @@ private:
                         auto c1 = match( c[ "from" ], "^" ~ Pattern.LABEL ~ "$" ).captures();
 
                         string st = to!string( c1[ "t" ] );
-                        int    t  = std.conv.parse!int ( st );
+                        ubyte  t  = std.conv.parse!ubyte( st );
                         lsn_t  o;
 
                         // Offset?
@@ -314,7 +314,7 @@ private:
                             ).captures();
 
                         string st1 = to!string( c2[ "t" ] );
-                        int    t1  = std.conv.parse!int ( st1 );
+                        ubyte  t1  = std.conv.parse!ubyte( st1 );
                         lsn_t  o1;
 
                         // Offset?
@@ -330,7 +330,7 @@ private:
                             o1 = msfToSectors( msf_t( m1, s1, f1 ) );
                         }
                         string st2 = to!string( c3[ "t" ] );
-                        int    t2  = std.conv.parse!int ( st2 );
+                        ubyte  t2  = std.conv.parse!ubyte( st2 );
                         lsn_t  o2  = -1;
 
                         // Offset?

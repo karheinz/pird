@@ -47,13 +47,14 @@ interface ReadFromDiscJob
   bool fits( Disc disc );
   string description( Disc disc = null );
   ReadFromDiscJob[] split( Disc disc );
+  bool disc();
+  ubyte track();
 }
 
 class ReadFromAudioDiscJob : ReadFromDiscJob
 {
-  Disc _disc;
   bool _wholeDisc;
-  int _track, _fromTrack, _toTrack;
+  ubyte _track, _fromTrack, _toTrack;
   lsn_t _fromSector, _toSector;
   Label _fromLabel, _toLabel;
   SectorRange _sectorRange;
@@ -62,11 +63,11 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     _wholeDisc = true;
   }
     
-  this( int track ) {
+  this( ubyte track ) {
     _track = track;
   }
 
-  this( Label label, int track, lsn_t sector )
+  this( Label label, ubyte track, lsn_t sector )
   {
     if ( label == Label.DISC_BEGIN || label == Label.TRACK_BEGIN ) {
       _fromLabel = label;
@@ -81,7 +82,7 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
     }
   }
 
-  this( int fromTrack, lsn_t fromSector, int toTrack, lsn_t toSector )
+  this( ubyte fromTrack, lsn_t fromSector, ubyte toTrack, lsn_t toSector )
   {
     _fromTrack = fromTrack;
     _fromSector = fromSector;
@@ -95,6 +96,16 @@ class ReadFromAudioDiscJob : ReadFromDiscJob
 
   bool fits( Disc disc ) {
     return sectorRange( disc ).valid();
+  }
+
+  bool disc()
+  {
+    return _wholeDisc;
+  }
+
+  ubyte track()
+  {
+    return _track;
   }
 
   SectorRange sectorRange( Disc disc )

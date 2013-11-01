@@ -136,7 +136,14 @@ public:
             }
 
             // Heyho, lets go!
-            logInfo( "Start job: " ~ job.description() );
+            if ( _checker !is null && ! _checker.isCalibrated() )
+            {
+                logInfo( "Start calibration of " ~ _source.path() ~ ": " ~ job.description() );
+            }
+            else
+            {
+                logInfo( "Start job: " ~ job.description() );
+            }
 
             // Init some vars.
             driver_return_code_t rc;
@@ -181,7 +188,8 @@ public:
 
             if ( _checker !is null && _checker.isCalibrated() )
             {
-                logInfo( format( "Source is calibrated with offset of %d samples.", _checker.getOffset() ) );
+                logInfo( format( "Source %s is calibrated with offset of %d samples.",
+                    _source.path(), _checker.getOffset() ) );
             }
 
             if ( _checker is null || _checker.isCalibrated() )
@@ -194,7 +202,7 @@ public:
             if ( _checker !is null && job.track() > 0 )
             {
                 checkId = _checker.init( disc(), job.track() );
-                logInfo( "checker init" );
+                logInfo( "Initialized checker." );
             }
 
             uint currentSector;
