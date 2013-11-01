@@ -176,7 +176,7 @@ class AccurateChecker : Checker
 {
 private:
     /** known sample offsets */
-    static int[] OFFSETS = [
+    static const int[] OFFSETS = [
             -582,
             0,
             6,
@@ -206,6 +206,9 @@ private:
     /** offset of the underlying source */
     int _offset;
 
+    /** offsets to use */
+    int[] _offsets = OFFSETS;
+
     /** is underlying source calibrated */
     bool _calibrated;
 
@@ -216,7 +219,7 @@ public:
         ulong id = uniform!( ulong )();
 
         AccurateCheckData data = AccurateCheckData( disc, track );
-        foreach ( offset; OFFSETS )
+        foreach ( offset; _offsets )
         {
             data.crcByOffset[ offset ] = CrcData();
         }
@@ -242,7 +245,7 @@ public:
                 );
 
 
-            foreach ( offset; OFFSETS )
+            foreach ( offset; _offsets )
             {
                 CrcData crcData = d.crcByOffset[ offset ];
 
@@ -333,7 +336,8 @@ public:
             AccurateCheckData d = _data[ id ];
             result = "";
             TrackData[] matches;
-            foreach ( offset; OFFSETS )
+
+            foreach ( offset; _offsets )
             {
                 //result ~= format( "\naccurate rip calculated crc of 0x%08x for disc 0x%08x (offset %d)",
                 //    d.crcByOffset[ offset ].crc, d.discIdent.cddbDiscId, offset );
@@ -372,19 +376,23 @@ public:
 
             if ( matches.length == 1 )
             {
-                result ~= format( "track %d was ripped accurately with offset %d and confidence %d",
-                    d.track, matches[ 0 ].offset, matches[ 0 ].confidence );
+                result ~= format( "Track %d was ripped accurately with an offset of %d samples " ~
+                    "and a confidence of %d.", d.track, matches[ 0 ].offset, matches[ 0 ].confidence );
 
-                _offset = matches[ 0 ].offset;
-                _calibrated = true;
+                if ( ! _calibrated )
+                {
+                    _offset = matches[ 0 ].offset;
+                    _offsets = [ _offset ];
+                    _calibrated = true;
+                }
             }
             else if ( matches.length == 0 )
             {
-                result ~= format( "track %d wasn't ripped accurately", d.track );
+                result ~= format( "Track %d wasn't ripped accurately.", d.track );
             }
             else
             {
-                result ~= format( "track %d was ripped accurately, but offset is not clear", d.track );
+                result ~= format( "Track %d was ripped accurately, but offset is not clear.", d.track );
             }
 
             return ( matches.length == 1 );
@@ -404,6 +412,13 @@ public:
             result = "failed to read from file";
             return false;
         }
+    }
+
+    void calibrate( int offset )
+    {
+        _offset = offset;
+        _offsets = [ _offset ];
+        _calibrated = true;
     }
 
     bool isCalibrated()

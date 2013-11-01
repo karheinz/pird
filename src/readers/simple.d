@@ -138,7 +138,7 @@ public:
             // Heyho, lets go!
             if ( _checker !is null && ! _checker.isCalibrated() )
             {
-                logInfo( "Start calibration of " ~ _source.path() ~ ": " ~ job.description() );
+                logInfo( "Start calibration of source: " ~ job.description() );
             }
             else
             {
@@ -188,8 +188,8 @@ public:
 
             if ( _checker !is null && _checker.isCalibrated() )
             {
-                logInfo( format( "Source %s is calibrated with offset of %d samples.",
-                    _source.path(), _checker.getOffset() ) );
+                logInfo( format( "Source is calibrated with offset of %d samples.",
+                    _checker.getOffset() ) );
             }
 
             if ( _checker is null || _checker.isCalibrated() )

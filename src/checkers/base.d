@@ -39,6 +39,14 @@ interface Checker : introspection.Interface
 
 
     /**
+     * Calibrates the checker with an offset of samples.
+     *
+     * Params:
+     *   offset = the offset of samples
+     */
+    void calibrate( int offset );
+
+    /**
      * Inits check of a track.
      *
      * Params:
