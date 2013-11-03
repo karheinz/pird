@@ -102,10 +102,17 @@ public:
             }
         }
 
-        // Add calibration job (read first track).
+        // Add calibration job if requested (read first track).
         if ( _checker !is null )
         {
-            _jobs.insertInPlace( 0, new ReadFromAudioDiscJob( 1 ) );
+            if ( _calibrate )
+            {
+                _jobs.insertInPlace( 0, new ReadFromAudioDiscJob( 1 ) );
+            }
+            else
+            {
+                _checker.calibrate( _offset );
+            }
         }
 
         ReadFromDiscJob job;
@@ -173,7 +180,6 @@ public:
             if ( _checker is null || _checker.isCalibrated() )
             {
                 writer.open();
-                logInfo( "Writer was opened." ); 
             }
 
             // Rip!
@@ -190,6 +196,11 @@ public:
             {
                 logInfo( format( "Source is calibrated with offset of %d samples.",
                     _checker.getOffset() ) );
+            }
+            else
+            {
+                logInfo( format( "Source is calibrated with offset of %d samples.",
+                    _offset ) );
             }
 
             if ( _checker is null || _checker.isCalibrated() )
@@ -287,7 +298,7 @@ public:
                     {
                         // Prepare buffers covering sector.
                         // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
-                        ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? 0 :_checker.getOffset() );
+                        ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? _offset :_checker.getOffset() );
                         ubyte[][] buffers;
                         while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
                         {

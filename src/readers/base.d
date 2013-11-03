@@ -42,6 +42,8 @@ interface DiscReader : introspection.Interface
     bool read();
     void setWriterConfig( Writer.Config config );
     void setSpeed( ubyte speed );
+    void calibrate();
+    void calibrate( int offset );
     ReadFromDiscJob[] jobs();
     ReadFromDiscJob[] unsatisfiableJobs();
     void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
@@ -82,6 +84,8 @@ protected:
     Checker           _checker;
     ubyte             _speed;
     bool              _swap;
+    bool              _calibrate;
+    int               _offset;
     Writer.Config     _writerConfig;
     ReadFromDiscJob[] _jobs;
 
@@ -95,6 +99,16 @@ public:
     void setSpeed( ubyte speed )
     {
         _speed = speed;
+    }
+
+    void calibrate()
+    {
+        _calibrate = true;
+    }
+
+    void calibrate( int offset )
+    {
+        _offset = offset;
     }
 
     void setSwap( bool swap )

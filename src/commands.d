@@ -524,8 +524,25 @@ public:
         _reader.setSource( source );
         _reader.setSpeed( _config.speed );
         _reader.setWriterConfig( _config.writer );
-        _reader.setChecker( new AccurateChecker() );
         _reader.setSwap( _config.swap );
+        // Configure for accurate rip.
+        if ( _config.accurate )
+        {
+            _reader.setChecker( new AccurateChecker() );
+
+            if ( _config.calibrate )
+            {
+                _reader.calibrate();
+            }
+            else
+            {
+                _reader.calibrate( _config.offset );
+            }
+        }
+        else
+        {
+            _reader.calibrate( _config.offset );
+        }
 
         // Look for audio disc (using reader of type T).
         logDebug( format( "Looking for audio disc in %s.", source.path() ) );

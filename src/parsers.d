@@ -41,8 +41,9 @@ struct Config
     string            sourceFile, sourceDirectory;
     Writer.Config     writer;
     ReadFromDiscJob[] jobs;
-    bool              help, quiet, list, simulate, paranoia, stdout, together, swap;
-    int               verbose;
+    bool              help, quiet, list, simulate, paranoia,
+                      stdout, together, swap, accurate, calibrate;
+    int               verbose, offset;
     ubyte             speed;
 }
 
@@ -487,7 +488,10 @@ private:
                         "format|f", &audioFormatDescription,
                         "jobs|j", &jobDescriptions,
                         "speed|s", &config.speed,
-                        "swap-bytes|x", &config.swap
+                        "swap-bytes|x", &config.swap,
+                        "accurate|a", &config.accurate,
+                        "calibrate|c", &config.calibrate,
+                        "offset|o", &config.offset
                         );
 
                     // Drop command.
@@ -541,11 +545,22 @@ private:
                     {
                         config.writer.klass  = format( "writers.%s.StdoutWriter", to!string( audioFormat ).toLower() );
                         config.writer.eponym = new StdoutEponym();
-                        // Or file?
+                    
                     }
+                    // Or file?
                     else
                     {
                         config.writer.klass = format( "writers.%s.FileWriter", to!string( audioFormat ).toLower() );
+                    }
+
+                    if ( config.calibrate )
+                    {
+                        config.accurate = true;
+
+                        if ( config.offset != 0 )
+                        {
+                            throw new Exception( "Switches -c and -o are mutual exclusiv" );
+                        }
                     }
 
                     // Parsing was successful.
