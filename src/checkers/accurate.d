@@ -506,6 +506,7 @@ private:
             if ( toWrite[ i .. i + delimiter.length ] == delimiter )
             {
                 start = i + delimiter.length;
+                break;
             }
         }
         auto file = std.stdio.File( path, "wb" );
