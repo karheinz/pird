@@ -34,7 +34,7 @@ interface Checker : introspection.Interface
     /** max offset in sectors (-/+) */
     static const ubyte MAX_SECTORS_OFFSET = 5;
 
-    /** sectors to read */
+    /** sectors to read for a check cycle */
     static const ubyte SECTORS_TO_READ = ( 2 * MAX_SECTORS_OFFSET ) + 1;
 
 

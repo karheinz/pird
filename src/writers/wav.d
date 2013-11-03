@@ -84,8 +84,7 @@ class FileWriter : writers.base.FileWriter
         // Got to the start of the file.
         _file.seek( 0, SeekPos.Set );
         // Write header.
-        ubyte[] header = WavHeader( _file ).serialized();
-        _file.writeExact( header.ptr, header.length );
+        super.write( WavHeader( _file ).serialized() );
 
         super.close();
     }
@@ -150,7 +149,7 @@ public:
             // Write header.
             WavHeader rawHeader = WavHeader();
             rawHeader.setExpectedSize( _expectedSize );
-            stdout.rawWrite!ubyte ( rawHeader.serialized() );
+            super.write( rawHeader.serialized() );
             _headerWritten = true;
         }
 
@@ -175,7 +174,7 @@ public:
             // Write header.
             WavHeader rawHeader = WavHeader();
             rawHeader.setExpectedSize( _expectedSize );
-            stdout.rawWrite!ubyte ( rawHeader.serialized() );
+            super.write( rawHeader.serialized() );
             _headerWritten = true;
         }
 

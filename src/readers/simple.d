@@ -273,44 +273,45 @@ public:
                     DiscReader.swapBytes( bufferViews[ Checker.SECTORS_TO_READ - 1 ] );
                 }
 
-                // Feed check with data.
+                // Feed check with data and write to file.
                 if ( currentSector >= Checker.SECTORS_TO_READ )
                 {
+                    // Feed.
                     if ( checkId > 0 )
                     {
                         _checker.feed( checkId, sector - Checker.MAX_SECTORS_OFFSET, bufferViews );
                     }
-                }
 
-                // Write to file!
-                if ( _checker is null || _checker.isCalibrated() )
-                {
-                    // Prepare buffers covering sector.
-                    // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
-                    ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? 0 :_checker.getOffset() );
-                    ubyte[][] buffers;
-                    while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
+                    // Write.
+                    if ( _checker is null || _checker.isCalibrated() )
                     {
-                        if ( !buffers.length )
+                        // Prepare buffers covering sector.
+                        // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
+                        ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? 0 :_checker.getOffset() );
+                        ubyte[][] buffers;
+                        while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
                         {
-                            buffers ~= cast( ubyte[] )bufferViews
-                            [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                                byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
-                            [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                                byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
-                        }
-                        else
-                        {
-                            buffers ~= cast( ubyte[] )bufferViews
+                            if ( !buffers.length )
+                            {
+                                buffers ~= cast( ubyte[] )bufferViews
                                 [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                                    byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
-                                [ 0 .. ( CDIO_CD_FRAMESIZE_RAW - length( buffers ) ) ];
+                                    byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
+                                [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                    byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
+                            }
+                            else
+                            {
+                                buffers ~= cast( ubyte[] )bufferViews
+                                    [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                        byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
+                                    [ 0 .. ( CDIO_CD_FRAMESIZE_RAW - length( buffers ) ) ];
+                            }
                         }
-                    }
 
-                    foreach( buf; buffers )
-                    {
-                        writer.write( buf );
+                        foreach( buf; buffers )
+                        {
+                            writer.write( buf );
+                        }
                     }
                 }
             }

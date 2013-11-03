@@ -20,11 +20,15 @@ module checkers.accurate;
 import core.exception;
 import std.c.string;
 import std.exception;
+import std.file;
 import std.math;
+import std.path;
 import std.random;
 import std.signals;
+import std.socket;
 import std.stdio;
 import std.stream;
+import std.string;
 
 import c.cdio.sector;
 import c.cdio.types;
@@ -102,6 +106,10 @@ struct AccurateCheckData
     bool  isLastTrack = false;
     CrcData[ int ] crcByOffset;
     string    url;
+    string  proto = "http";
+    string   host = "www.accuraterip.com";
+    ushort   port = 80;
+    string   path;
     DiscIdent discIdent;
 
     this( Disc d, ubyte t )
@@ -126,7 +134,6 @@ struct AccurateCheckData
         }
 
         // Calc DiscIdent and URL.
-        const string BASE_URL = "http://www.accuraterip.com";
         lsn_t        tmp;
         uint         trackOffsetsSum;
         uint         trackOffsetsProduct;
@@ -152,9 +159,8 @@ struct AccurateCheckData
         discIdent.trackOffsetsProduct = trackOffsetsProduct;
         discIdent.cddbDiscId          = media.cddbDiscId( disc );
 
-        url = format(
-            "%s/accuraterip/%c/%c/%c/dBAR-%03d-%08x-%08x-%08x.bin",
-            BASE_URL,
+        path = format(
+            "/accuraterip/%c/%c/%c/dBAR-%03d-%08x-%08x-%08x.bin",
             trackOffsetsSumAsHexString[ 7 ],
             trackOffsetsSumAsHexString[ 6 ],
             trackOffsetsSumAsHexString[ 5 ],
@@ -162,6 +168,14 @@ struct AccurateCheckData
             trackOffsetsSum,
             trackOffsetsProduct,
             discIdent.cddbDiscId
+            );
+
+        url = format(
+            "%s://%s:%d%s",
+            proto,
+            host,
+            port,
+            path
             );
     }
 }
@@ -215,14 +229,21 @@ private:
 public:
     ulong init( Disc disc, in ubyte track )
     {
+        AccurateCheckData data = AccurateCheckData( disc, track );
+
+        if ( ! fetchAccurateRipResults( data ) )
+        {
+            return 0L;
+        }
+
         // Generate random id as lookup key.
         ulong id = uniform!( ulong )();
 
-        AccurateCheckData data = AccurateCheckData( disc, track );
         foreach ( offset; _offsets )
         {
             data.crcByOffset[ offset ] = CrcData();
         }
+
         _data[ id ] = data;
         return id;
     }
@@ -332,33 +353,27 @@ public:
     {
         try
         {
-            // TODO: lookup in accurate rip db and cleanup
             AccurateCheckData d = _data[ id ];
             result = "";
             TrackData[] matches;
 
             foreach ( offset; _offsets )
             {
-                //result ~= format( "\naccurate rip calculated crc of 0x%08x for disc 0x%08x (offset %d)",
-                //    d.crcByOffset[ offset ].crc, d.discIdent.cddbDiscId, offset );
-                //result ~= format( "\n%s", d.url );
-
                 ubyte dbuffer[ 13 ];  // don't use DiscIdent.sizeof because of alignment
                 ubyte tbuffer[ 9 ];   // don't use TrackData.sizeof because of alignment
 
-                std.stream.File file = new std.stream.File( "dBAR-019-0037354d-03051d36-1612b213.bin" );
-                //std.stream.File file = new std.stream.File( "dBAR-010-0010aad4-0085d1ed-7d0acb0a.bin" );
+                auto file = std.stdio.File( buildPath( tempDir(), baseName( d.path ) ), "rb" );
 
                 bool match;
                 while ( !file.eof )
                 {
-                    file.readExact( &dbuffer, dbuffer.sizeof );
+                    file.rawRead( dbuffer );
 
                     DiscIdent discIdent = DiscIdent( dbuffer );
                     match = ( discIdent == d.discIdent );
                     for ( uint i = 0; i < discIdent.tracks; ++i )
                     {
-                        file.readExact( &tbuffer, tbuffer.sizeof );
+                        file.rawRead( tbuffer );
 
                         if ( match && ( i + 1 ) == d.track )
                         {
@@ -433,5 +448,70 @@ public:
 
     mixin introspection.Initial;
     mixin Log;
+
+private:
+    bool fetchAccurateRipResults( AccurateCheckData data )
+    {
+        string path = buildPath( tempDir(), baseName( data.path ) );
+
+        try
+        {
+            if ( path.isFile )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        catch ( FileException e )
+        {
+        }
+
+        Socket socket = new TcpSocket();
+        socket.setOption( SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, dur!"seconds"( 1 ) );
+        socket.connect( new InternetAddress( cast( char[] )data.host, data.port ) );
+        scope( exit ) socket.close();
+        socket.send( format( "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", data.path, data.host ) );
+
+        void buffer[] = new ubyte[ 1024 ];
+        ubyte toWrite[];
+        ptrdiff_t bytes;
+        bool receivedData;
+        while ( true )
+        {
+            bytes = socket.receive( buffer );
+            if ( bytes > 0 )
+            {
+                toWrite ~= cast( ubyte[] )buffer[ 0 .. bytes ];
+                receivedData = true;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if ( ! receivedData )
+        {
+            return false;
+        }
+
+        // Write to file (remove http header)!
+        ulong start = 0;
+        ubyte delimiter[] = [ '\r', '\n', '\r', '\n' ];
+        for ( ulong i = 0; i < ( toWrite.length - delimiter.length ); ++i )
+        {
+            if ( toWrite[ i .. i + delimiter.length ] == delimiter )
+            {
+                start = i + delimiter.length;
+            }
+        }
+        auto file = std.stdio.File( path, "wb" );
+        file.rawWrite( toWrite[ start .. $ ] );
+        
+        return true;
+    }
 }
 

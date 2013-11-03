@@ -236,13 +236,13 @@ public:
 
     void write( ubyte[] buffer, uint bytes )
     {
-        uint bound = cast( uint ) fmin( buffer.length, bytes );
+        uint bound = cast( uint )fmin( buffer.length, bytes );
         write( buffer[ 0 .. bound ] );
     }
 
     void write( ubyte[] buffer )
     {
-        stdout.rawWrite!ubyte ( buffer );
+        stdout.rawWrite!ubyte( buffer );
     }
 
     ulong seek( long offset, SeekPos whence )
