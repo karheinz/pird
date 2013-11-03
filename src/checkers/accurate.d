@@ -391,8 +391,8 @@ public:
 
             if ( matches.length == 1 )
             {
-                result ~= format( "Track %d was ripped accurately with an offset of %d samples " ~
-                    "and a confidence of %d.", d.track, matches[ 0 ].offset, matches[ 0 ].confidence );
+                result ~= format( "Track %d was ripped accurately (confidence %d).",
+                    d.track, matches[ 0 ].confidence );
 
                 if ( ! _calibrated )
                 {
