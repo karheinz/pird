@@ -211,10 +211,11 @@ public:
             // Current position?
             position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
             // Go to first sector of range (use relative offset).
-            cdio_paranoia_seek( handle, cast( short )( fmax( sr.from - Checker.MAX_SECTORS_OFFSET, 0 ) - position ), SEEK_CUR );
+            lsn_t seekTo = cast( lsn_t )fmax( sr.from - Checker.MAX_SECTORS_OFFSET, 0 );
+            cdio_paranoia_seek( handle, cast( short )( seekTo - position ), SEEK_CUR );
             position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
             // Check result of seeking.
-            if ( position != fmax( sr.from - Checker.MAX_SECTORS_OFFSET, 0 ) )
+            if ( position != seekTo )
             {
                 logError(
                     format(
@@ -226,10 +227,13 @@ public:
                 continue;
             }
 
-            if ( _checker !is null && _checker.isCalibrated() )
+            if ( _checker !is null )
             {
-                logInfo( format( "Source is calibrated with offset of %d samples.",
-                    _checker.getOffset() ) );
+                if ( _checker.isCalibrated() )
+                {
+                    logInfo( format( "Source is calibrated with offset of %d samples.",
+                        _checker.getOffset() ) );
+                }
             }
             else
             {

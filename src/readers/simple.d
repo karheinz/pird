@@ -192,10 +192,13 @@ public:
                     )
                 );
 
-            if ( _checker !is null && _checker.isCalibrated() )
+            if ( _checker !is null )
             {
-                logInfo( format( "Source is calibrated with offset of %d samples.",
-                    _checker.getOffset() ) );
+                if ( _checker.isCalibrated() )
+                {
+                    logInfo( format( "Source is calibrated with offset of %d samples.",
+                        _checker.getOffset() ) );
+                }
             }
             else
             {
