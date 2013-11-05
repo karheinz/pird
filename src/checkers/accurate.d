@@ -522,7 +522,7 @@ private:
             }
         }
         auto file = std.stdio.File( path, "wb" );
-        file.rawWrite( toWrite[ 0 .. start ] ); //start .. $ ] );
+        file.rawWrite( toWrite[ start .. $ ] );
         
         return true;
     }
