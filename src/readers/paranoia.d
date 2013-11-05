@@ -251,7 +251,16 @@ public:
             if ( _checker !is null && job.track() > 0 )
             {
                 checkId = _checker.init( disc(), job.track() );
-                logInfo( "Initialized checker." );
+                
+                if ( checkId != 0L )
+                {
+                    logInfo( "Initialized checker." );
+                }
+                else
+                {
+                    logError( "Initializing checker failed." );
+                    return false;
+                }
             }
 
             uint currentSector;

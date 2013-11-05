@@ -19,11 +19,13 @@ module checkers.accurate;
 
 import core.exception;
 import std.c.string;
+import std.conv;
 import std.exception;
 import std.file;
 import std.math;
 import std.path;
 import std.random;
+import std.regex;
 import std.signals;
 import std.socket;
 import std.stdio;
@@ -498,6 +500,16 @@ private:
             return false;
         }
 
+        // Check http header.
+        auto pattern = regex( r" 200" );
+        ptrdiff_t eol = indexOf( cast( char[] )toWrite, '\n' );
+        string header = to!string( cast( char[] )( toWrite[ 0 .. eol ] ) );
+        auto hit = match( header, pattern );
+        if ( hit.empty() )
+        {
+            return false;
+        }
+
         // Write to file (remove http header)!
         ulong start = 0;
         ubyte delimiter[] = [ '\r', '\n', '\r', '\n' ];
@@ -510,7 +522,7 @@ private:
             }
         }
         auto file = std.stdio.File( path, "wb" );
-        file.rawWrite( toWrite[ start .. $ ] );
+        file.rawWrite( toWrite[ 0 .. start ] ); //start .. $ ] );
         
         return true;
     }
