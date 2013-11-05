@@ -65,6 +65,13 @@ mixin template CdIoAudioDiscReader( )
         track_t        tracks = cdio_get_num_tracks( handle );
         track_format_t trackFormat;
         lsn_t          firstSector, lastSector;
+        bool           mixedMode;
+
+        // Check if last track is a data track.
+        // If so, subtract 11.400 sectors from last audio track.
+        trackFormat = cdio_get_track_format( handle, tracks );
+        mixedMode = ( trackFormat != track_format_t.TRACK_FORMAT_AUDIO );
+
         for ( track_t track = 1; track <= tracks; track++ )
         {
             trackFormat = cdio_get_track_format( handle, track );
@@ -83,7 +90,7 @@ mixin template CdIoAudioDiscReader( )
                 new Track(
                     track,
                     firstSector,
-                    lastSector,
+                    ( mixedMode && ( track == tracks - 1 ) ? lastSector - 11400 : lastSector ),
                     trackFormat == track_format_t.TRACK_FORMAT_AUDIO
                     )
                 );

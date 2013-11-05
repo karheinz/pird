@@ -158,11 +158,16 @@ public:
 
     lsn_t sectors()
     {
+        bool mixedMode;
         uint sum;
         foreach ( track; tracks() )
         {
+            mixedMode = mixedMode || ( ! track.isAudio() );
             sum += track.sectors();
         }
+
+        // Add offset of last audio track!
+        if ( mixedMode ) { sum += 11400; }
 
         return sum;
     }
@@ -183,6 +188,11 @@ public:
 
     uint seconds()
     {
+        return sectors() / CDIO_CD_FRAMES_PER_SEC;
+    }
+
+    uint audioSeconds()
+    {
         return audioSectors() / CDIO_CD_FRAMES_PER_SEC;
     }
 
@@ -190,6 +200,14 @@ public:
     {
         uint m = seconds() / CDIO_CD_SECS_PER_MIN;
         uint s = seconds() % CDIO_CD_SECS_PER_MIN;
+
+        return format( "%d:%02d", m, s );
+    }
+
+    string audioLength()
+    {
+        uint m = audioSeconds() / CDIO_CD_SECS_PER_MIN;
+        uint s = audioSeconds() % CDIO_CD_SECS_PER_MIN;
 
         return format( "%d:%02d", m, s );
     }
@@ -323,7 +341,7 @@ string discToString( Disc disc )
     lines ~= format( "%6s: %s", "Tracks", disc.tracks().length );
     if ( disc.isAudio() )
     {
-        lines ~= format( "%6s: %s", "Length", disc.length() );
+        lines ~= format( "%6s: %s", "Length", disc.audioLength() );
         lines ~= "";
         lines ~= format( "%2s   %-6s   %-15s   %s", "#", "Length", "Sectors", "Type" );
         foreach ( Track track; disc.tracks() )

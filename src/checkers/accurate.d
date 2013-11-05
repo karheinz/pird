@@ -118,7 +118,7 @@ struct AccurateCheckData
         track = t;
 
         // Is last track?
-        Track[] tracks = d.tracks();
+        Track[] tracks = d.audioTracks();
         foreach_reverse ( elem; tracks )
         {
             if ( !elem.isAudio() )
@@ -147,8 +147,8 @@ struct AccurateCheckData
             trackOffsetsSum     += tmp;
             trackOffsetsProduct += ( ( tmp != 0 ? tmp : 1 ) * ( i + 1 ) );
         }
-        // Lead out too.
-        tmp                        = tracks[ $ - 1 ].sectorRange.to + 1;
+        // Lead out too. Consider data track!
+        tmp                        = disc.tracks()[ $ - 1 ].sectorRange.to + 1;
         trackOffsetsSum           += tmp;
         trackOffsetsProduct       += ( ( tmp != 0 ? tmp : 1 ) * ( tracks.length + 1 ) );
         trackOffsetsSumAsHexString = format( "%08x", trackOffsetsSum );
