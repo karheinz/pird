@@ -501,9 +501,10 @@ private:
         }
 
         // Check http header.
-        auto pattern = regex( r" 200" );
+        auto pattern = regex( r" 200( |$)" );
         ptrdiff_t eol = indexOf( cast( char[] )toWrite, '\n' );
-        string header = to!string( cast( char[] )( toWrite[ 0 .. eol ] ) );
+        string header = to!string( stripRight( cast( char[] )( toWrite[ 0 .. eol ] ) ) );
+        
         auto hit = match( header, pattern );
         if ( hit.empty() )
         {
