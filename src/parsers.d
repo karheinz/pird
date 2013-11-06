@@ -553,14 +553,9 @@ private:
                         config.writer.klass = format( "writers.%s.FileWriter", to!string( audioFormat ).toLower() );
                     }
 
-                    if ( config.calibrate )
+                    if ( config.calibrate && config.offset != 0 )
                     {
-                        config.accurate = true;
-
-                        if ( config.offset != 0 )
-                        {
-                            throw new Exception( "Switches -c and -o are mutual exclusiv" );
-                        }
+                        throw new Exception( "Switches -c and -o are mutual exclusiv" );
                     }
 
                     // Parsing was successful.

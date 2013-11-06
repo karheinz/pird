@@ -37,13 +37,14 @@ interface DiscReader : introspection.Interface
     void add( ReadFromDiscJob job );
     void setSwap( bool swap );
     void setChecker( Checker checker );
+    void check();
+    void calibrate();
+    void calibrate( int offset );
     void replace( ReadFromDiscJob from, ReadFromDiscJob[] to );
     void clear();
     bool read();
     void setWriterConfig( Writer.Config config );
     void setSpeed( ubyte speed );
-    void calibrate();
-    void calibrate( int offset );
     ReadFromDiscJob[] jobs();
     ReadFromDiscJob[] unsatisfiableJobs();
     void connect( void delegate( string, LogLevel, string, bool, bool ) signalHandler );
@@ -81,9 +82,10 @@ abstract class AbstractAudioDiscReader : AudioDiscReader
 protected:
     GenericSource     _source;
     Disc              _disc;
-    Checker           _checker;
     ubyte             _speed;
     bool              _swap;
+    Checker           _checker;
+    bool              _check;
     bool              _calibrate;
     int               _offset;
     Writer.Config     _writerConfig;
@@ -99,6 +101,17 @@ public:
     void setSpeed( ubyte speed )
     {
         _speed = speed;
+    }
+
+    void setChecker( Checker checker )
+    {
+        _checker = checker;
+        _checker.connect( &handleSignal );
+    }
+
+    void check()
+    {
+        _check = true;
     }
 
     void calibrate()
@@ -124,12 +137,6 @@ public:
     void add( ReadFromDiscJob job )
     {
         _jobs ~= job;
-    }
-
-    void setChecker( Checker checker )
-    {
-        _checker = checker;
-        _checker.connect( &handleSignal );
     }
 
     void replace( ReadFromDiscJob from, ReadFromDiscJob[] to )

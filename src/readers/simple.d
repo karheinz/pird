@@ -211,9 +211,12 @@ public:
                 logInfo( "Data is written to " ~ writer.path() ~ "." );
             }
 
-            // Init check if checker was set and job is to read a single track.
+            // Init check if requested.
             ulong checkId = 0;
-            if ( _checker !is null && job.track() > 0 )
+            if ( _checker !is null &&
+                 job.track() > 0 &&
+                 ( _check || ( _calibrate && ! _checker.isCalibrated() ) )
+               )
             {
                 checkId = _checker.init( disc(), job.track() );
                 

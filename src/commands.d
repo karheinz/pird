@@ -525,19 +525,21 @@ public:
         _reader.setSpeed( _config.speed );
         _reader.setWriterConfig( _config.writer );
         _reader.setSwap( _config.swap );
-        // Configure for accurate rip.
-        if ( _config.accurate )
+
+        // Configure for calibration and/or accurate rip.
+        if ( _config.accurate || _config.calibrate )
         {
             _reader.setChecker( new AccurateChecker() );
+        }
 
-            if ( _config.calibrate )
-            {
-                _reader.calibrate();
-            }
-            else
-            {
-                _reader.calibrate( _config.offset );
-            }
+        if ( _config.accurate )
+        {
+            _reader.check();
+        }
+
+        if ( _config.calibrate )
+        {
+            _reader.calibrate();
         }
         else
         {
