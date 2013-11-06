@@ -20,7 +20,8 @@ SYNOPSIS
 
 DESCRIPTION
        Rips audio data from a disc (CD-DA or CD-ROM Mixed) or a disc image
-       (TOC, CUE or NRG).
+       (TOC, CUE or NRG). Supports (automatic) device calibration and result
+       validation against accurate rip database[1].
 
 OPTIONS
        There are some options to tell pird how to proceed:
@@ -71,6 +72,19 @@ OPTIONS
        -x, --swap-bytes
            swap bytes (should be used if the byte order of read data is wrong)
 
+       -a, --accurate
+           validates rip result against accurate rip database
+
+       -c, --calibrate
+           calibrates the device by ripping the first track and validating
+           ripped data against accurate rip database (trying all known
+           offsets)
+
+       -o, --offset OFFSET
+           Calibrates the device with an offset (+/-) of OFFSET samples.
+
+           NOTE: A sample is four byte (two short values).
+
        -v, --verbose
            be verbose, each occurrence increases log level
 
@@ -91,7 +105,7 @@ OUTPUT
 RIPPING DISC IMAGES
        Support of TOC format is limited in libcdio versions prior to 0.90, use
        CUE format instead. Conversion can be done with toc2cue, which is part
-       of CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs[1].
+       of CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs[2].
 
 EXAMPLES
        Rip audio disc in /dev/cdrom writing each track to a separate WAV-file:
@@ -107,24 +121,27 @@ AUTHOR
 
 COPYRIGHT
        Copyright © 2011-2013 Karsten Heinze <karsten@sidenotes.de>. License
-       GPLv3+: GNU General Public License[2] version 3 or later.
+       GPLv3+: GNU General Public License[3] version 3 or later.
 
        This is free software: you are free to change and redistribute it.
        There is NO WARRANTY, to the extent permitted by law.
 
 SEE ALSO
-       GNU Compact Disc Input and Control Library[3] (libcdio)
+       GNU Compact Disc Input and Control Library[4] (libcdio)
 
 NOTES
-        1. CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs
+        1. accurate rip database
+           http://www.accuraterip.com
+
+        2. CDRDAO, Disk-At-Once Recording of Audio and Data CD-Rs/CD-RWs
            http://cdrdao.sourceforge.net
 
-        2. GNU General Public License
+        3. GNU General Public License
            http://gnu.org/licenses/gpl.html
 
-        3. GNU Compact Disc Input and Control Library
+        4. GNU Compact Disc Input and Control Library
            http://gnu.org/software/libcdio
 
 
 
-PIRD                              07/03/2013                           PIRD(1)
+PIRD                              11/06/2013                           PIRD(1)

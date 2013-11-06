@@ -68,6 +68,8 @@
       Rips audio data from a disc (<literal>CD-DA</literal> or
       <literal>CD-ROM Mixed</literal>) or a disc image (<literal>TOC</literal>,
       <literal>CUE</literal> or <literal>NRG</literal>).
+      Supports (automatic) device calibration and result validation
+      against <ulink url="http://www.accuraterip.com">accurate rip database</ulink>.
     </para>
   </refsect1>
   <refsect1 id="options">
@@ -211,6 +213,45 @@
         </term>
         <listitem>
           <para>swap bytes (should be used if the byte order of read data is wrong)</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-a</option>, 
+          <option>--accurate</option>
+        </term>
+        <listitem>
+          <para>
+            validates rip result against accurate rip database
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-c</option>, 
+          <option>--calibrate</option>
+        </term>
+        <listitem>
+          <para>
+            calibrates the device by ripping the first track and validating
+            ripped data against accurate rip database (trying all known offsets)
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>
+          <option>-o</option>, 
+          <option>--offset</option>
+          <replaceable class="parameter">OFFSET</replaceable>
+        </term>
+        <listitem>
+          <para>
+            Calibrates the device with an offset (+/-) of
+            <replaceable class="parameter">OFFSET</replaceable> samples.
+          </para>
+          <para>
+            NOTE: A sample is four byte (two short values).
+          </para>
         </listitem>
       </varlistentry>
       <varlistentry>
