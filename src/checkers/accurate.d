@@ -471,31 +471,39 @@ private:
         {
         }
 
-        Socket socket = new TcpSocket();
-        socket.setOption( SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, dur!"seconds"( 1 ) );
-        socket.connect( new InternetAddress( cast( char[] )data.host, data.port ) );
-        scope( exit ) socket.close();
-        socket.send( format( "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", data.path, data.host ) );
-
         void buffer[] = new ubyte[ 1024 ];
         ubyte toWrite[];
         ptrdiff_t bytes;
         bool receivedData;
-        while ( true )
+
+        try
         {
-            bytes = socket.receive( buffer );
-            if ( bytes > 0 )
+            Socket socket = new TcpSocket();
+            socket.setOption( SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, dur!"seconds"( 1 ) );
+            scope( exit ) { socket.close(); }
+            socket.connect( new InternetAddress( cast( char[] )data.host, data.port ) );
+            socket.send( format( "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", data.path, data.host ) );
+
+            while ( true )
             {
-                toWrite ~= cast( ubyte[] )buffer[ 0 .. bytes ];
-                receivedData = true;
+                bytes = socket.receive( buffer );
+                if ( bytes > 0 )
+                {
+                    toWrite ~= cast( ubyte[] )buffer[ 0 .. bytes ];
+                    receivedData = true;
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
+
+            if ( ! receivedData )
             {
-                break;
+                return false;
             }
         }
-
-        if ( ! receivedData )
+        catch ( AddressException e )
         {
             return false;
         }
