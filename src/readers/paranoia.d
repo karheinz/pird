@@ -334,7 +334,7 @@ public:
                     }
                 }
 
-                logDebug( format( "Read sector %d", sector ) );
+                logTrace( format( "Read sector %d", sector ) );
                 if ( _swap )
                 {
                     DiscReader.swapBytes( bufferViews[ Checker.SECTORS_TO_READ - 1 ] );

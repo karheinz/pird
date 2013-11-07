@@ -18,6 +18,7 @@
 module checkers.accurate;
 
 import core.exception;
+import std.bitmanip;
 import std.c.string;
 import std.conv;
 import std.exception;
@@ -31,6 +32,7 @@ import std.socket;
 import std.stdio;
 import std.stream;
 import std.string;
+import std.system;
 
 import c.cdio.sector;
 import c.cdio.types;
@@ -55,10 +57,9 @@ struct DiscIdent
     {
         tracks = data[ 0 ];
 
-        // FIXME: Works only on LE systems.
-        memcpy( &trackOffsetsSum, &( data[ 1 ] ), trackOffsetsSum.sizeof );
-        memcpy( &trackOffsetsProduct, &( data[ 5 ] ), trackOffsetsProduct.sizeof );
-        memcpy( &cddbDiscId, &( data[ 9 ] ), cddbDiscId.sizeof );
+        trackOffsetsSum = data.peek!( uint, Endian.littleEndian )( 1 );
+        trackOffsetsProduct = data.peek!( uint, Endian.littleEndian )( 5 );
+        cddbDiscId = data.peek!( uint, Endian.littleEndian )( 9 );
     }
 
     bool opEquals( T ) ( auto ref T other )
@@ -83,9 +84,8 @@ struct TrackData
     {
         confidence = data[ 0 ];
 
-        // FIXME: Works only on LE systems.
-        memcpy( &crc, &( data[ 1 ] ), crc.sizeof );
-        memcpy( &offset, &( data[ 5 ] ), offset.sizeof );
+        crc = data.peek!( uint, Endian.littleEndian )( 1 );
+        offset = data.peek!( uint, Endian.littleEndian )( 5 );
     }
 }
 
@@ -106,7 +106,8 @@ struct AccurateRipCheckData
     Disc  disc;
     ubyte track; // starts with 1
     bool  isLastTrack = false;
-    CrcData[ int ] crcByOffset;
+    CrcData[ int ] crcOldByOffset;
+    CrcData[ int ] crcNewByOffset;
     string    url;
     string  proto = "http";
     string   host = "www.accuraterip.com";
@@ -249,7 +250,8 @@ public:
 
         foreach ( offset; _offsets )
         {
-            data.crcByOffset[ offset ] = CrcData();
+            data.crcOldByOffset[ offset ] = CrcData();
+            data.crcNewByOffset[ offset ] = CrcData();
         }
 
         _data[ id ] = data;
@@ -276,7 +278,8 @@ public:
 
             foreach ( offset; _offsets )
             {
-                CrcData crcData = d.crcByOffset[ offset ];
+                CrcData crcOldData = d.crcOldByOffset[ offset ];
+                CrcData crcNewData = d.crcNewByOffset[ offset ];
 
                 // Prepare buffers covering sector.
                 // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
@@ -301,8 +304,10 @@ public:
                     }
                 }
 
-                // Now calc the checksum.
-                uint  tmp;
+                // Now calc the checksums.
+                ubyte[ 4 ] raw;
+                uint  tmp, low, high;
+                ulong product;
                 ubyte read;
                 foreach ( i, buffer; buffers )
                 {
@@ -313,36 +318,53 @@ public:
                         // Handle sector.
                         if ( !ignore )
                         {
-                            *( cast( ubyte* )( &tmp ) + read - 1 ) = elem;
+                            raw[ read - 1 ] = elem;
 
                             if ( read == 4 )
                             {
-                                crcData.crc += ( crcData.factor * tmp );
+                                // FIXME: Always little endian?
+                                tmp = littleEndianToNative!uint( raw );
+                                crcOldData.crc += ( crcOldData.factor * tmp );
+
+                                product = ( cast( ulong )crcNewData.factor * cast( ulong )tmp );
+                                low = cast( uint )( product & 0xffffffffL );
+                                high = cast( uint )( product / 0x100000000L );
+                                crcNewData.crc += high;
+                                crcNewData.crc += low;
                             }
                         }
                         // Also handle last sample of 5th sector,
                         // which is found at the end of second buffer.
                         else if ( sector == 4 && i == ( buffers.length - 1 ) && k >= ( buffer.length - 4 ) )
                         {
-                            // FIXME: Byte order save!
-                            *( cast( ubyte* )( &tmp ) + read - 1 ) = elem;
+                            raw[ read - 1 ] = elem;
 
                             if ( read == 4 )
                             {
-                                crcData.crc += ( crcData.factor * tmp );
+                                // FIXME: Always little endian?
+                                tmp = littleEndianToNative!uint( raw );
+                                crcOldData.crc += ( crcOldData.factor * tmp );
+
+                                product = ( cast( ulong )crcNewData.factor * cast( ulong )tmp );
+                                low = cast( uint )( product & 0xffffffffL );
+                                high = cast( uint )( product / 0x100000000L );
+                                crcNewData.crc += high;
+                                crcNewData.crc += low;
                             }
                         }
 
                         if ( read == 4 )
                         {
-                            ++( crcData.factor );
+                            ++( crcOldData.factor );
+                            ++( crcNewData.factor );
                             read = 0;
                         }
                     }
                 }
 
                 // Store crcData, because structs are copied by value!
-                d.crcByOffset[ offset ] = crcData;
+                d.crcOldByOffset[ offset ] = crcOldData;
+                d.crcNewByOffset[ offset ] = crcNewData;
             }
 
             // Store d, because structs are copied by value!
@@ -363,10 +385,13 @@ public:
         {
             AccurateRipCheckData d = _data[ id ];
             result = "";
-            TrackData[] matches;
+            TrackData[] matchesOld;
+            TrackData[] matchesNew;
 
             foreach ( offset; _offsets )
             {
+                logDebug( format( "Checking calculated CRCs for offset %d.", offset ) );
+
                 ubyte dbuffer[ 13 ];  // don't use DiscIdent.sizeof because of alignment
                 ubyte tbuffer[ 9 ];   // don't use TrackData.sizeof because of alignment
 
@@ -386,30 +411,75 @@ public:
                         if ( match && ( i + 1 ) == d.track )
                         {
                             TrackData trackData = TrackData( tbuffer );
-                            if ( d.crcByOffset[ offset ].crc == trackData.crc )
+                            if ( d.crcOldByOffset[ offset ].crc == trackData.crc )
                             {
+                                logDebug( format( "Old CRC hit (confidence %d).", trackData.confidence ) );
                                 // FIXME: Offset in files seems to be wrong, so overwrite!
                                 trackData.offset = offset;
-                                matches ~= trackData;
+                                matchesOld ~= trackData;
+                            }
+                            if ( d.crcNewByOffset[ offset ].crc == trackData.crc )
+                            {
+                                logDebug( format( "New CRC hit (confidence %d).", trackData.confidence ) );
+                                // FIXME: Offset in files seems to be wrong, so overwrite!
+                                trackData.offset = offset;
+                                matchesNew ~= trackData;
                             }
                         }
                     }
                 }
             }
 
-            if ( matches.length == 1 )
-            {
-                result ~= format( "Track %d was ripped accurately (confidence %d).",
-                    d.track, matches[ 0 ].confidence );
 
-                if ( ! _calibrated )
+            bool accurate;
+
+            if ( ( matchesOld.length == 1 && matchesNew.length == 1 ) ||
+                 ( matchesOld.length == 1 && matchesNew.length == 0 ) ||
+                 ( matchesOld.length == 0 && matchesNew.length == 1 )
+               )
+            {
+                ubyte confidenceOld = ( matchesOld.length ? matchesOld[ 0 ].confidence : 0 );
+                ubyte confidenceNew = ( matchesNew.length ? matchesNew[ 0 ].confidence : 0 );
+
+                bool offsetError;
+                if ( confidenceOld > 0 && confidenceNew > 0 )
                 {
-                    _offset = matches[ 0 ].offset;
-                    _offsets = [ _offset ];
-                    _calibrated = true;
+                    offsetError = ( matchesOld[ 0 ].offset != matchesNew[ 0 ].offset );
+                }
+                
+                if ( offsetError )
+                {
+                    result ~= format( "Track %d was ripped accurately, but offset is not clear.", d.track );
+                }
+                else
+                {
+                    ubyte confidence;
+                    int offset;
+                    if ( confidenceOld > confidenceNew )
+                    {
+                        confidence = matchesOld[ 0 ].confidence;
+                        offset = matchesOld[ 0 ].offset;
+                    }
+                    else
+                    {
+                        confidence = matchesNew[ 0 ].confidence;
+                        offset = matchesNew[ 0 ].offset;
+                    }
+
+                    result ~= format( "Track %d was ripped accurately (confidence %d).",
+                        d.track, confidence );
+
+                    if ( ! _calibrated )
+                    {
+                        _offset = offset;
+                        _offsets = [ _offset ];
+                        _calibrated = true;
+                    }
+
+                    accurate = true;
                 }
             }
-            else if ( matches.length == 0 )
+            else if ( matchesOld.length == 0 && matchesNew.length == 0 )
             {
                 result ~= format( "Track %d wasn't ripped accurately.", d.track );
             }
@@ -418,7 +488,7 @@ public:
                 result ~= format( "Track %d was ripped accurately, but offset is not clear.", d.track );
             }
 
-            return ( matches.length == 1 );
+            return accurate;
         }
         catch ( RangeError e )
         {
@@ -458,6 +528,17 @@ public:
     mixin Log;
 
 private:
+    bool isLE()
+    {
+        ushort tmp = 0x8000;
+        return ( *( cast( ubyte* )( &tmp ) ) == 0x80 );
+    }
+
+    bool isBE()
+    {
+        return ( ! isLE() );
+    }
+
     bool fetchAccurateRipResults( AccurateRipCheckData data )
     {
         string path = buildPath( tempDir(), baseName( data.path ) );
