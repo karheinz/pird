@@ -29,7 +29,7 @@ import std.variant;
 import c.cdio.logging;
 import c.cdio.types;
 
-import checkers.accurate;
+import checkers.accuraterip;
 static import introspection;
 import log;
 import media;
@@ -529,7 +529,7 @@ public:
         // Configure for calibration and/or accurate rip.
         if ( _config.accurate || _config.calibrate )
         {
-            _reader.setChecker( new AccurateChecker() );
+            _reader.setChecker( new AccurateRipChecker() );
         }
 
         if ( _config.accurate )

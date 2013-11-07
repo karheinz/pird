@@ -39,6 +39,14 @@ interface Checker : introspection.Interface
 
 
     /**
+     * Returns the name of the checker.
+     *
+     * Returns:
+     *   the name of the checker
+     */
+    string name();
+
+    /**
      * Calibrates the checker with an offset of samples.
      *
      * Params:

@@ -222,11 +222,11 @@ public:
                 
                 if ( checkId != 0L )
                 {
-                    logInfo( "Initialized checker." );
+                    logInfo( "Initialized " ~ _checker.name() ~ " checker." );
                 }
                 else
                 {
-                    logError( "Initializing checker failed." );
+                    logError( "Initializing " ~ _checker.name() ~ " checker failed." );
                     return false;
                 }
             }

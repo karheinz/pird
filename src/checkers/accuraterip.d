@@ -101,7 +101,7 @@ struct CrcData
 /**
  * The accurate check data of a track.
  */
-struct AccurateCheckData
+struct AccurateRipCheckData
 {
     Disc  disc;
     ubyte track; // starts with 1
@@ -188,7 +188,7 @@ struct AccurateCheckData
  *
  * http://accuraterip.com
  */
-class AccurateChecker : Checker
+class AccurateRipChecker : Checker
 {
 private:
     /** known sample offsets */
@@ -217,7 +217,7 @@ private:
         ];
 
     /** accurate check data by id */
-    AccurateCheckData[ ulong ] _data;
+    AccurateRipCheckData[ ulong ] _data;
 
     /** offset of the underlying source */
     int _offset;
@@ -229,12 +229,18 @@ private:
     bool _calibrated;
 
 public:
+    string name()
+    {
+        return "accurate rip";
+    }
+
     ulong init( Disc disc, in ubyte track )
     {
-        AccurateCheckData data = AccurateCheckData( disc, track );
+        AccurateRipCheckData data = AccurateRipCheckData( disc, track );
 
         if ( ! fetchAccurateRipResults( data ) )
         {
+            logError( "fetching file " ~ baseName( data.url ) ~ " failed" );
             return 0L;
         }
 
@@ -258,7 +264,7 @@ public:
     {
         try
         {
-            AccurateCheckData d = _data[ id ];
+            AccurateRipCheckData d = _data[ id ];
 
             // Ignore first 5 sectors of disc (except last byte of 5th sector) and
             // last 5 sectors of disc (consider only audio tracks).
@@ -355,7 +361,7 @@ public:
     {
         try
         {
-            AccurateCheckData d = _data[ id ];
+            AccurateRipCheckData d = _data[ id ];
             result = "";
             TrackData[] matches;
 
@@ -452,7 +458,7 @@ public:
     mixin Log;
 
 private:
-    bool fetchAccurateRipResults( AccurateCheckData data )
+    bool fetchAccurateRipResults( AccurateRipCheckData data )
     {
         string path = buildPath( tempDir(), baseName( data.path ) );
 
