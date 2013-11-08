@@ -22,6 +22,7 @@ import std.conv;
 import std.file;
 import std.path;
 import std.string;
+import std.system;
 
 import c.cdio.cdda;
 import c.cdio.device;
@@ -50,11 +51,14 @@ interface GenericSource
 
     bool readsAudioDiscs();
     bool hasProgrammableSpeed();
+
+    Endian endianness();
 }
 
 interface Source( T ) : GenericSource, introspection.Interface
 {
     bool open( out T* handle );
+    bool isOpen( in T* handle );
     bool close( out T* handle );
 
     // Allows to search for all sources.
@@ -141,7 +145,7 @@ public:
             cwd = getcwd();
             chdir( dirName( _path ) );
             handle = _cdio_t_handle = cdio_open( toStringz( baseName( _path ) ), _driver );
-            return _cdio_t_handle != null;
+            return ( _cdio_t_handle !is null );
         }
         catch ( Exception e )
         {
@@ -152,6 +156,11 @@ public:
         {
             chdir( cwd );
         }
+    }
+
+    bool isOpen( in CdIo_t* handle )
+    {
+        return ( _cdio_t_handle !is null );
     }
 
     bool close( out CdIo_t* handle )
@@ -186,6 +195,11 @@ class Image : AbstractSource
     mixin Finders;
     mixin introspection.Initial;
     mixin Comparators;
+
+    Endian endianness()
+    {
+        return Endian.bigEndian;
+    }
 }
 
 class Device : AbstractSource, Source!cdrom_drive_t, Source!cdrom_paranoia_t
@@ -205,13 +219,45 @@ protected:
     Info              _info;
     cdrom_drive_t*    _cdrom_drive_t_handle;
     cdrom_paranoia_t* _cdrom_paranoia_t_handle;
+    Endian            _endianness = Endian.littleEndian;
+    bool              _endiannessKnown;
 
 public:
+    override Endian endianness()
+    {
+        if ( ! _endiannessKnown )
+        {
+            cdrom_drive_t* tmp_handle;
+            bool close = ( ! ( cast( Source!cdrom_drive_t )( this ) ).isOpen( tmp_handle ) );
+
+            if ( ( cast( Source!cdrom_drive_t )( this ) ).open( tmp_handle ) )
+            {
+                if ( ( *tmp_handle ).bigendianp == 1 )
+                {
+                    _endianness = Endian.bigEndian;
+                }
+
+                _endiannessKnown = true;
+            }
+
+            if ( close )
+            {
+                ( cast( Source!cdrom_drive_t )( this ) ).close( tmp_handle );
+            }
+        }
+
+        return _endianness;
+    }
+
     // Need (dummy) overriden methods here, otherwise unittests will fail.
     // Problem arises when different Source interfaces implemented by a class.
     override bool open( out CdIo_t* handle )
     {
         return super.open( handle );
+    }
+    override bool isOpen( in CdIo_t* handle )
+    {
+        return super.isOpen( handle );
     }
     override bool close( out CdIo_t* handle )
     {
@@ -224,11 +270,12 @@ public:
         if ( _cdrom_drive_t_handle )
         {
             handle = _cdrom_drive_t_handle;
+
             // Already opened?
             if ( _cdrom_drive_t_handle.opened )
             {
                 return true;
-                // Try to open.
+            // Try to open.
             }
             else
             {
@@ -244,7 +291,7 @@ public:
         }
 
         handle = _cdrom_drive_t_handle = cdio_cddap_identify_cdio( tmp, 0, null );
-        if ( _cdrom_drive_t_handle == null )
+        if ( _cdrom_drive_t_handle is null )
         {
             return false;
         }
@@ -253,7 +300,11 @@ public:
         return ( cdio_cddap_open( _cdrom_drive_t_handle ) == 0 );
     }
 
-
+    bool isOpen( in cdrom_drive_t* handle )
+    {
+        return ( _cdrom_drive_t_handle !is null );
+    }
+ 
     bool close( out cdrom_drive_t* handle )
     {
         handle = null;
@@ -284,7 +335,12 @@ public:
         }
 
         handle = _cdrom_paranoia_t_handle = cdio_paranoia_init( tmp );
-        return ( _cdrom_paranoia_t_handle != null );
+        return ( _cdrom_paranoia_t_handle !is null );
+    }
+
+    bool isOpen( in cdrom_paranoia_t* handle )
+    {
+        return ( _cdrom_paranoia_t_handle !is null );
     }
 
     bool close( out cdrom_paranoia_t* handle )

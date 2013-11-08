@@ -23,6 +23,7 @@ import std.math;
 import std.signals;
 import std.stdio;
 import std.string;
+import std.system;
 
 import c.cdio.cdda;
 import c.cdio.device;
@@ -294,7 +295,7 @@ public:
                 }
 
                 logTrace( format( "Read sector %d", sector ) );
-                if ( _swap )
+                if ( ( _source.endianness() == Endian.bigEndian ) || _swap )
                 {
                     DiscReader.swapBytes( bufferViews[ Checker.SECTORS_TO_READ - 1 ] );
                 }

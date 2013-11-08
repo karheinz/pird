@@ -19,18 +19,22 @@ module writers.wav;
 
 import std.c.string;
 
+import std.bitmanip;
 import std.conv;
 import std.math;
 import std.stdio;
 import std.stream;
 import std.string;
+import std.system;
 
 static import introspection;
 static import writers.base;
 
 
-/*
+/**
  * For Structure see: http://de.wikipedia.org/wiki/RIFF_WAVE (german).
+ *
+ * Byte order is little endian by definition.
  */
 struct WavHeader
 {
@@ -65,11 +69,28 @@ struct WavHeader
 
     ubyte[] serialized()
     {
-        ubyte[ WavHeader.sizeof ] bytes;
+        ubyte[] bytes;
+        bytes.length = 44;
 
         // Convert struct to bytes.
-        memcpy( bytes.ptr, &this, WavHeader.sizeof );
-        assert( "RIFF" == to!string( cast( char[] )bytes[ 0 .. 4 ] ) );
+        size_t index = 0;
+        memcpy( bytes.ptr + index, chunkId.ptr, 4 );
+        index += 4;
+        std.bitmanip.write!( uint, Endian.littleEndian, ubyte[] )( bytes, chunkSize, &index );
+        memcpy( bytes.ptr + index, riffType.ptr, 4 );
+        index += 4;
+        memcpy( bytes.ptr + index, fmtTag.ptr, 4 );
+        index += 4;
+        std.bitmanip.write!( uint, Endian.littleEndian, ubyte[] )( bytes, fmtHeaderLength, &index );
+        std.bitmanip.write!( ushort, Endian.littleEndian, ubyte[] )( bytes, fmtType, &index );
+        std.bitmanip.write!( ushort, Endian.littleEndian, ubyte[] )( bytes, fmtChannels, &index );
+        std.bitmanip.write!( uint, Endian.littleEndian, ubyte[] )( bytes, fmtSampleRate, &index );
+        std.bitmanip.write!( uint, Endian.littleEndian, ubyte[] )( bytes, fmtBytesPerSecond, &index );
+        std.bitmanip.write!( ushort, Endian.littleEndian, ubyte[] )( bytes, fmtBlockAlign, &index );
+        std.bitmanip.write!( ushort, Endian.littleEndian, ubyte[] )( bytes, fmtBitsPerSample, &index );
+        memcpy( bytes.ptr + index, dataTag.ptr, 4 );
+        index += 4;
+        std.bitmanip.write!( uint, Endian.littleEndian, ubyte[] )( bytes, dataLength, &index );
 
         return bytes.dup;
     }

@@ -54,6 +54,9 @@ interface DiscReader : introspection.Interface
     {
         emit( emitter, level, message, lineBreak, prefix );
     }
+    /**
+     * Swaps bytes of short (2 byte) values in buffer.
+     */
     final void swapBytes( ubyte[] buffer )
     {
         ubyte tmp;

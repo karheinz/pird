@@ -71,7 +71,8 @@ interface Checker : introspection.Interface
      * Params:
      *   id     = the id of the check (see init())
      *   sector = the read sector
-     *   data   = the read data (-/+ MAX_SECTORS_OFFSET sectors)
+     *   data   = the read data (-/+ MAX_SECTORS_OFFSET sectors),
+     *            byte order has to be little endian
      */
     void feed(
         in ulong id,

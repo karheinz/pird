@@ -528,17 +528,6 @@ public:
     mixin Log;
 
 private:
-    bool isLE()
-    {
-        ushort tmp = 0x8000;
-        return ( *( cast( ubyte* )( &tmp ) ) == 0x80 );
-    }
-
-    bool isBE()
-    {
-        return ( ! isLE() );
-    }
-
     bool fetchAccurateRipResults( AccurateRipCheckData data )
     {
         string path = buildPath( tempDir(), baseName( data.path ) );
