@@ -67,7 +67,7 @@ private:
     final static T _find( string path )
     {
         // Image/Device exists?
-        DirEntry info = std.file.dirEntry( path );
+        DirEntry info = DirEntry( path );
         if ( !( info.isFile || info.statBuf.st_rdev > 0 ) )
         {
             throw new Exception( format( "%s is no device or image", path ) );
@@ -130,7 +130,7 @@ private:
     final static T[] _findAll( string dir )
     {
         // Is directory?
-        DirEntry info = std.file.dirEntry( dir );
+        DirEntry info = DirEntry( dir );
         if ( !info.isDir )
         {
             throw new Exception( format( "%s is no directory", dir ) );

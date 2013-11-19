@@ -123,7 +123,7 @@ public:
 
     final DirEntry dirEntry()
     {
-        return std.file.dirEntry( _path );
+        return DirEntry( _path );
     }
 
     final string[] aliases()
