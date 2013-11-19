@@ -95,9 +95,9 @@ string msfToString( msf_t v )
  * Return:
  *   the number of bytes covered by buffers
  */
-ulong length( in ubyte[][] buffers )
+uint length( in ubyte[][] buffers )
 {
-    ulong length;
+    uint length;
     foreach ( buffer; buffers )
     {
         length += buffer.length;

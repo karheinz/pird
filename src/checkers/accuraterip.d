@@ -283,24 +283,24 @@ public:
 
                 // Prepare buffers covering sector.
                 // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
-                ulong     byteOffset = SAMPLE_SIZE * offset;
+                uint      byteOffset = SAMPLE_SIZE * offset;
                 ubyte[][] buffers;
                 while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
                 {
                     if ( !buffers.length )
                     {
                         buffers ~= cast( ubyte[] )data
-                        [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                            byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
-                        [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                            byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
+                            [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
+                            [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
                     }
                     else
                     {
                         buffers ~= cast( ubyte[] )data
-                        [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                            byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
-                        [ 0 .. CDIO_CD_FRAMESIZE_RAW - length( buffers ) ];
+                            [ ( MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                byteOffset + length( buffers ) ) / CDIO_CD_FRAMESIZE_RAW ]
+                            [ 0 .. CDIO_CD_FRAMESIZE_RAW - length( buffers ) ];
                     }
                 }
 
@@ -596,13 +596,13 @@ private:
         }
 
         // Write to file (remove http header)!
-        ulong start = 0;
+        uint start = 0;
         ubyte delimiter[] = [ '\r', '\n', '\r', '\n' ];
-        for ( ulong i = 0; i < ( toWrite.length - delimiter.length ); ++i )
+        for ( uint i = 0; i < ( toWrite.length - delimiter.length ); ++i )
         {
             if ( toWrite[ i .. i + delimiter.length ] == delimiter )
             {
-                start = i + delimiter.length;
+                start = i + cast(uint)delimiter.length;
                 break;
             }
         }

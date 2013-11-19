@@ -355,7 +355,7 @@ public:
                     {
                         // Prepare buffers covering sector.
                         // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
-                        ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? _offset :_checker.getOffset() );
+                        uint      byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? _offset :_checker.getOffset() );
                         ubyte[][] buffers;
                         while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
                         {

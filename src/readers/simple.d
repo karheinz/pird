@@ -314,17 +314,17 @@ public:
                     {
                         // Prepare buffers covering sector.
                         // Two buffers covering CDIO_CD_FRAMESIZE_RAW bytes are returned.
-                        ulong     byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? _offset :_checker.getOffset() );
+                        uint      byteOffset = Checker.SAMPLE_SIZE * ( _checker is null ? _offset :_checker.getOffset() );
                         ubyte[][] buffers;
                         while ( length( buffers ) < CDIO_CD_FRAMESIZE_RAW )
                         {
                             if ( !buffers.length )
                             {
                                 buffers ~= cast( ubyte[] )bufferViews
-                                [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                                    byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
-                                [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
-                                    byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
+                                    [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                        byteOffset ) / CDIO_CD_FRAMESIZE_RAW ]
+                                    [ ( Checker.MAX_SECTORS_OFFSET * CDIO_CD_FRAMESIZE_RAW +
+                                        byteOffset ) % CDIO_CD_FRAMESIZE_RAW .. $ ];
                             }
                             else
                             {
