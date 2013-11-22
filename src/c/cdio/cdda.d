@@ -181,5 +181,5 @@ alias cdio_cddap_disc_firstsector  cdda_disc_firstsector;
 alias cdio_cddap_disc_lastsector   cdda_disc_lastsector;
 alias cdrom_drive_t                cdrom_drive;
 
-paranoia_jitter_t     debug_paranoia_jitter;
-paranoia_cdda_enums_t debug_paranoia_cdda_enums;
+extern paranoia_jitter_t     debug_paranoia_jitter;
+extern paranoia_cdda_enums_t debug_paranoia_cdda_enums;

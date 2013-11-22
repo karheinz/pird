@@ -76,7 +76,7 @@ enum paranoia_cb_mode_t
     PARANOIA_CB_READERR         /**< Hard read error */
 };
 
-const char* paranoia_cb_mode2str[];
+extern const char* paranoia_cb_mode2str[];
 
 
 /*!

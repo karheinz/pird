@@ -21,7 +21,7 @@ import c.cdio.types;
 
 
 extern ( C ) :
-const char* track_format2str[ 6 ];
+extern const char* track_format2str[ 6 ];
 
 enum track_format_t
 {
