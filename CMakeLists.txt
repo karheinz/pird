@@ -20,16 +20,22 @@ set(CPACK_RPM_PACKAGE_VENDOR "Karsten Heinze <karsten@sidenotes.de>" )
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
 
 # Set package name.
-find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems") 
-if(DPKG_PROGRAM) 
-  execute_process( 
-    COMMAND ${DPKG_PROGRAM} --print-architecture 
-      OUTPUT_VARIABLE CPACK_PACKAGE_ARCHITECTURE 
-      OUTPUT_STRIP_TRAILING_WHITESPACE 
-    ) 
-else(DPKG_PROGRAM)
-  set(CPACK_PACKAGE_ARCHITECTURE "arch")
-endif(DPKG_PROGRAM) 
+if(ARCH)
+  set(CPACK_PACKAGE_ARCHITECTURE ${ARCH})
+else()
+  find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems") 
+  if(DPKG_PROGRAM) 
+    execute_process( 
+      COMMAND ${DPKG_PROGRAM} --print-architecture 
+        OUTPUT_VARIABLE CPACK_PACKAGE_ARCHITECTURE 
+        OUTPUT_STRIP_TRAILING_WHITESPACE 
+      ) 
+    set(ARCH ${CPACK_PACKAGE_ARCHITECTURE})
+  else(DPKG_PROGRAM)
+    set(CPACK_PACKAGE_ARCHITECTURE "arch")
+    set(ARCH "arch")
+  endif(DPKG_PROGRAM) 
+endif()
 
 # Base name of package.
 set(CPACK_PACKAGE_FILE_NAME "pird")
@@ -77,6 +83,27 @@ install(TARGETS pird DESTINATION bin)
 # Also install man page.
 install(DIRECTORY "doc/man" DESTINATION share)
 
+# Link pird against this libraries.
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+find_library(LIBCDIO cdio)
+find_library(LIBCDIO_CDDA cdio_cdda)
+find_library(LIBCDIO_PARANOIA cdio_paranoia)
+message(${LIBCDIO})
+message(${LIBCDIO_CDDA})
+message(${LIBCDIO_PARANOIA})
+execute_process(COMMAND dirname ${LIBCDIO}
+  OUTPUT_VARIABLE LIBRARY_PATH_LIBCDIO
+  OUTPUT_STRIP_TRAILING_WHITESPACE 
+)
+execute_process(COMMAND dirname ${LIBCDIO_CDDA}
+  OUTPUT_VARIABLE LIBRARY_PATH_LIBCDIO_CDDA
+  OUTPUT_STRIP_TRAILING_WHITESPACE 
+)
+execute_process(COMMAND dirname ${LIBCDIO_PARANOIA}
+  OUTPUT_VARIABLE LIBRARY_PATH_LIBCDIO_PARANOIA
+  OUTPUT_STRIP_TRAILING_WHITESPACE 
+)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
 endif()
@@ -99,6 +126,19 @@ elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   set(GDC_COMPILE_FLAGS "-g -fversion=devel -funittest")
 endif()
 
+# Consider architecture!
+string(REGEX MATCH "(([356ix]86)|(amd64))" ARCH_SUPPORTED ${ARCH})
+if("${ARCH_SUPPORTED}" STREQUAL "")
+  message(FATAL_ERROR "architecture ${ARCH} is not supported")
+endif()
+if(${ARCH} MATCHES "[356ix]86")
+  set(DMD_COMPILE_FLAGS "${DMD_COMPILE_FLAGS} -m32")
+  set(GDC_COMPILE_FLAGS "${GDC_COMPILE_FLAGS} -m32")
+else()
+  set(DMD_COMPILE_FLAGS "${DMD_COMPILE_FLAGS} -m64")
+  set(GDC_COMPILE_FLAGS "${GDC_COMPILE_FLAGS} -m64")
+endif()
+
 # Tell cmake its a C project (no D support yet).
 set_target_properties(pird PROPERTIES LINKER_LANGUAGE C)
 set(CMAKE_C_SOURCE_FILE_EXTENSTIONS .d)
@@ -114,7 +154,6 @@ if(NOT CMAKE_D_COMPILER)
   endif()
 endif()
 message("CMAKE_D_COMPILER is ${CMAKE_D_COMPILER}")
-
 
 string(REGEX MATCH "dmd" DMD_SELECTED ${CMAKE_D_COMPILER})
 string(REGEX MATCH "gdc" GDC_SELECTED ${CMAKE_D_COMPILER})
@@ -138,9 +177,9 @@ if(DMD_SELECTED)
   # How to link.
   # NOTE: <OBJECTS> is empty, how to use?
   #set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
-  set(CMAKE_C_LINK_EXECUTABLE "${DMD} ${OBJECT_FILES} -of<TARGET> <LINK_LIBRARIES>")
-  # Linking is down using -L-l<library>
-  set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
+  #set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
+  #set(CMAKE_LINK_LIBRARY_PATH_FLAG "-L-L")
+  set(CMAKE_C_LINK_EXECUTABLE "dmd ${OBJECT_FILES} -of<TARGET> -L-Bstatic -L-lcdio -L-lcdio_cdda -L-lcdio_paranoia -L-L${LIBRARY_PATH_LIBCDIO} -L-L${LIBRARY_PATH_LIBCDIO_CDDA} -L-L${LIBRARY_PATH_LIBCDIO_PARANOIA} -L-Bdynamic")
 elseif(GDC_SELECTED)
   # Before linking, build object files.
   add_custom_command(
@@ -158,15 +197,7 @@ elseif(GDC_SELECTED)
   # How to compile (done by pre-link job).
   set(CMAKE_C_COMPILE_OBJECT "${GDC} <FLAGS> -o<OBJECT> -c <SOURCE>")
   # How to link.
-  # NOTE: <OBJECTS> is empty, how to use?
-  #set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
-  set(CMAKE_C_LINK_EXECUTABLE "${GDC} ${OBJECT_FILES} -o<TARGET> <LINK_LIBRARIES>")
-  # Linking is down using -L-l<library>
-  set(CMAKE_LINK_LIBRARY_FLAG "-l")
+  set(CMAKE_C_LINK_EXECUTABLE "${GDC} ${OBJECT_FILES} -o<TARGET> -Wl,-Bstatic -lcdio -lcdio_cdda -lcdio_paranoia -L${LIBRARY_PATH_LIBCDIO} -L${LIBRARY_PATH_LIBCDIO_CDDA} -L${LIBRARY_PATH_LIBCDIO_PARANOIA} -Wl,-Bdynamic")
 endif()
 
-# Link pird against this libraries.
-find_library(LIBCDIO cdio)
-find_library(LIBCDIO_CDDA cdio_cdda)
-find_library(LIBCDIO_PARANOIA cdio_paranoia)
 target_link_libraries(pird ${LIBCDIO} ${LIBCDIO_CDDA} ${LIBCDIO_PARANOIA})
