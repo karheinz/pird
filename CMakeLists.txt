@@ -84,13 +84,16 @@ install(TARGETS pird DESTINATION bin)
 install(DIRECTORY "doc/man" DESTINATION share)
 
 # Link pird against this libraries.
-SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
 find_library(LIBCDIO cdio)
 find_library(LIBCDIO_CDDA cdio_cdda)
 find_library(LIBCDIO_PARANOIA cdio_paranoia)
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+find_library(LIBPHOBOS2 phobos2)
 message(${LIBCDIO})
 message(${LIBCDIO_CDDA})
 message(${LIBCDIO_PARANOIA})
+message(${LIBPHOBOS2})
 execute_process(COMMAND dirname ${LIBCDIO}
   OUTPUT_VARIABLE LIBRARY_PATH_LIBCDIO
   OUTPUT_STRIP_TRAILING_WHITESPACE 
@@ -101,6 +104,10 @@ execute_process(COMMAND dirname ${LIBCDIO_CDDA}
 )
 execute_process(COMMAND dirname ${LIBCDIO_PARANOIA}
   OUTPUT_VARIABLE LIBRARY_PATH_LIBCDIO_PARANOIA
+  OUTPUT_STRIP_TRAILING_WHITESPACE 
+)
+execute_process(COMMAND dirname ${LIBPHOBOS2}
+  OUTPUT_VARIABLE LIBRARY_PATH_LIBPHOBOS2
   OUTPUT_STRIP_TRAILING_WHITESPACE 
 )
 
@@ -134,9 +141,13 @@ endif()
 if(${ARCH} MATCHES "[356ix]86")
   set(DMD_COMPILE_FLAGS "${DMD_COMPILE_FLAGS} -m32")
   set(GDC_COMPILE_FLAGS "${GDC_COMPILE_FLAGS} -m32")
+  set(DMD_LINK_FLAGS "-m32")
+  set(GDC_LINK_FLAGS "-m32")
 else()
   set(DMD_COMPILE_FLAGS "${DMD_COMPILE_FLAGS} -m64")
   set(GDC_COMPILE_FLAGS "${GDC_COMPILE_FLAGS} -m64")
+  set(DMD_LINK_FLAGS "-m64")
+  set(GDC_LINK_FLAGS "-m64")
 endif()
 
 # Tell cmake its a C project (no D support yet).
@@ -179,7 +190,7 @@ if(DMD_SELECTED)
   #set(CMAKE_C_LINK_EXECUTABLE "dmd <FLAGS> <CMAKE_C_LINK_FLAGS> <OBJECTS> -of<TARGET> <LINK_LIBRARIES>")
   #set(CMAKE_LINK_LIBRARY_FLAG "-L-l")
   #set(CMAKE_LINK_LIBRARY_PATH_FLAG "-L-L")
-  set(CMAKE_C_LINK_EXECUTABLE "dmd ${OBJECT_FILES} -of<TARGET> -L-Bstatic -L-lcdio -L-lcdio_cdda -L-lcdio_paranoia -L-L${LIBRARY_PATH_LIBCDIO} -L-L${LIBRARY_PATH_LIBCDIO_CDDA} -L-L${LIBRARY_PATH_LIBCDIO_PARANOIA} -L-Bdynamic")
+  set(CMAKE_C_LINK_EXECUTABLE "dmd ${OBJECT_FILES} ${DMD_LINK_FLAGS} -of<TARGET> -L-Bdynamic -L-lcdio -L-lcdio_cdda -L-lcdio_paranoia -L-L${LIBRARY_PATH_LIBCDIO} -L-L${LIBRARY_PATH_LIBCDIO_CDDA} -L-L${LIBRARY_PATH_LIBCDIO_PARANOIA} -L-Bdynamic -L-L${LIBRARY_PATH_LIBPHOBOS2}")
 elseif(GDC_SELECTED)
   # Before linking, build object files.
   add_custom_command(
@@ -197,7 +208,7 @@ elseif(GDC_SELECTED)
   # How to compile (done by pre-link job).
   set(CMAKE_C_COMPILE_OBJECT "${GDC} <FLAGS> -o<OBJECT> -c <SOURCE>")
   # How to link.
-  set(CMAKE_C_LINK_EXECUTABLE "${GDC} ${OBJECT_FILES} -o<TARGET> -Wl,-Bstatic -lcdio -lcdio_cdda -lcdio_paranoia -L${LIBRARY_PATH_LIBCDIO} -L${LIBRARY_PATH_LIBCDIO_CDDA} -L${LIBRARY_PATH_LIBCDIO_PARANOIA} -Wl,-Bdynamic")
+  set(CMAKE_C_LINK_EXECUTABLE "${GDC} ${OBJECT_FILES} ${GDC_LINK_FLAGS} -o<TARGET> -Wl,-Bdynamic -lcdio -lcdio_cdda -lcdio_paranoia -L${LIBRARY_PATH_LIBCDIO} -L${LIBRARY_PATH_LIBCDIO_CDDA} -L${LIBRARY_PATH_LIBCDIO_PARANOIA} -Wl,-Bdynamic -L${LIBRARY_PATH_LIBPHOBOS2}")
 endif()
 
-target_link_libraries(pird ${LIBCDIO} ${LIBCDIO_CDDA} ${LIBCDIO_PARANOIA})
+#target_link_libraries(pird ${LIBCDIO} ${LIBCDIO_CDDA} ${LIBCDIO_PARANOIA})
