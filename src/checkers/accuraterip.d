@@ -15,7 +15,7 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 +/
 
-module checkers.accurate;
+module checkers.accuraterip;
 
 import core.exception;
 import std.bitmanip;
