@@ -113,10 +113,10 @@ EXAMPLES
            pird -t /dev/cdrom
 
 AUTHOR
-       Written by Karsten Heinze <karsten@sidenotes.de>.
+       Written by Karsten Heinze <<karsten@sidenotes.de>>.
 
 COPYRIGHT
-       Copyright © 2011-2013 Karsten Heinze <karsten@sidenotes.de>. License
+       Copyright © 2011-2014 Karsten Heinze <<karsten@sidenotes.de>>. License
        GPLv3+: GNU General Public License[3] version 3 or later.
 
        This is free software: you are free to change and redistribute it.
