@@ -9,7 +9,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a simple cd ripper written in D")
 set(CPACK_PACKAGE_DESCRIPTION ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 10)
-set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_VERSION_PATCH 1)
 set(CPACK_PACKAGE_REVISION 1)
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcdio-dev (>= 0.81-4), libcdio-cdda-dev (>= 0.81-4), libcdio-paranoia-dev (>= 0.81-4)" )
@@ -175,8 +175,25 @@ else()
   message(FATAL_ERROR "type of D2 compiler couldn't be determined")
 endif()
 
+# Strip binary in release mode if possible.
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  find_program(STRIP strip DOC "strip removes debug symbols from binary")
+  if(STRIP)
+    add_custom_command(
+      TARGET pird POST_BUILD
+      COMMAND ${STRIP} pird
+    )
+  else()
+    message(WARNING "strip not found")
+  endif()
+endif()
+
 # Link pird against this libraries.
 find_library(LIBCDIO cdio)
 find_library(LIBCDIO_CDDA cdio_cdda)
 find_library(LIBCDIO_PARANOIA cdio_paranoia)
 target_link_libraries(pird ${LIBCDIO} ${LIBCDIO_CDDA} ${LIBCDIO_PARANOIA})
+
+# Remove object files and packages on make clean.
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+    "${OBJECTS_DIR};${CPACK_PACKAGE_FILE_NAME_DEB}.deb;${CPACK_PACKAGE_FILE_NAME_RPM}.rpm")
