@@ -53,7 +53,7 @@ add_custom_command(
 )
 
 # Find all source files *.d
-set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/source)
 file(GLOB_RECURSE SOURCE_FILES ${SOURCES_DIR} *.d)
 # Same again but relative to src directory.
 file(GLOB_RECURSE SOURCE_FILES_RELATIVE RELATIVE ${SOURCES_DIR} *.d)

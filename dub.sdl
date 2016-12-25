@@ -14,8 +14,7 @@ targetName "pird"
 //this is needed for gdc
 buildRequirements "allowWarnings"
 
-stringImportPaths "src/usages"
-sourcePaths "src"
-sourceFiles "src/pird.d"
+stringImportPaths "source/usages"
+sourceFiles "source/pird.d"
 
 libs "cdio" "cdio_cdda" "cdio_paranoia" platform="posix"
