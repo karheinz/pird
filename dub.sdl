@@ -1,0 +1,21 @@
+name "pird"
+description "Rips audio data from a disc (CD-DA or CD-ROM Mixed) or a disc image (TOC, CUE or NRG). Supports (automatic) device calibration and result validation against accurate rip database."
+homepage "https://github.com/karheinz/pird"
+
+license "GPLv3+"
+copyright "Copyright © 2011-2016 Karsten Heinze"
+authors "Karsten Heinze"
+
+systemDependencies "Mandatory libcdio-dev, libcdio-cdda-dev, libcdio-paranoia-dev >= 0.81-4"
+
+targetType "executable"
+targetName "pird"
+
+//this is needed for gdc
+buildRequirements "allowWarnings"
+
+stringImportPaths "src/usages"
+sourcePaths "src"
+sourceFiles "src/pird.d"
+
+libs "cdio" "cdio_cdda" "cdio_paranoia" platform="posix"
