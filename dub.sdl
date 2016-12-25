@@ -11,6 +11,16 @@ systemDependencies "Mandatory libcdio-dev, libcdio-cdda-dev, libcdio-paranoia-de
 targetType "executable"
 targetName "pird"
 
+buildType "debug" {
+        buildOptions "debugMode" "debugInfo" "warnings" "deprecationWarnings" "warningsAsErrors" "unittests"
+        versions "devel"
+}
+
+buildType "release" {
+        buildOptions "releaseMode" "optimize" "warnings" "deprecationWarnings" "warningsAsErrors"
+        postBuildCommands "strip -s $PACKAGE_DIR/pird"
+}
+
 //this is needed for gdc
 buildRequirements "allowWarnings"
 
