@@ -272,7 +272,7 @@ class PrintCommand : AbstractCommand
         _target = target;
     }
 
-    ref PrintCommand enqueue( string[] messages ... )
+    /*ref*/ PrintCommand enqueue( string[] messages ... )
     {
         _messages ~= messages;
 
