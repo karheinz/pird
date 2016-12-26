@@ -2,6 +2,8 @@ pird
 .dub
 docs.json
 __dummy.html
+*sublime-project
+*sublime-workspace
 *.o
 *.obj
 *.wav
