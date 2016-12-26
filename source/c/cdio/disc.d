@@ -44,7 +44,7 @@ enum discmode_t
     CDIO_DISC_MODE_CD_I         /**< CD-i. */
 };
 
-extern const char* discmode2str[];
+extern const char*[] discmode2str;
 
 discmode_t cdio_get_discmode( CdIo_t* p_cdio );
 lsn_t cdio_get_disc_last_lsn( const CdIo_t* p_cdio );

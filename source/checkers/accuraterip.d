@@ -392,8 +392,8 @@ public:
             {
                 logDebug( format( "Checking calculated CRCs for offset %d.", offset ) );
 
-                ubyte dbuffer[ 13 ];  // don't use DiscIdent.sizeof because of alignment
-                ubyte tbuffer[ 9 ];   // don't use TrackData.sizeof because of alignment
+                ubyte[ 13 ] dbuffer;  // don't use DiscIdent.sizeof because of alignment
+                ubyte[ 9 ] tbuffer;   // don't use TrackData.sizeof because of alignment
 
                 auto file = std.stdio.File( buildPath( tempDir(), baseName( d.path ) ), "rb" );
 
@@ -547,8 +547,8 @@ private:
         {
         }
 
-        void buffer[] = new ubyte[ 1024 ];
-        ubyte toWrite[];
+        void[] buffer = new ubyte[ 1024 ];
+        ubyte[] toWrite;
         ptrdiff_t bytes;
         bool receivedData;
 
@@ -597,7 +597,7 @@ private:
 
         // Write to file (remove http header)!
         uint start = 0;
-        ubyte delimiter[] = [ '\r', '\n', '\r', '\n' ];
+        ubyte[] delimiter = [ '\r', '\n', '\r', '\n' ];
         for ( uint i = 0; i < ( toWrite.length - delimiter.length ); ++i )
         {
             if ( toWrite[ i .. i + delimiter.length ] == delimiter )
