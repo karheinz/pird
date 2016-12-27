@@ -23,7 +23,7 @@ import std.signals;
 import std.stdio;
 import std.string;
 
-import std.c.string;
+import core.stdc.string;
 
 import c.cdio.logging;
 

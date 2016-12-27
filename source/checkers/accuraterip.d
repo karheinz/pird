@@ -18,8 +18,9 @@
 module checkers.accuraterip;
 
 import core.exception;
+import core.stdc.string;
+import core.time;
 import std.bitmanip;
-import std.c.string;
 import std.conv;
 import std.exception;
 import std.file;
