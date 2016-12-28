@@ -1,5 +1,12 @@
 pird
+.dub
+docs.json
+__dummy.html
+*sublime-project
+*sublime-workspace
 *.o
-*.toc
+*.obj
 *.wav
 *.bin
+*.toc
+*.cue

@@ -54,7 +54,7 @@ struct cdrom_drive_s
     int     cd_extra;
     bool    b_swap_bytes;
     track_t tracks;
-    TOC_t   disc_toc[ paranoia_cdda_enums_t.MAXTRK ];
+    TOC_t[ paranoia_cdda_enums_t.MAXTRK ] disc_toc;
     lsn_t   audio_first_sector;
     lsn_t   audio_last_sector;
     int     errordest;
@@ -143,7 +143,7 @@ enum transport_error_t
     TR_STREAMING = 11 /**< loss of streaming */,
 };
 
-const char* strerror_tr[] = [
+const char*[] strerror_tr = [
     "Success",
     "Error writing packet command to device",
     "Error reading command from device",

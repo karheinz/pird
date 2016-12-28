@@ -22,7 +22,7 @@ import std.math;
 import std.string;
 import std.traits;
 
-import std.c.string;
+import core.stdc.string;
 
 import c.cdio.types;
 

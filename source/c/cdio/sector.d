@@ -91,7 +91,7 @@ enum
     CDIO_CD_XA_SYNC_HEADER  = ( CDIO_CD_SYNC_SIZE + CDIO_CD_XA_HEADER )
 }
 
-extern const ubyte CDIO_SECTOR_SYNC_HEADER[ CDIO_CD_SYNC_SIZE ];
+extern const ubyte[ CDIO_CD_SYNC_SIZE ] CDIO_SECTOR_SYNC_HEADER;
 
 enum m2_sector_enums
 {

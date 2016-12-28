@@ -50,7 +50,7 @@ enum
 
 struct cdtext
 {
-    char* field[ MAX_CDTEXT_FIELDS ];
+    char*[ MAX_CDTEXT_FIELDS ] field;
 };
 alias cdtext cdtext_t;
 

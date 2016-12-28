@@ -67,7 +67,7 @@ public:
 
     void clear()
     {
-        store.clear();
+        store.destroy();
     }
 }
 
@@ -215,7 +215,7 @@ public:
         {
             command.disconnect( &handleSignal );
         }
-        _commands.clear();
+        _commands.destroy();
     }
 
     bool execute()
@@ -272,7 +272,7 @@ class PrintCommand : AbstractCommand
         _target = target;
     }
 
-    ref PrintCommand enqueue( string[] messages ... )
+    /*ref*/ PrintCommand enqueue( string[] messages ... )
     {
         _messages ~= messages;
 

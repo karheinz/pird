@@ -17,7 +17,7 @@
 
 module writers.wav;
 
-import std.c.string;
+import core.stdc.string;
 
 import std.bitmanip;
 import std.conv;

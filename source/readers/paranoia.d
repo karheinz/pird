@@ -67,6 +67,8 @@ public:
 
     bool read()
     {
+        import core.stdc.string : memcpy;
+
         // Abort if source is no device.
         if ( !_source.isDevice() )
         {
