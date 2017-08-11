@@ -17,6 +17,8 @@
 
 module readers.paranoia;
 
+import core.stdc.string;
+
 import std.array;
 import std.conv;
 import std.math;

@@ -48,7 +48,7 @@ string sourcesToString( S ) ( S[] sources, bool fullPath = true )
     foreach ( int count, S source; sources )
     {
         // Build aliases string.
-        aliases.clear();
+        aliases = "";
         if ( source.aliases().length )
         {
             if ( fullPath || source.isDevice )

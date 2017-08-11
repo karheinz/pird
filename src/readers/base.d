@@ -156,7 +156,7 @@ public:
 
     void clear()
     {
-        _jobs.clear();
+        _jobs = [];
     }
 
     ReadFromDiscJob[] jobs()

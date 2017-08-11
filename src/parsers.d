@@ -564,7 +564,7 @@ private:
         }
         catch ( Exception e )
         {
-            clear( config );
+            config = Config.init;
             error = e.msg;
             return false;
         }

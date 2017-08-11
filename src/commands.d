@@ -67,7 +67,9 @@ public:
 
     void clear()
     {
-        store.clear();
+        // For emptying an associative array, see:
+        // http://arsdnet.net/this-week-in-d/dec-13.html
+        store = null;
     }
 }
 
@@ -215,7 +217,7 @@ public:
         {
             command.disconnect( &handleSignal );
         }
-        _commands.clear();
+        _commands = [];
     }
 
     bool execute()
@@ -272,11 +274,9 @@ class PrintCommand : AbstractCommand
         _target = target;
     }
 
-    ref PrintCommand enqueue( string[] messages ... )
+    void enqueue( string[] messages ... )
     {
         _messages ~= messages;
-
-        return this;
     }
 
     bool execute()

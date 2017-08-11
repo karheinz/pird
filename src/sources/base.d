@@ -61,6 +61,41 @@ interface Source( T ) : GenericSource, introspection.Interface
     bool isOpen( in T* handle );
     bool close( out T* handle );
 
+    final int opCmp( Source other )
+    {
+        if ( this == other )
+            return 0;   // equal
+        if ( other is null )
+            return 1;   // this is greater
+
+        // Compare driver and path of sources.
+        // Because image driver values (uint) are greater than
+        // device driver values (uint), devices come first.
+        if ( driver() > other.driver() )
+        {
+            return 1;   // this is greater
+        }
+        else if ( driver() < other.driver() )
+        {
+            return -1;  // this is smaller
+        }
+        else   // equal drivers
+        {
+            if ( path() > other.path() )
+            {
+                return 1;   // this is greater
+            }
+            else if ( path() < other.path() )
+            {
+                return -1;  // this is smaller
+            }
+            else
+            {
+                return 0;
+            }
+        }
+    }
+
     // Allows to search for all sources.
     mixin Finders;
 }

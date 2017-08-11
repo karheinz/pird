@@ -17,6 +17,8 @@
 
 module sources.mixins;
 
+import std.algorithm.sorting;
+
 
 mixin template Finders( )
 {
@@ -245,7 +247,7 @@ private:
         // Sort groups. Build result.
         foreach ( ref T[] group; groups )
         {
-            group.sort;
+            std.algorithm.sorting.sort( group );
 
             // Add first source in group to result.
             // Add paths of other sources as alias.
@@ -262,7 +264,7 @@ private:
         }
 
         // Sort result.
-        result.sort;
+        std.algorithm.sorting.sort( result );
 
         return result;
     }
@@ -300,45 +302,5 @@ mixin template Comparators( )
 
         // Path and driver have to be equal.
         return ( this.path() == o.path() && this.driver() == o.driver() );
-    }
-
-    override final int opCmp( Object other )
-    {
-        if ( cast( Object )this is other )
-            return 0;
-        if ( other is null )
-            return 1;                // this is greater
-
-        // Important: Only compare instances of Source!
-        auto o = cast( GenericSource )other;
-        if ( o is null )
-            return 1;            // this is greater
-
-        // Compare driver and path of sources.
-        // Because image driver values (uint) are greater than
-        // device driver values (uint), devices come first.
-        if ( driver() > o.driver() )
-        {
-            return 1; // this is greater
-        }
-        else if ( driver() < o.driver() )
-        {
-            return -1; // this is smaller
-        }
-        else   // equal drivers
-        {
-            if ( path() > o.path() )
-            {
-                return 1; // this is greater
-            }
-            else if ( path() < o.path() )
-            {
-                return -1; // this is smaller
-            }
-            else
-            {
-                return 0;
-            }
-        }
     }
 }

@@ -115,9 +115,9 @@ enum WriteCapability : uint
 // Used to store drive info.
 struct cdio_hwinfo_t
 {
-    char psz_vendor[ 8 + 1 ];
-    char psz_model[ 16 + 1 ];
-    char psz_revision[ 4 + 1 ];
+    char[ 8 + 1 ] psz_vendor;
+    char[ 16 + 1 ] psz_model;
+    char[ 4 + 1 ] psz_revision;
 };
 
 
@@ -132,12 +132,12 @@ CdIo_t* cdio_open( const char* psz_source, driver_id_t driver_id );
 void cdio_destroy( CdIo_t* handle );
 void cdio_free_device_list( char** device_list );
 char** cdio_get_devices_with_cap(
-    char* ppsz_search_devices[],   // in
+    char*[] ppsz_search_devices,   // in
     cdio_fs_anal_t capabilities,
     bool b_any
     );
 char** cdio_get_devices_with_cap_ret(
-    ref char* ppsz_search_devices[],   // in
+    ref char*[] ppsz_search_devices,   // in
     cdio_fs_anal_t capabilities,
     bool b_any,
     driver_id_t* p_driver_id   // out
