@@ -21,7 +21,7 @@ import std.stdio;
 import std.string;
 import std.traits;
 
-import std.c.string;
+import core.stdc.string;
 
 import c.cdio.device;
 import c.cdio.logging;

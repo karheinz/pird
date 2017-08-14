@@ -18,8 +18,10 @@
 module checkers.accuraterip;
 
 import core.exception;
+import core.stdc.string;
+import core.time;
+
 import std.bitmanip;
-import std.c.string;
 import std.conv;
 import std.exception;
 import std.file;
@@ -30,7 +32,6 @@ import std.regex;
 import std.signals;
 import std.socket;
 import std.stdio;
-import std.stream;
 import std.string;
 import std.system;
 
@@ -500,7 +501,7 @@ public:
             result = "failed to open file";
             return false;
         }
-        catch ( ReadException e )
+        catch ( Exception e )
         {
             result = "failed to read from file";
             return false;

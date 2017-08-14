@@ -17,12 +17,12 @@
 
 module utils;
 
+import core.stdc.string;
+
 import std.conv;
 import std.math;
 import std.string;
 import std.traits;
-
-import std.c.string;
 
 import c.cdio.types;
 

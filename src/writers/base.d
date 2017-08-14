@@ -19,7 +19,6 @@ module writers.base;
 
 import std.math;
 import std.stdio;
-import std.stream;
 
 import eponyms;
 static import introspection;
@@ -37,7 +36,7 @@ interface Writer
         // Used to generate a filename.
         Eponym eponym;
         // How to open file.
-        FileMode mode = FileMode.In | FileMode.OutNew;
+        string mode = "w+";
 
         // Build and configure writer for job and disc.
         Writer build( ReadFromDiscJob job, Disc disc )
@@ -57,35 +56,26 @@ interface Writer
 
     void setPath( string path );
     string path();
-    void setMode( FileMode mode );
-    FileMode mode();
+    void setMode( string mode );
+    string mode();
     // Expected number of bytes to write (excluding header).
     void setExpectedSize( ulong bytes );
-    /*
-     * // access modes; may be or'ed
-     * enum FileMode {
-     *   In = 1,
-     *   Out = 2,
-     *   OutNew = 6, // includes FileMode.Out
-     *   Append = 10 // includes FileMode.Out
-     * }
-     */
     void open();
-    void open( FileMode mode );
+    void open( string mode );
     void close();
     void write( ubyte[] buffer );
     void write( ubyte[] buffer, uint bytes );
     void write( ubyte* buffer, uint bytes );
-    ulong seek( long offset, SeekPos whence );
+    ulong seek( long offset, int whence );
 }
 
 abstract class FileWriter : Writer, introspection.Interface
 {
 protected:
-    string          _path;
-    std.stream.File _file;
-    FileMode        _mode;
-    ulong           _expectedSize;
+    string _path;
+    File   _file;
+    string _mode;
+    ulong  _expectedSize;
 
 public:
     void setPath( string path )
@@ -98,12 +88,12 @@ public:
         return _path;
     }
 
-    void setMode( FileMode mode )
+    void setMode( string mode )
     {
         _mode = mode;
     }
 
-    FileMode mode()
+    string mode()
     {
         return _mode;
     }
@@ -118,11 +108,11 @@ public:
         open( _mode );
     }
 
-    void open( FileMode mode )
+    void open( string mode )
     {
-        if ( _file is null )
+        if ( _file.getFP() is null )
         {
-            _file = new std.stream.File( _path, mode );
+            _file = File( _path, mode );
             return;
         }
 
@@ -134,7 +124,7 @@ public:
 
     void close()
     {
-        if ( _file !is null )
+        if ( _file.getFP() !is null )
         {
             _file.close();
         }
@@ -142,9 +132,7 @@ public:
 
     void write( ubyte* buffer, uint bytes )
     {
-        open();
-
-        _file.writeExact( buffer, bytes );
+        write( buffer[0..bytes] );
     }
 
     void write( ubyte[] buffer, uint bytes )
@@ -157,14 +145,16 @@ public:
     {
         open();
 
-        _file.writeExact( buffer.ptr, buffer.length );
+        _file.rawWrite( buffer );
     }
 
-    ulong seek( long offset, SeekPos whence )
+    ulong seek( long offset, int whence )
     {
         open();
 
-        return _file.seek( offset, whence );
+        _file.seek( offset, whence );
+
+        return _file.tell();
     }
 
 
@@ -174,9 +164,9 @@ public:
 abstract class StdoutWriter : Writer, introspection.Interface
 {
 protected:
-    string   _path;
-    FileMode _mode;
-    ulong    _expectedSize;
+    string _path;
+    string _mode;
+    ulong  _expectedSize;
 
 public:
     void setPath( string path )
@@ -189,12 +179,12 @@ public:
         return _path;
     }
 
-    void setMode( FileMode mode )
+    void setMode( string mode )
     {
         _mode = mode;
     }
 
-    FileMode mode()
+    string mode()
     {
         return _mode;
     }
@@ -209,7 +199,7 @@ public:
         open( _mode );
     }
 
-    void open( FileMode mode )
+    void open( string mode )
     {
         // Nothing to do, already open.
     }
@@ -245,7 +235,7 @@ public:
         stdout.rawWrite!ubyte( buffer );
     }
 
-    ulong seek( long offset, SeekPos whence )
+    ulong seek( long offset, int whence )
     {
         // Seeking makes no sence here.
         return 0;

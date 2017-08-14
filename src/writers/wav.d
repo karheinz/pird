@@ -17,13 +17,12 @@
 
 module writers.wav;
 
-import std.c.string;
+import core.stdc.string;
 
 import std.bitmanip;
 import std.conv;
 import std.math;
 import std.stdio;
-import std.stream;
 import std.string;
 import std.system;
 
@@ -55,7 +54,7 @@ struct WavHeader
     char[ 4 ] dataTag = "data";
     uint dataLength = 0;
 
-    this( std.stream.File file )
+    this( File file )
     {
         chunkSize  = cast( uint )( file.size - 8 );
         dataLength = cast( uint )( file.size - 44 );
@@ -103,7 +102,7 @@ class FileWriter : writers.base.FileWriter
         open();
 
         // Got to the start of the file.
-        _file.seek( 0, SeekPos.Set );
+        _file.seek( 0, SEEK_SET );
         // Write header.
         super.write( WavHeader( _file ).serialized() );
 
@@ -115,9 +114,9 @@ class FileWriter : writers.base.FileWriter
         open();
 
         // Let 44 bytes for the wav header!
-        if ( _file.seek( 0, SeekPos.Current ) == 0 )
+        if ( _file.tell() == 0 )
         {
-            _file.seek( 44, SeekPos.Set );
+            _file.seek( 44, SEEK_SET );
         }
 
         super.write( buffer, bytes );
@@ -128,9 +127,9 @@ class FileWriter : writers.base.FileWriter
         open();
 
         // Let 44 bytes for the wav header!
-        if ( _file.seek( 0, SeekPos.Current ) == 0 )
+        if ( _file.tell() == 0 )
         {
-            _file.seek( 44, SeekPos.Set );
+            _file.seek( 44, SEEK_SET );
         }
 
         super.write( buffer );
@@ -141,9 +140,9 @@ class FileWriter : writers.base.FileWriter
         open();
 
         // Let 44 bytes for the wav header!
-        if ( _file.seek( 0, SeekPos.Current ) == 0 )
+        if ( _file.tell() == 0 )
         {
-            _file.seek( 44, SeekPos.Set );
+            _file.seek( 44, SEEK_SET );
         }
 
         super.write( buffer, bytes );

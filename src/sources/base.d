@@ -17,6 +17,7 @@
 
 module sources.base;
 
+import std.algorithm;
 import std.array;
 import std.conv;
 import std.file;
@@ -33,7 +34,6 @@ import c.cdio.types;
 static import introspection;
 import utils;
 import sources.mixins;
-
 
 
 interface GenericSource

@@ -17,10 +17,11 @@
 
 module readers.jobs;
 
+import core.exception;
+
 import std.conv;
 import std.file;
 import std.stdio;
-import std.stream;
 import std.string;
 
 import c.cdio.types;

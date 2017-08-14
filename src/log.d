@@ -17,13 +17,13 @@
 
 module log;
 
+import core.stdc.string;
+
 import std.conv;
 import std.math;
 import std.signals;
 import std.stdio;
 import std.string;
-
-import std.c.string;
 
 import c.cdio.logging;
 

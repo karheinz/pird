@@ -17,7 +17,7 @@
 
 module sources.mixins;
 
-import std.algorithm.sorting;
+static import std.algorithm;
 
 
 mixin template Finders( )
@@ -247,7 +247,7 @@ private:
         // Sort groups. Build result.
         foreach ( ref T[] group; groups )
         {
-            std.algorithm.sorting.sort( group );
+            sort( group );
 
             // Add first source in group to result.
             // Add paths of other sources as alias.
@@ -264,7 +264,7 @@ private:
         }
 
         // Sort result.
-        std.algorithm.sorting.sort( result );
+        sort( result );
 
         return result;
     }
