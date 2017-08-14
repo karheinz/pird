@@ -1,7 +1,5 @@
 PIRD(1)                          Users Manual                          PIRD(1)
 
-
-
 NAME
        pird - rip audio data from a disc or a disc image
 
@@ -142,6 +140,4 @@ NOTES
         4. GNU Compact Disc Input and Control Library
            http://gnu.org/software/libcdio
 
-
-
-PIRD                              07/17/2014                           PIRD(1)
+PIRD                              08/14/2017                           PIRD(1)
