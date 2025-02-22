@@ -111,7 +111,7 @@ public:
 
     void open( string mode )
     {
-        if ( _file.getFP() is null )
+        if ( _file.name() is null )
         {
             _file = File( _path, mode );
             return;
