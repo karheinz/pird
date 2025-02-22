@@ -1,5 +1,5 @@
 /+
-  Copyright (C) 2011-2017 Karsten Heinze <karsten@sidenotes.de>
+  Copyright (C) 2011-2025 Karsten Heinze <karsten@sidenotes.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
 +/
 
 module sources.utils;
+
+static import core.exception;
 
 import std.array;
 import std.format;
@@ -45,7 +47,7 @@ string sourcesToString( S ) ( S[] sources, bool fullPath = true )
     string[] shortAliases;
 
 
-    foreach ( int count, S source; sources )
+    foreach ( size_t _, S source; sources )
     {
         // Build aliases string.
         aliases = "";

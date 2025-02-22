@@ -1,5 +1,5 @@
 /+
-  Copyright (C) 2011-2013 Karsten Heinze <karsten@sidenotes.de>
+  Copyright (C) 2011-2025 Karsten Heinze <karsten@sidenotes.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ struct SectorRange
 
     this( lsn_t f, lsn_t t, int o = 0 )
     {
-        from   = cast( lsn_t ) fmin( f, t );
-        to     = cast( lsn_t ) fmax( f, t );
+        from   = cast( lsn_t ) min( f, t );
+        to     = cast( lsn_t ) max( f, t );
         offset = o;
     }
 

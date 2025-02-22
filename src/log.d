@@ -1,5 +1,5 @@
 /+
-  Copyright (C) 2011-2017 Karsten Heinze <karsten@sidenotes.de>
+  Copyright (C) 2011-2025 Karsten Heinze <karsten@sidenotes.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ module log;
 
 import core.stdc.string;
 
+import std.algorithm.comparison;
 import std.conv;
 import std.math;
 import std.signals;
@@ -241,7 +242,7 @@ class DefaultLoggerFactory : LoggerFactory
         DefaultLogger logger = new DefaultLogger();
         if ( config.verbose )
         {
-            logger.setLogLevel( cast( LogLevel )( fmin( logger.logLevel() + config.verbose, LogLevel.max ) ) );
+            logger.setLogLevel( min( logger.logLevel() + to!LogLevel(config.verbose), LogLevel.max ) );
         }
         if ( config.quiet )
         {

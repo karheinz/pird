@@ -19,6 +19,7 @@ module readers.paranoia;
 
 import core.stdc.string;
 
+import std.algorithm.comparison;
 import std.array;
 import std.conv;
 import std.math;
@@ -214,7 +215,7 @@ public:
             // Current position?
             position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
             // Go to first sector of range (use relative offset).
-            lsn_t seekTo = cast( lsn_t )fmax( sr.from - Checker.MAX_SECTORS_OFFSET, 0 );
+            lsn_t seekTo = cast( lsn_t )max( sr.from - Checker.MAX_SECTORS_OFFSET, 0 );
             cdio_paranoia_seek( handle, cast( short )( seekTo - position ), SEEK_CUR );
             position = cdio_paranoia_seek( handle, 0, SEEK_CUR );
             // Check result of seeking.
@@ -223,7 +224,7 @@ public:
                 logError(
                     format(
                         "Failed to seek to sector %d! Stuck at sector %d",
-                        fmax( sr.from - Checker.MAX_SECTORS_OFFSET, 0 ),
+                        max( sr.from - Checker.MAX_SECTORS_OFFSET, 0 ),
                         position
                         )
                     );

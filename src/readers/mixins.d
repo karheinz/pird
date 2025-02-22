@@ -1,5 +1,5 @@
 /+
-  Copyright (C) 2012-2013 Karsten Heinze <karsten@sidenotes.de>
+  Copyright (C) 2012-2025 Karsten Heinze <karsten@sidenotes.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
 +/
 
 module readers.mixins;
+
+public import core.stdc.stdlib : free;
 
 
 mixin template CdIoAudioDiscReader( )
@@ -59,7 +61,7 @@ mixin template CdIoAudioDiscReader( )
         // Retrieve media catalog number and apply to disc.
         char* mcn = cdio_get_mcn( handle );
         disc.setMcn( to!string( mcn ) );
-        delete mcn;
+        free(mcn);
 
         // Retrieve tracks and add them to disc.
         track_t        tracks = cdio_get_num_tracks( handle );

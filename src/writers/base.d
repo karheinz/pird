@@ -1,5 +1,5 @@
 /+
-  Copyright (C) 2011-2017 Karsten Heinze <karsten@sidenotes.de>
+  Copyright (C) 2011-2025 Karsten Heinze <karsten@sidenotes.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 module writers.base;
 
+import std.algorithm.comparison;
 import std.math;
 import std.stdio;
 
@@ -137,7 +138,7 @@ public:
 
     void write( ubyte[] buffer, uint bytes )
     {
-        uint bound = cast( uint ) fmin( buffer.length, bytes );
+        uint bound = cast( uint ) min( buffer.length, bytes );
         write( buffer[ 0 .. bound ] );
     }
 
@@ -226,7 +227,7 @@ public:
 
     void write( ubyte[] buffer, uint bytes )
     {
-        uint bound = cast( uint )fmin( buffer.length, bytes );
+        uint bound = cast( uint )min( buffer.length, bytes );
         write( buffer[ 0 .. bound ] );
     }
 
