@@ -116,7 +116,7 @@ AUTHOR
        Written by Karsten Heinze <<karsten@sidenotes.de>>.
 
 COPYRIGHT
-       Copyright © 2011-2014 Karsten Heinze <<karsten@sidenotes.de>>. License
+       Copyright © 2011-2025 Karsten Heinze <<karsten@sidenotes.de>>. License
        GPLv3+: GNU General Public License[3] version 3 or later.
 
        This is free software: you are free to change and redistribute it.
@@ -138,4 +138,4 @@ NOTES
         4. GNU Compact Disc Input and Control Library
            http://gnu.org/software/libcdio
 
-PIRD                              08/14/2017                           PIRD(1)
+PIRD                              02/22/2025                           PIRD(1)
