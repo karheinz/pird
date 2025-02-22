@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
 project(pird)
 
@@ -47,6 +47,7 @@ add_custom_target(packages COMMAND "${CMAKE_CPACK_COMMAND}"
    "-C" "$<CONFIGURATION>" "--config" "${CMAKE_BINARY_DIR}/CPackConfigPird.cmake")
 add_custom_command(
   TARGET packages
+  POST_BUILD
   COMMAND mv pird.deb ${CPACK_PACKAGE_FILE_NAME_DEB}.deb
   COMMAND mv pird.rpm ${CPACK_PACKAGE_FILE_NAME_RPM}.rpm
   COMMENT "renaming packages"
